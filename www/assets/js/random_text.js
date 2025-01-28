@@ -27,7 +27,7 @@ function randomtext() {
 	'dad\'s favorite',
 	'shut up kiss me hold me tight'
 	];
-    return randomtxt[Math.floor((Math.random() * 26.99))];
+    return randomtxt[Math.floor((Math.random() * 27.99))];
 }
 
 document.getElementById("words").innerHTML = randomtext();
