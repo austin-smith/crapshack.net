@@ -2,8 +2,6 @@
 const gifs = [
     { src: "images/stuckers/blinky.gif", alt: "the franchise" },
     { src: "images/stuckers/robot.gif", alt: "stupid robot" },
-    { src: "images/stuckers/popcorn.gif", alt: "popcorn | opus" },
-    { src: "images/stuckers/spiral.gif", alt: "obey" }
 ];
 
 // Function to get a random GIF
