@@ -345,8 +345,6 @@
 			color: #FFF;
 			font-size: 1.25rem;
 			margin-bottom: 3rem;
-			animation: textWave 3s ease-in-out infinite;
-			transform-origin: center;
 		}
 
 		#main a {
