@@ -1,0 +1,57 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const repoUrl = 'https://github.com/austin-smith/BitDream';
+const issuesUrl = 'https://github.com/austin-smith/BitDream/issues';
+const rpcSpecUrl = 'https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md';
+const transmissionUrl = 'https://transmissionbt.com/';
+const iconUrl = '/images/bitdream.png';
+---
+
+<Layout title="BitDream"
+    title="crapshack (bitdream)"
+    noIndex={true}
+>
+	<section class="mx-auto max-w-3xl space-y-8 mt-10">
+		<header class="flex items-center gap-4">
+			<img src={iconUrl} alt="BitDream icon" width="96" height="96" class="rounded-2xl shadow-sm" loading="lazy" />
+			<div>
+				<h1 class="text-3xl font-semibold text-[var(--color-text)]">BitDream</h1>
+				<p class="text-white/90">A native, feature-rich remote for the Transmission web server.</p>
+			</div>
+		</header>
+
+		<div class="flex flex-wrap gap-3">
+			<a href={repoUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+				view on github
+			</a>
+			<a href={issuesUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+				support / issues
+			</a>
+		</div>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-semibold text-[var(--color-text)]">Features</h2>
+			<ul class="list-disc pl-6 space-y-1 text-white/95">
+				<li>Fully native apps for both macOS and iOS</li>
+				<li>Remote management of Transmission server</li>
+				<li>Real-time torrent status monitoring</li>
+				<li>Add, remove, and manage torrents remotely</li>
+				<li>View detailed torrent information and statistics</li>
+				<li>Secure connection to Transmission's RPC interface</li>
+			</ul>
+		</section>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-semibold text-[var(--color-text)]">About Transmission</h2>
+			<p class="text-white/95">
+				<a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={transmissionUrl} target="_blank" rel="noopener noreferrer">Transmission</a>
+				is a fast, easy, and free BitTorrent client for macOS, Windows, and Linux.
+			</p>
+			<p class="text-white/95">
+				BitDream connects to Transmission's RPC (Remote Procedure Call) interface, allowing you to control your Transmission server from anywhere. Learn more in the
+				<a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={rpcSpecUrl} target="_blank" rel="noopener noreferrer">official RPC specification</a>.
+			</p>
+		</section>
+	</section>
+</Layout>
