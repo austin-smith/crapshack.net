@@ -26,11 +26,11 @@ const stickers: Sticker[] = [
 	<section class="mx-auto max-w-5xl text-center space-y-6">
 		<!-- Top logo -->
 		<div class="flex items-center justify-center">
-			<img src="/images/stuckers/stuckers.png" alt="stuckers" class="block h-auto" width="350" />
+			<img src="/images/stuckers/stuckers.png" alt="stuckers" class="block h-auto" width="350" height="93" decoding="async" fetchpriority="high" />
 		</div>
 
 		<!-- Subtitle -->
-		<p data-typed-text class="mb-10 text-white font-mono text-[clamp(18px,2.5vw,20px)]"><noscript>stickers for phone</noscript></p>
+		<p data-typed-text class="mb-10 text-white font-mono text-[clamp(18px,2.5vw,20px)] min-h-[30px]"><noscript>stickers for phone</noscript></p>
 
 		<!-- App Store link -->
 		<div>
@@ -41,7 +41,7 @@ const stickers: Sticker[] = [
 				aria-label="Download Stuckers on the App Store"
 				class="inline-block transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
 			>
-				<img src="/images/stuckers/app-store.png" alt="Download on the App Store" class="h-auto w-full max-w-[160px] sm:max-w-[180px]" />
+				<img src="/images/stuckers/app-store.png" alt="Download on the App Store" width="499" height="167" decoding="async" class="h-auto max-w-[160px] sm:max-w-[180px]" />
 			</a>
 		</div>
 
@@ -52,6 +52,8 @@ const stickers: Sticker[] = [
 					<img
 						src={src}
 						alt={alt}
+						width="480"
+						height="480"
 						loading="lazy"
 						decoding="async"
 						class="h-full w-full object-contain transition-opacity group-hover:opacity-60 group-focus-within:opacity-60 group-data-[mode=feedback]:opacity-40"
