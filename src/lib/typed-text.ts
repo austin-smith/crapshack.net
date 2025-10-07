@@ -85,8 +85,8 @@ export async function typedText(
   cursorEl.style.transition = `opacity ${cursorFadeMs}ms linear`;
   element.append(textNode, cursorEl);
 
-  // Use a terminal-like rectangular block: width equals character cell width
-  cursorEl.style.width = '1ch';
+  // terminal cursor
+  cursorEl.style.width = '2px';
 
   let blinkVisible = true;
   const blinkIntervalId = window.setInterval(() => {

@@ -48,7 +48,7 @@ const stickers: Sticker[] = [
 		<!-- Responsive, intrinsic grid of stickers -->
 		<div class="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-4 sm:gap-6">
 			{stickers.map(({ name, src, alt }) => (
-				<figure class="group relative rounded-xl bg-white/70 p-2 shadow-md aspect-square" data-sticker-tile data-copy-url={src}>
+				<figure class="group relative rounded-xl bg-white/70 p-2 shadow-md aspect-square" data-sticker-tile data-copy-url={src} data-name={name}>
 					<img
 						src={src}
 						alt={alt}
@@ -60,20 +60,19 @@ const stickers: Sticker[] = [
 					/>
 					<button
 						type="button"
-						class="absolute inset-0 z-[1] flex h-full w-full items-center justify-center cursor-pointer rounded-xl text-white opacity-0 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] group-hover:opacity-100 group-focus-within:opacity-100 group-data-[active=true]:opacity-100"
+						class="absolute inset-0 z-[1] flex h-full w-full cursor-pointer rounded-xl text-white opacity-0 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] group-hover:opacity-100 group-focus-within:opacity-100 group-data-[active=true]:opacity-100"
 						data-copy-url={src}
 						data-tile-button
 						aria-label={`Copy link to ${name} GIF`}
 					>
-						<span class="inline-flex items-center gap-1.5 rounded-md bg-black/60 group-data-[mode=feedback]:bg-black/70 px-3 py-1.5 text-sm font-medium shadow-sm select-none">
-							<Copy width={16} height={16} stroke-width={2.25} stroke="#fff" aria-hidden="true" class="shrink-0 inline-block group-data-[mode=feedback]:hidden" />
-							<CopyCheck width={16} height={16} stroke-width={2.25} stroke="#fff" aria-hidden="true" class="shrink-0 hidden group-data-[mode=feedback]:inline-block" />
-							<span data-label class="font-mono">Copy link</span>
+						<span class="absolute left-2 top-2 inline-flex items-center rounded bg-black/60 group-data-[mode=feedback]:bg-black/70 px-2 py-0.5 text-xs font-mono text-white shadow-sm select-none whitespace-nowrap leading-none transform-gpu">
+							<span class="inline-flex items-center justify-center relative w-4 h-4 shrink-0 align-middle leading-none will-change-[opacity] transform-gpu">
+								<Copy width={14} height={14} stroke-width={2.25} stroke="#fff" aria-hidden="true" class="absolute inset-0 opacity-100 transition-opacity group-data-[mode=feedback]:opacity-0" />
+								<CopyCheck width={14} height={14} stroke-width={2.25} stroke="#fff" aria-hidden="true" class="absolute inset-0 opacity-0 transition-opacity group-data-[mode=feedback]:opacity-100" />
+							</span>
+							<span data-label aria-live="polite" class="leading-none ml-1.5">{name}</span>
 						</span>
 					</button>
-					<figcaption class="pointer-events-none absolute inset-x-2 bottom-2 z-[2] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 group-data-[active=true]:opacity-100">
-						<span class="inline-block rounded bg-black/60 px-2 py-0.5 text-xs font-mono text-white shadow-sm">{name}</span>
-					</figcaption>
 				</figure>
 			))}
 		</div>
@@ -116,8 +115,9 @@ const stickers: Sticker[] = [
 				if (!(button instanceof HTMLButtonElement)) continue;
 				const label = button.querySelector('[data-label]');
 				if (!(label instanceof HTMLElement)) continue;
+				const stickerName = tile.getAttribute('data-name') || '';
 				let feedbackTimer: number | null = null;
-				const defaultLabel = 'Copy link';
+				const defaultLabel = stickerName;
 				const feedbackLabel = 'Copied!';
 
 				const setMode = (mode: 'feedback' | 'default') => {
@@ -154,7 +154,10 @@ const stickers: Sticker[] = [
 					t.removeAttribute('data-mode');
 					t.removeAttribute('data-active');
 					const labelEl = t.querySelector('[data-tile-button] [data-label]');
-					if (labelEl instanceof HTMLElement) labelEl.textContent = 'Copy link';
+					if (labelEl instanceof HTMLElement) {
+						const n = t.getAttribute('data-name') || '';
+						labelEl.textContent = n;
+					}
 				}
 			}, { passive: true });
 		</script>

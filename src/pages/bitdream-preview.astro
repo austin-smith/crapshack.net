@@ -12,12 +12,13 @@ const iconUrl = '/images/bitdream.png';
     title="crapshack (bitdream)"
     noIndex={true}
 >
+	<div class="rain-container" id="rain-container"></div>
 	<section class="mx-auto max-w-3xl space-y-8 mt-10">
 		<header class="flex items-center gap-4">
 			<img src={iconUrl} alt="BitDream icon" width="96" height="96" class="rounded-2xl drop-shadow-md" loading="lazy" />
 			<div>
-				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">BitDream_</h1>
-				<p class="text-white/90 text-sm">A native, feature-rich remote control client for Transmission web server.</p>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">BitDream</h1>
+				<p class="text-white/90">A native, feature-rich remote control client for Transmission web server.</p>
 			</div>
 		</header>
 
@@ -54,4 +55,13 @@ const iconUrl = '/images/bitdream.png';
 			</p>
 		</section>
 	</section>
+
+	<script>
+		import { initRainyDay } from '../lib/rainy-day';
+
+		const rainContainer = document.getElementById('rain-container');
+		if (rainContainer) {
+			initRainyDay(rainContainer);
+		}
+	</script>
 </Layout>
