@@ -26,7 +26,7 @@ const { title, ogImage, noIndex } = Astro.props as Props;
 			<div class="header-inner">
 				<button
 					id="sidebar-toggle"
-					class="group fixed right-3 top-3 z-[110] p-2 rounded-md text-[var(--color-text)]/80 hover:text-[var(--color-sidebar-toggle-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+					class="group fixed right-3 top-3 z-[110] p-2 rounded-md text-[var(--color-text)]/80 hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
 					aria-label="Open menu"
 					aria-controls="site-sidebar"
 					aria-expanded="false"
@@ -50,5 +50,7 @@ const { title, ogImage, noIndex } = Astro.props as Props;
 		</main>
 		<Sidebar />
 		<script src="../scripts/sidebar.ts"></script>
+		<script src="../scripts/weather.ts"></script>
+		<div class="weather-container" id="weather-container" aria-hidden="true"></div>
 	</body>
 </html>

@@ -1,4 +1,5 @@
 ---
+import WeatherToggle from './WeatherToggle.astro';
 ---
 <div id="sidebar-overlay" class="fixed inset-0 z-[90] hidden bg-transparent"></div>
 
@@ -8,13 +9,16 @@
 	aria-modal="true"
 	aria-labelledby="site-sidebar-title"
 	tabindex="-1"
-	class="fixed inset-y-0 right-0 z-[100] h-full w-56 sm:w-64 bg-[var(--color-sidebar-bg)] text-[var(--color-text)] border-l border-white/10 transform translate-x-full transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none overflow-y-auto font-mono"
+	class="fixed inset-y-0 right-0 z-[100] h-full w-56 sm:w-64 bg-[var(--color-sidebar-bg)] text-[var(--color-text)] border-l border-white/10 transform translate-x-full transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none overflow-hidden font-mono flex flex-col"
 >
 	<h2 id="site-sidebar-title" class="sr-only">Site navigation</h2>
-	<nav class="flex flex-col gap-0.5 px-4 pt-3 pb-4 sm:px-5 sm:pt-4 sm:pb-6">
+	<nav class="flex flex-col gap-0.5 px-4 pt-3 pb-4 sm:px-5 sm:pt-4 sm:pb-6 grow overflow-y-auto">
 		<a href="/" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">home</span></a>
 		<a href="/stuckers" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">stuckers</span></a>
 		<a href="https://ombi.crapshack.net" target="_blank" rel="noopener noreferrer" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">plex requests</span></a>
 		<a href="https://plex.crapshack.net" target="_blank" rel="noopener noreferrer" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">plex</span></a>
 	</nav>
+	<div class="mt-auto px-4 sm:px-5 pb-3 sm:pb-4">
+		<WeatherToggle />
+	</div>
 </aside>

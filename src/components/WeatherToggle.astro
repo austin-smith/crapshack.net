@@ -1,0 +1,26 @@
+---
+import { Cloud, CloudRain, CloudSnow } from '@lucide/astro';
+const options = [
+	{ value: 'off', label: 'clear', Icon: Cloud },
+	{ value: 'rain', label: 'rain', Icon: CloudRain },
+	{ value: 'snow', label: 'snow', Icon: CloudSnow },
+];
+---
+
+<div class="px-0 pb-0">
+	<div role="radiogroup" aria-labelledby="effects-label" aria-orientation="horizontal" class="flex rounded-md border border-white/5 p-0.5">
+		{options.map(({ value, label, Icon }) => (
+			<button
+				data-effect-option={value}
+				role="radio"
+				aria-checked="false"
+				tabindex="-1"
+				type="button"
+				class="relative basis-0 flex-1 inline-flex flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1.5 text-[var(--color-text)] transition-colors hover:text-[var(--color-accent)] focus-visible:outline-none data-[checked]:text-[var(--color-accent)] before:content-[''] before:absolute before:rounded-md before:opacity-0 hover:before:opacity-100 data-[checked]:before:opacity-100 hover:before:bg-white/10 data-[checked]:before:bg-white/10 hover:before:inset-0.5 data-[checked]:before:inset-0.5"
+			>
+				<Icon width={14} height={14} stroke-width={2} aria-hidden="true" />
+				<span class="text-[10px] leading-3 sm:text-xs">{label}</span>
+			</button>
+		))}
+	</div>
+</div>
