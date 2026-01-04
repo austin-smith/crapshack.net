@@ -59,6 +59,11 @@ export function openDialog(id: string): void {
 		return;
 	}
 
+	// Prevent opening if already open
+	if (dialog.dataset.open === 'true') {
+		return;
+	}
+
 	// Store trigger element to return focus on close
 	const activeElement = document.activeElement as HTMLElement;
 	if (activeElement) {
