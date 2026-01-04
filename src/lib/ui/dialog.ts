@@ -8,6 +8,34 @@ const triggerMap = new WeakMap<HTMLElement, HTMLElement>();
 /** Track which dialogs have been initialized to avoid double-binding */
 const initializedDialogs = new WeakSet<HTMLElement>();
 
+/** Track currently open dialog IDs (stack order) */
+const openDialogStack: string[] = [];
+
+/** Ensure we only bind one global Escape handler */
+let escapeHandlerBound = false;
+
+function bindGlobalEscapeHandler(): void {
+	if (escapeHandlerBound) return;
+	escapeHandlerBound = true;
+
+	document.addEventListener('keydown', (e: KeyboardEvent) => {
+		if (e.key !== 'Escape') return;
+
+		// Close the most recently opened dialog that is still in the DOM
+		while (openDialogStack.length > 0) {
+			const id = openDialogStack[openDialogStack.length - 1];
+			const dialog = document.getElementById(id);
+			if (!dialog || dialog.dataset.open !== 'true') {
+				openDialogStack.pop();
+				continue;
+			}
+			e.preventDefault();
+			closeDialog(id);
+			break;
+		}
+	});
+}
+
 /** Track currently focused element within dialog for focus trap */
 function getFocusableElements(dialog: HTMLElement): HTMLElement[] {
 	const selector = [
@@ -43,12 +71,22 @@ export function openDialog(id: string): void {
 	// Open the dialog
 	dialog.dataset.open = 'true';
 	dialog.setAttribute('aria-hidden', 'false');
+	openDialogStack.push(id);
 
-	// Focus the dialog container (not the close button) to avoid visible focus ring
-	// The container has tabindex="-1" so it can receive focus without showing a ring
+	// Ensure global escape handler is registered
+	bindGlobalEscapeHandler();
+
+	// Move focus into the dialog: first focusable element, else the dialog itself
 	requestAnimationFrame(() => {
-		const container = dialog.querySelector<HTMLElement>('.dialog-container');
-		container?.focus();
+		const focusable = getFocusableElements(dialog);
+		const target = focusable[0] ?? dialog;
+
+		// Ensure the dialog can receive focus for fallback
+		if (target === dialog && !dialog.hasAttribute('tabindex')) {
+			dialog.setAttribute('tabindex', '-1');
+		}
+
+		(target as HTMLElement)?.focus();
 	});
 }
 
@@ -61,6 +99,11 @@ export function closeDialog(id: string): void {
 
 	dialog.dataset.open = 'false';
 	dialog.setAttribute('aria-hidden', 'true');
+	// Remove from stack if present
+	const idx = openDialogStack.lastIndexOf(id);
+	if (idx !== -1) {
+		openDialogStack.splice(idx, 1);
+	}
 
 	// Restore body scroll
 	document.body.style.overflow = '';
@@ -92,18 +135,6 @@ export function initDialog(dialog: HTMLElement): void {
 
 	// Close on close button click
 	closeBtn?.addEventListener('click', () => closeDialog(id));
-
-	// Global keyboard handling for Escape
-	document.addEventListener('keydown', (e: KeyboardEvent) => {
-		if (dialog.dataset.open !== 'true') return;
-
-		// Escape to close
-		if (e.key === 'Escape') {
-			e.preventDefault();
-			closeDialog(id);
-			return;
-		}
-	});
 
 	// Focus trap with Tab (on the dialog itself)
 	dialog.addEventListener('keydown', (e: KeyboardEvent) => {

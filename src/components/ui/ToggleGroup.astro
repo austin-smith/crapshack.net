@@ -13,9 +13,11 @@ interface Props {
 	defaultValue?: string;
 	/** Additional class for the container */
 	class?: string;
+	/** Accessible label for the radio group */
+	ariaLabel: string;
 }
 
-const { name, options, defaultValue, class: className } = Astro.props;
+const { name, options, defaultValue, class: className, ariaLabel } = Astro.props;
 const selectedValue = defaultValue ?? options[0]?.value;
 ---
 
@@ -23,6 +25,7 @@ const selectedValue = defaultValue ?? options[0]?.value;
 	class={`toggle-group ${className ?? ''}`}
 	role="radiogroup"
 	data-toggle-group={name}
+	aria-label={ariaLabel}
 >
 	{options.map((option) => (
 		<label class="toggle-option">

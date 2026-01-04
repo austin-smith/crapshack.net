@@ -6,9 +6,11 @@ interface Props {
 	class?: string;
 	/** Max width of the dialog content. Defaults to 'max-w-2xl' */
 	maxWidth?: string;
+	/** Accessible name for the dialog */
+	ariaLabel: string;
 }
 
-const { id, class: className, maxWidth = 'max-w-2xl' } = Astro.props;
+const { id, class: className, maxWidth = 'max-w-2xl', ariaLabel } = Astro.props;
 ---
 
 <div
@@ -18,6 +20,7 @@ const { id, class: className, maxWidth = 'max-w-2xl' } = Astro.props;
 	role="dialog"
 	aria-modal="true"
 	aria-hidden="true"
+	aria-label={ariaLabel}
 >
 	<div class="dialog-backdrop" data-dialog-backdrop></div>
 	<div class={`dialog-container ${maxWidth} ${className ?? ''}`} tabindex="-1">
@@ -38,13 +41,22 @@ const { id, class: className, maxWidth = 'max-w-2xl' } = Astro.props;
 <script>
 	import { initAllDialogs } from '../../lib/ui/dialog';
 
-	// Initialize all dialogs on page load
-	document.addEventListener('DOMContentLoaded', () => {
-		initAllDialogs();
-	});
+	if (typeof window !== 'undefined') {
+		// Guard to avoid wiring multiple listeners when component is rendered multiple times
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+		// @ts-ignore allow attaching a flag on window
+		if (!window.__dialogInitRegistered) {
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore allow attaching a flag on window
+			window.__dialogInitRegistered = true;
 
-	// Also run immediately in case DOM is already ready
-	if (document.readyState !== 'loading') {
-		initAllDialogs();
+			const runDialogInit = () => initAllDialogs();
+
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', runDialogInit, { once: true });
+			} else {
+				runDialogInit();
+			}
+		}
 	}
 </script>
