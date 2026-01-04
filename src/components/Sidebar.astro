@@ -1,5 +1,6 @@
 ---
 import WeatherToggle from './WeatherToggle.astro';
+import { Plus, Minus } from '@lucide/astro';
 ---
 <div id="sidebar-overlay" class="fixed inset-0 z-[90] hidden bg-transparent"></div>
 
@@ -17,6 +18,37 @@ import WeatherToggle from './WeatherToggle.astro';
 		<a href="/stuckers" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">stuckers</span></a>
 		<a href="https://ombi.crapshack.net" target="_blank" rel="noopener noreferrer" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">plex requests</span></a>
 		<a href="https://plex.crapshack.net" target="_blank" rel="noopener noreferrer" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">plex</span></a>
+
+		<div class="mt-auto space-y-1">
+			<div class="my-2 h-px bg-white/10" aria-hidden="true"></div>
+			<details class="collapsible group/collapsible flex flex-col-reverse rounded-md text-[var(--color-text)]">
+				<summary class="group/summary flex items-center justify-between cursor-pointer rounded-md px-4 py-2 text-sm text-white/60 hover:text-[var(--color-brand)] select-none list-none [&::-webkit-details-marker]:hidden">
+					<span>apps</span>
+					<span aria-hidden="true" class="text-white/50 transition-colors group-hover/summary:text-[var(--color-brand)]">
+						<Plus class="block group-open/collapsible:hidden" size={14} stroke-width={2} />
+						<Minus class="hidden group-open/collapsible:block" size={14} stroke-width={2} />
+					</span>
+				</summary>
+				<div class="collapsible-content grid grid-rows-[0fr] transition-[grid-template-rows] duration-200 ease-out">
+					<div class="overflow-hidden">
+						<div class="mb-1 space-y-1 pl-2">
+							<a href="/crapdash" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]">
+								<span class="inline-flex items-center gap-2">
+									<img src="/images/crapdash/compy.png" alt="" aria-hidden="true" class="h-4 w-4 rounded-md" loading="lazy" />
+									<span class="squiggle-underline">crapdash</span>
+								</span>
+							</a>
+							<a href="/bitdream" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]">
+								<span class="inline-flex items-center gap-2">
+									<img src="/images/bitdream/bitdream.png" alt="" aria-hidden="true" class="h-4 w-4 rounded-md" loading="lazy" />
+									<span class="squiggle-underline">bitdream</span>
+								</span>
+							</a>
+						</div>
+					</div>
+				</div>
+			</details>
+		</div>
 	</nav>
 	<div class="mt-auto px-4 sm:px-5 pb-3 sm:pb-4">
 		<WeatherToggle />

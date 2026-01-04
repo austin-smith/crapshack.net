@@ -288,6 +288,11 @@
 }
 
 @layer utilities {
+	/* Collapsible expand animation */
+	.collapsible[open] .collapsible-content {
+		grid-template-rows: 1fr;
+	}
+
 	/* Sidebar shadow only when expanded */
 	html[data-sidebar-open="true"] #site-sidebar {
 		box-shadow:

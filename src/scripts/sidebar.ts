@@ -7,6 +7,8 @@
  * - Scroll lock on <html>
  */
 
+import { initCollapsibles } from '../lib/ui/collapsible';
+
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   const selector = [
     'a[href]','area[href]','button:not([disabled])','input:not([disabled])',
@@ -259,6 +261,9 @@ function initSidebar(): void {
   toggle.dataset.controllerInitialized = 'true';
 
   new SidebarController({ sidebar, overlay, toggle });
+
+  // Initialize collapsible sections within sidebar
+  initCollapsibles(sidebar);
 }
 
 if (document.readyState === 'loading') {
