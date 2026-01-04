@@ -1,0 +1,109 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const repoUrl = 'https://github.com/crapshack/crapdash';
+const issuesUrl = 'https://github.com/crapshack/crapdash/issues';
+const releasesUrl = 'https://github.com/crapshack/crapdash/releases';
+const dockerUrl = 'https://github.com/crapshack/crapdash/pkgs/container/crapdash';
+const iconUrl = '/images/crapdash/compy.png';
+const screenshotLight = '/images/crapdash/screen-grab-light.png';
+const screenshotDark = '/images/crapdash/screen-grab-dark.png';
+---
+
+<Layout
+	title="crapshack (crapdash)"
+	ogImage="/open-graph/crapdash.png"
+	noIndex={true}
+>
+	<section class="mx-auto max-w-3xl space-y-8 mt-10">
+		<header class="flex items-center gap-4">
+			<img src={iconUrl} alt="crapdash icon" width="96" height="96" class="rounded-2xl drop-shadow-md" loading="lazy" />
+			<div>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">crapdash</h1>
+				<p class="text-white/90">Low-frills, customizable homepage to organize your links and services.</p>
+			</div>
+		</header>
+
+		<div class="flex flex-wrap gap-3">
+			<a href={repoUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+				view on github
+			</a>
+			<a href={dockerUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+				docker image
+			</a>
+			<a href={issuesUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+				support / issues
+			</a>
+		</div>
+
+		<div class="screenshots grid grid-cols-1 sm:grid-cols-2 gap-4">
+			<img src={screenshotLight} alt="crapdash light mode" class="rounded-xl border border-white/10 shadow-lg" loading="lazy" />
+			<img src={screenshotDark} alt="crapdash dark mode" class="rounded-xl border border-white/10 shadow-lg" loading="lazy" />
+		</div>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
+			<ul class="list-disc pl-6 space-y-1 text-white/95">
+				<li><strong>Services</strong> — Save links with names, descriptions, and custom icons</li>
+				<li><strong>Categories</strong> — Group services into categories with drag-and-drop organization</li>
+				<li><strong>Admin panel</strong> — Manage services and categories through a simple UI</li>
+				<li><strong>Search</strong> — Filter services quickly with keyboard shortcuts</li>
+				<li><strong>Self-hosted</strong> — Run it on your own hardware via Docker or Node.js</li>
+			</ul>
+		</section>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Quick Start</h2>
+			<p class="text-white/95">Pull and run the Docker image:</p>
+			<div class="relative group">
+				<pre class="bg-black/40 rounded-lg p-4 pr-12 overflow-x-auto text-sm"><code id="docker-command" class="text-white/90">docker run -d \
+  --name crapdash \
+  -p 2727:2727 \
+  --mount type=bind,source=/path/to/data,target=/app/data \
+  --restart=unless-stopped \
+  ghcr.io/crapshack/crapdash:latest</code></pre>
+				<button
+					id="copy-btn"
+					type="button"
+					class="absolute top-3 right-3 p-1.5 rounded-md bg-white/10 text-white/60 hover:text-white hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+					aria-label="Copy to clipboard"
+				>
+					<svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+						<path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+					</svg>
+					<svg id="check-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="20 6 9 17 4 12"/>
+					</svg>
+				</button>
+			</div>
+			<p class="text-white/80 text-sm">
+				Or grab a <a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={releasesUrl} target="_blank" rel="noopener noreferrer">prebuilt bundle</a> for standalone Node.js deployment.
+			</p>
+		</section>
+	</section>
+</Layout>
+
+<script>
+	import { copyTextToClipboard } from '../lib/clipboard';
+
+	const copyBtn = document.getElementById('copy-btn');
+	const codeEl = document.getElementById('docker-command');
+	const copyIcon = document.getElementById('copy-icon');
+	const checkIcon = document.getElementById('check-icon');
+
+	copyBtn?.addEventListener('click', async () => {
+		const text = codeEl?.textContent ?? '';
+		const success = await copyTextToClipboard(text);
+		
+		if (success && copyIcon && checkIcon) {
+			copyIcon.classList.add('hidden');
+			checkIcon.classList.remove('hidden');
+			
+			setTimeout(() => {
+				copyIcon.classList.remove('hidden');
+				checkIcon.classList.add('hidden');
+			}, 2000);
+		}
+	});
+</script>
