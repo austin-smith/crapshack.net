@@ -25,7 +25,10 @@ export function initCollapsibles(root: Document | HTMLElement = document): void 
 			content.style.gridTemplateRows = '0fr';
 
 			// Wait for transition to complete, then remove open attribute
-			const onTransitionEnd = () => {
+			// Filter by target and property to avoid premature close from bubbled child transitions
+			const onTransitionEnd = (e: TransitionEvent) => {
+				if (e.target !== content || e.propertyName !== 'grid-template-rows') return;
+
 				details.open = false;
 				content.style.gridTemplateRows = '';
 				content.removeEventListener('transitionend', onTransitionEnd);
