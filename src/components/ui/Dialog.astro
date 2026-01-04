@@ -23,7 +23,7 @@ const { id, class: className, maxWidth = 'max-w-2xl', ariaLabel } = Astro.props;
 	aria-label={ariaLabel}
 >
 	<div class="dialog-backdrop" data-dialog-backdrop></div>
-	<div class={`dialog-container ${maxWidth} ${className ?? ''}`} tabindex="-1">
+	<div class={`dialog-container ${maxWidth} ${className ?? ''}`} tabindex="-1" data-dialog-container>
 		<button
 			type="button"
 			class="dialog-close"

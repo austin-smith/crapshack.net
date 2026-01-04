@@ -83,8 +83,9 @@ export function openDialog(id: string): void {
 
 	// Move focus into the dialog: first focusable element, else the dialog itself
 	requestAnimationFrame(() => {
+		const dialogContainer = dialog.querySelector<HTMLElement>('[data-dialog-container]');
 		const focusable = getFocusableElements(dialog);
-		const target = focusable[0] ?? dialog;
+		const target = dialogContainer ?? focusable[0] ?? dialog;
 
 		// Ensure the dialog can receive focus for fallback
 		if (target === dialog && !dialog.hasAttribute('tabindex')) {
