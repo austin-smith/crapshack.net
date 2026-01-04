@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { Copy, Check } from '@lucide/astro';
 
 const repoUrl = 'https://github.com/crapshack/crapdash';
 const issuesUrl = 'https://github.com/crapshack/crapdash/issues';
@@ -37,18 +38,18 @@ const screenshotDark = '/images/crapdash/screen-grab-dark.png';
 		</div>
 
 		<div class="screenshots grid grid-cols-1 sm:grid-cols-2 gap-4">
-			<img src={screenshotLight} alt="crapdash light mode" class="rounded-xl border border-white/10 shadow-lg" loading="lazy" />
-			<img src={screenshotDark} alt="crapdash dark mode" class="rounded-xl border border-white/10 shadow-lg" loading="lazy" />
+			<img src={screenshotLight} alt="crapdash (light mode)" class="rounded-xl border border-white/10 shadow-lg opacity-0 transition-opacity duration-300" data-screenshot loading="lazy" />
+			<img src={screenshotDark} alt="crapdash (dark mode)" class="rounded-xl border border-white/10 shadow-lg opacity-0 transition-opacity duration-300" data-screenshot loading="lazy" />
 		</div>
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
 			<ul class="list-disc pl-6 space-y-1 text-white/95">
-				<li><strong>Services</strong> — Save links with names, descriptions, and custom icons</li>
-				<li><strong>Categories</strong> — Group services into categories with drag-and-drop organization</li>
-				<li><strong>Admin panel</strong> — Manage services and categories through a simple UI</li>
-				<li><strong>Search</strong> — Filter services quickly with keyboard shortcuts</li>
-				<li><strong>Self-hosted</strong> — Run it on your own hardware via Docker or Node.js</li>
+				<li><strong>Services</strong> - Save links with names, descriptions, and custom icons</li>
+				<li><strong>Categories</strong> - Group services into categories with drag-and-drop organization</li>
+				<li><strong>Admin panel</strong> - Manage services and categories through a simple UI</li>
+				<li><strong>Search</strong> - Filter services quickly with keyboard shortcuts</li>
+				<li><strong>Self-hosted</strong> - Run it on your own hardware via Docker or Node.js</li>
 			</ul>
 		</section>
 
@@ -68,13 +69,8 @@ const screenshotDark = '/images/crapdash/screen-grab-dark.png';
 					class="absolute top-3 right-3 p-1.5 rounded-md bg-white/10 text-white/60 hover:text-white hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 					aria-label="Copy to clipboard"
 				>
-					<svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-						<path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-					</svg>
-					<svg id="check-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<polyline points="20 6 9 17 4 12"/>
-					</svg>
+					<Copy id="copy-icon" width={16} height={16} stroke-width={2} />
+					<Check id="check-icon" class="hidden" width={16} height={16} stroke-width={2} />
 				</button>
 			</div>
 			<p class="text-white/80 text-sm">
@@ -87,6 +83,23 @@ const screenshotDark = '/images/crapdash/screen-grab-dark.png';
 <script>
 	import { copyTextToClipboard } from '../lib/clipboard';
 
+	// Fade in screenshots on load
+	const screenshots = document.querySelectorAll<HTMLImageElement>('[data-screenshot]');
+	screenshots.forEach((img, i) => {
+		const fadeIn = () => {
+			setTimeout(() => {
+				img.classList.remove('opacity-0');
+				img.classList.add('opacity-100');
+			}, i * 100);
+		};
+		if (img.complete) {
+			fadeIn();
+		} else {
+			img.addEventListener('load', fadeIn, { once: true });
+		}
+	});
+
+	// Copy button
 	const copyBtn = document.getElementById('copy-btn');
 	const codeEl = document.getElementById('docker-command');
 	const copyIcon = document.getElementById('copy-icon');
