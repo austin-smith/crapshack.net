@@ -290,8 +290,8 @@
 	.icon-apple {
 		display: inline-block;
 		background-color: currentColor;
-		mask: url('/images/apple.svg') center/contain no-repeat;
-		-webkit-mask: url('/images/apple.svg') center/contain no-repeat;
+		mask: url('/images/brands/apple.svg') center/contain no-repeat;
+		-webkit-mask: url('/images/brands/apple.svg') center/contain no-repeat;
 	}
 }
 
