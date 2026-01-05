@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import { Copy, CopyCheck } from '@lucide/astro';
 type Sticker = { name: string; src: string; alt: string };
 
-const appStoreUrl = 'https://apps.apple.com/us/appimages/stuckers/id1173389437';
+const appStoreUrl = 'https://apps.apple.com/us/app/stuckers/id1173389437';
 
 const stickers: Sticker[] = [
 	{ name: 'popcorn', src: '/images/stuckers/popcorn.gif', alt: 'popcorn' },
@@ -30,18 +30,19 @@ const stickers: Sticker[] = [
 		</div>
 
 		<!-- Subtitle -->
-		<p data-typed-text class="mb-10 text-white font-mono text-[clamp(18px,2.5vw,20px)] min-h-[30px] drop-shadow-lg"><noscript>stickers for phone</noscript></p>
+		<p data-typed-text class="mb-6 text-white font-mono text-[clamp(18px,2.5vw,20px)] min-h-[30px] drop-shadow-lg"><noscript>stickers for phone</noscript></p>
 
 		<!-- App Store link -->
-		<div>
+		<div class="flex items-center justify-center gap-4">
 			<a
 				href={appStoreUrl}
 				target="_blank"
 				rel="noopener noreferrer"
 				aria-label="Download Stuckers on the App Store"
-				class="inline-block transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
-				<img src="/images/stuckers/app-store.png" alt="Download on the App Store" width="499" height="167" decoding="async" class="h-auto max-w-[160px] sm:max-w-[180px]" />
+				<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
+				<span>app store</span>
 			</a>
 		</div>
 
