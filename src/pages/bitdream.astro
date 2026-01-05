@@ -10,8 +10,8 @@ const releasesUrl = 'https://github.com/austin-smith/BitDream/releases';
 const rpcSpecUrl = 'https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md';
 const transmissionUrl = 'https://transmissionbt.com/';
 const iconUrl = '/images/bitdream/bitdream.png';
-const screenshotLight = '/images/bitdream/screen-grab-light.png';
-const screenshotDark = '/images/bitdream/screen-grab-dark.png';
+const screenshotLight = '/images/bitdream/screen-grabs/screen-grab-light.png';
+const screenshotDark = '/images/bitdream/screen-grabs/screen-grab-dark.png';
 ---
 
 <Layout title="BitDream"
@@ -131,8 +131,8 @@ const screenshotDark = '/images/bitdream/screen-grab-dark.png';
 	const toggleGroup = document.querySelector<HTMLElement>('[data-toggle-group="screenshot-mode"]');
 
 	const screenshotSources: Record<string, { src: string; alt: string }> = {
-		light: { src: '/images/bitdream/screen-grab-light.png', alt: 'BitDream (light mode)' },
-		dark: { src: '/images/bitdream/screen-grab-dark.png', alt: 'BitDream (dark mode)' },
+		light: { src: '/images/bitdream/screen-grabs/screen-grab-light.png', alt: 'BitDream (light mode)' },
+		dark: { src: '/images/bitdream/screen-grabs/screen-grab-dark.png', alt: 'BitDream (dark mode)' },
 	};
 
 	function setScreenshot(mode: string) {

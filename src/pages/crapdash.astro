@@ -9,8 +9,8 @@ const issuesUrl = 'https://github.com/austin-smith/crapdash/issues';
 const releasesUrl = 'https://github.com/austin-smith/crapdash/releases';
 const dockerUrl = 'https://github.com/austin-smith/crapdash/pkgs/container/crapdash';
 const iconUrl = '/images/crapdash/compy.png';
-const screenshotLight = '/images/crapdash/screen-grab-light.png';
-const screenshotDark = '/images/crapdash/screen-grab-dark.png';
+const screenshotLight = '/images/crapdash/screen-grabs/screen-grab-light.png';
+const screenshotDark = '/images/crapdash/screen-grabs/screen-grab-dark.png';
 ---
 
 <Layout
@@ -142,8 +142,8 @@ const screenshotDark = '/images/crapdash/screen-grab-dark.png';
 
 	// Screenshot sources
 	const screenshotSources: Record<string, { src: string; alt: string }> = {
-		light: { src: '/images/crapdash/screen-grab-light.png', alt: 'crapdash (light mode)' },
-		dark: { src: '/images/crapdash/screen-grab-dark.png', alt: 'crapdash (dark mode)' },
+		light: { src: '/images/crapdash/screen-grabs/screen-grab-light.png', alt: 'crapdash (light mode)' },
+		dark: { src: '/images/crapdash/screen-grabs/screen-grab-dark.png', alt: 'crapdash (dark mode)' },
 	};
 
 	function setScreenshot(mode: string) {
