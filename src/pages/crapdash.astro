@@ -4,10 +4,10 @@ import Dialog from '../components/ui/Dialog.astro';
 import ToggleGroup from '../components/ui/ToggleGroup.astro';
 import { Copy, Check, Container } from '@lucide/astro';
 
-const repoUrl = 'https://github.com/crapshack/crapdash';
-const issuesUrl = 'https://github.com/crapshack/crapdash/issues';
-const releasesUrl = 'https://github.com/crapshack/crapdash/releases';
-const dockerUrl = 'https://github.com/crapshack/crapdash/pkgs/container/crapdash';
+const repoUrl = 'https://github.com/austin-smith/crapdash';
+const issuesUrl = 'https://github.com/austin-smith/crapdash/issues';
+const releasesUrl = 'https://github.com/austin-smith/crapdash/releases';
+const dockerUrl = 'https://github.com/austin-smith/crapdash/pkgs/container/crapdash';
 const iconUrl = '/images/crapdash/compy.png';
 const screenshotLight = '/images/crapdash/screen-grab-light.png';
 const screenshotDark = '/images/crapdash/screen-grab-dark.png';
@@ -97,7 +97,7 @@ const screenshotDark = '/images/crapdash/screen-grab-dark.png';
   -p 2727:2727 \
   --mount type=bind,source=/path/to/data,target=/app/data \
   --restart=unless-stopped \
-  ghcr.io/crapshack/crapdash:latest</code></pre>
+  ghcr.io/austin-smith/crapdash:latest</code></pre>
 				<button
 					id="copy-btn"
 					type="button"
