@@ -140,15 +140,6 @@ const screenshotDark = '/images/bitdream/screen-grabs/screen-grab-dark.png';
 		}
 	}
 
-	function setToggleValue(name: string, value: string) {
-		const radio = document.querySelector<HTMLInputElement>(
-			`[data-toggle-group="${name}"] input[value="${value}"]`
-		);
-		if (radio) {
-			radio.checked = true;
-		}
-	}
-
 	screenshotTriggers.forEach((trigger) => {
 		trigger.addEventListener('click', () => {
 			const src = trigger.dataset.src;
@@ -156,10 +147,9 @@ const screenshotDark = '/images/bitdream/screen-grabs/screen-grab-dark.png';
 			if (dialogImg && src) {
 				dialogImg.src = src;
 				dialogImg.alt = alt ?? '';
-
-				const mode = src.includes('light') ? 'light' : 'dark';
-				setToggleValue('screenshot-mode', mode);
-
+				document.dispatchEvent(new CustomEvent('toggle-set-value', {
+					detail: { name: 'screenshot-mode', value: src.includes('light') ? 'light' : 'dark' }
+				}));
 				openDialog('screenshot-dialog');
 			}
 		});

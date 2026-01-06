@@ -166,19 +166,6 @@ const screenshots = [
 		}
 	}
 
-	function setToggleValue(name: string, value: string) {
-		const radio = document.querySelector<HTMLInputElement>(
-			`[data-toggle-group="${name}"] input[value="${value}"]`
-		);
-		if (radio) {
-			const wasChecked = radio.checked;
-			radio.checked = true;
-			if (!wasChecked) {
-				radio.dispatchEvent(new Event('change', { bubbles: true }));
-			}
-		}
-	}
-
 	screenshotTriggers.forEach((trigger) => {
 		trigger.addEventListener('click', () => {
 			const src = trigger.dataset.src;
@@ -187,12 +174,11 @@ const screenshots = [
 			if (dialogImg && src) {
 				dialogImg.src = src;
 				dialogImg.alt = alt ?? '';
-
-				// Set toggle to match clicked screenshot
 				if (id) {
-					setToggleValue('screenshot-view', id);
+					document.dispatchEvent(new CustomEvent('toggle-set-value', {
+						detail: { name: 'screenshot-view', value: id }
+					}));
 				}
-
 				openDialog('screenshot-dialog');
 			}
 		});
