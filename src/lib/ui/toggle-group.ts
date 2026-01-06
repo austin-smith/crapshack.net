@@ -6,9 +6,37 @@
 
 let initialized = false;
 
+/** Avoid rAF loops: if a group has 0-size layout, wait for resize instead. */
+const pendingResizeObservers = new WeakMap<HTMLElement, ResizeObserver>();
+
+function getCheckedLabel(group: HTMLElement): HTMLElement | null {
+	const checkedInput = group.querySelector<HTMLInputElement>('input[type="radio"]:checked');
+	return checkedInput?.closest<HTMLElement>('.toggle-option')?.querySelector<HTMLElement>('.toggle-label') ?? null;
+}
+
+function ensureResizeObserver(group: HTMLElement): void {
+	if (pendingResizeObservers.has(group)) return;
+
+	const observer = new ResizeObserver(() => {
+		// Once the group has measurable size, update to the currently checked label and stop observing.
+		const rect = group.getBoundingClientRect();
+		if (rect.width === 0) return;
+
+		const label = getCheckedLabel(group);
+		if (!label) return;
+
+		observer.disconnect();
+		pendingResizeObservers.delete(group);
+		updateSliderPosition(group, label);
+	});
+
+	pendingResizeObservers.set(group, observer);
+	observer.observe(group);
+}
+
 /**
  * Updates the sliding indicator position and size for a toggle group.
- * Handles hidden containers and CSS scale transforms.
+ * Handles hidden containers and steady-state CSS scale transforms.
  */
 function updateSliderPosition(group: HTMLElement, targetLabel: HTMLElement): void {
 	const slider = group.querySelector<HTMLElement>('.toggle-slider');
@@ -17,21 +45,17 @@ function updateSliderPosition(group: HTMLElement, targetLabel: HTMLElement): voi
 	const groupRect = group.getBoundingClientRect();
 	const labelRect = targetLabel.getBoundingClientRect();
 
-	// If completely hidden (width = 0), retry on next frame until visible
+	// If completely unmeasurable (e.g. display:none), wait for layout to exist (no rAF loop).
 	if (labelRect.width === 0 || groupRect.width === 0) {
-		requestAnimationFrame(() => updateSliderPosition(group, targetLabel));
+		ensureResizeObserver(group);
 		return;
 	}
 
-	// Detect scale from parent transforms (e.g., dialog scale animation)
-	// Compare bounding rect to offset dimensions
-	const scale = group.offsetWidth > 0 ? groupRect.width / group.offsetWidth : 1;
-
-	// If still animating (scale != 1), retry on next frame
-	if (Math.abs(scale - 1) > 0.01) {
-		requestAnimationFrame(() => updateSliderPosition(group, targetLabel));
-		return;
-	}
+	// Detect X scale from transforms (e.g. dialog open/close scale animation).
+	// Important: transforms affect getBoundingClientRect() results but NOT computed styles.
+	// We convert measured (scaled) distances back into the element’s unscaled coordinate space.
+	const scaleXRaw = group.offsetWidth > 0 ? groupRect.width / group.offsetWidth : 1;
+	const scaleX = Number.isFinite(scaleXRaw) && scaleXRaw > 0 ? scaleXRaw : 1;
 
 	// Calculate position relative to the slider's inline start (respects padding/RTL)
 	const groupStyles = getComputedStyle(group);
@@ -43,8 +67,11 @@ function updateSliderPosition(group: HTMLElement, targetLabel: HTMLElement): voi
 		parseFloat(groupStyles.paddingLeft || ''),
 	];
 	const startOffset = offsetCandidates.find((value) => Number.isFinite(value)) ?? 0;
-	const left = labelRect.left - groupRect.left - startOffset;
-	const width = labelRect.width;
+
+	// Convert scaled viewport-space distances back to unscaled local px.
+	const deltaXScaled = labelRect.left - groupRect.left;
+	const left = deltaXScaled / scaleX - startOffset;
+	const width = labelRect.width / scaleX;
 
 	slider.style.transform = `translateX(${left}px)`;
 	slider.style.width = `${width}px`;
@@ -58,20 +85,17 @@ function initToggleGroup(group: HTMLElement): void {
 	if (!slider) return;
 
 	// Position slider on the initially checked option
-	const checkedInput = group.querySelector<HTMLInputElement>('input[type="radio"]:checked');
-	if (checkedInput) {
-		const label = checkedInput.closest<HTMLElement>('.toggle-option')?.querySelector<HTMLElement>('.toggle-label');
-		if (label) {
-			// Disable transitions temporarily for initial positioning
-			slider.style.transition = 'none';
-			updateSliderPosition(group, label);
-			// Mark as initialized to trigger opacity transition
-			slider.setAttribute('data-initialized', 'true');
-			// Force reflow
-			void slider.offsetHeight;
-			// Re-enable transitions
-			slider.style.transition = '';
-		}
+	const label = getCheckedLabel(group);
+	if (label) {
+		// Disable transitions temporarily for initial positioning
+		slider.style.transition = 'none';
+		updateSliderPosition(group, label);
+		// Mark as initialized to trigger opacity transition
+		slider.setAttribute('data-initialized', 'true');
+		// Force reflow
+		void slider.offsetHeight;
+		// Re-enable transitions
+		slider.style.transition = '';
 	}
 }
 
