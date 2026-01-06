@@ -27,6 +27,7 @@ const selectedValue = defaultValue ?? options[0]?.value;
 	data-toggle-group={name}
 	aria-label={ariaLabel}
 >
+	<div class="toggle-slider" aria-hidden="true"></div>
 	{options.map((option) => (
 		<label class="toggle-option">
 			<input
