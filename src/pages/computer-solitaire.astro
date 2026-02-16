@@ -1,0 +1,146 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Dialog from '../components/ui/Dialog.astro';
+import ToggleGroup from '../components/ui/ToggleGroup.astro';
+import { Package } from '@lucide/astro';
+
+const repoUrl = 'https://github.com/austin-smith/ComputerSolitaire';
+const releasesUrl = 'https://github.com/austin-smith/ComputerSolitaire/releases';
+const iconUrl = '/images/computer-solitaire/computer-solitaire-icon.png';
+const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.png';
+---
+
+<Layout
+	title="crapshack (computer solitaire)"
+	ogImage="/images/computer-solitaire/computer-solitaire-icon.png"
+	noIndex={true}
+>
+	<section class="mx-auto max-w-3xl space-y-8 mt-10">
+		<header class="flex items-center gap-4">
+			<img src={iconUrl} alt="Computer Solitaire icon" width="96" height="96" class="rounded-2xl drop-shadow-md" loading="lazy" />
+			<div>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">Computer Solitaire</h1>
+				<p class="text-white/90">A fully native Solitaire app for iOS, iPadOS, and macOS.</p>
+			</div>
+		</header>
+
+		<div class="flex flex-wrap gap-3">
+			<a
+				href={repoUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
+				<span>github</span>
+			</a>
+			<a
+				href={releasesUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<Package width={16} height={16} stroke-width={2} class="mr-2" />
+				<span>releases</span>
+			</a>
+		</div>
+
+		<div class="screenshots flex flex-wrap items-start gap-4">
+			<button
+				type="button"
+				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+				data-screenshot-trigger
+				data-id="ios"
+			>
+				<img src={screenshotIos} alt="Computer Solitaire on iOS" class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
+			</button>
+			<button
+				type="button"
+				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+				data-screenshot-trigger
+				data-id="macos"
+			>
+				<img src="/images/computer-solitaire/screen-grabs/screen-grab-macos.png" alt="Computer Solitaire on macOS" class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
+			</button>
+		</div>
+
+		<Dialog id="screenshot-dialog" maxWidth="max-w-4xl" ariaLabel="Computer Solitaire screenshot dialog">
+			<img id="screenshot-dialog-img" src="" alt="" class="w-full max-h-[75vh] object-contain rounded-lg" />
+			<div class="flex justify-center">
+				<ToggleGroup
+					name="screenshot-platform"
+					options={[
+						{ value: 'ios', label: 'ios' },
+						{ value: 'macos', label: 'macos' },
+					]}
+					defaultValue="ios"
+					ariaLabel="Screenshot platform"
+				/>
+			</div>
+		</Dialog>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
+			<ul class="list-disc pl-6 space-y-1 text-white/95">
+				<li>Fully native apps for iOS, iPadOS, and macOS</li>
+				<li>Automatic game persistence and resume</li>
+				<li>Support for 1-card and 3-card Klondike variants</li>
+				<li>Customizable table appearance</li>
+				<li>Other things you enjoy</li>
+			</ul>
+		</section>
+	</section>
+</Layout>
+
+<script>
+	import { openDialog } from '../lib/ui/dialog';
+
+	const screenshots = document.querySelectorAll<HTMLImageElement>('[data-screenshot]');
+	screenshots.forEach((img, i) => {
+		const fadeIn = () => {
+			setTimeout(() => {
+				img.classList.remove('opacity-0');
+				img.classList.add('opacity-100');
+			}, i * 100);
+		};
+		if (img.complete) {
+			fadeIn();
+		} else {
+			img.addEventListener('load', fadeIn, { once: true });
+		}
+	});
+
+	const screenshotTriggers = document.querySelectorAll<HTMLButtonElement>('[data-screenshot-trigger]');
+	const dialogImg = document.getElementById('screenshot-dialog-img') as HTMLImageElement | null;
+	const toggleGroup = document.querySelector<HTMLElement>('[data-toggle-group="screenshot-platform"]');
+
+	const screenshotSources: Record<string, { src: string; alt: string }> = {
+		ios: { src: '/images/computer-solitaire/screen-grabs/screen-grab-ios.png', alt: 'Computer Solitaire on iOS' },
+		macos: { src: '/images/computer-solitaire/screen-grabs/screen-grab-macos.png', alt: 'Computer Solitaire on macOS' },
+	};
+
+	function setScreenshot(platform: string) {
+		const source = screenshotSources[platform];
+		if (source && dialogImg) {
+			dialogImg.src = source.src;
+			dialogImg.alt = source.alt;
+		}
+	}
+
+	screenshotTriggers.forEach((trigger) => {
+		trigger.addEventListener('click', () => {
+			const id = trigger.dataset.id;
+			if (dialogImg && id) {
+				setScreenshot(id);
+				document.dispatchEvent(new CustomEvent('toggle-set-value', {
+					detail: { name: 'screenshot-platform', value: id }
+				}));
+				openDialog('screenshot-dialog');
+			}
+		});
+	});
+
+	toggleGroup?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
+		setScreenshot(e.detail.value);
+	}) as EventListener);
+</script>
