@@ -216,6 +216,97 @@
 		}
 	}
 
+	/* Tooltip component */
+	.tooltip {
+		position: relative;
+		display: inline-block;
+		vertical-align: baseline;
+	}
+
+	.tooltip-trigger {
+		display: inline-block;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		line-height: inherit;
+		text-decoration-line: underline;
+		text-decoration-style: dotted;
+		text-decoration-thickness: 1.5px;
+		text-decoration-color: color-mix(in srgb, var(--color-brand) 80%, white 20%);
+		text-underline-offset: 0.18em;
+		transition: color 150ms ease;
+		cursor: help;
+	}
+
+	.tooltip-trigger:hover {
+		color: var(--color-brand);
+	}
+
+	.tooltip-trigger:focus-visible {
+		outline: none;
+		border-radius: 0.2rem;
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand) 70%, transparent);
+	}
+
+	.tooltip-content {
+		display: block;
+		position: absolute;
+		left: 50%;
+		top: calc(100% + 0.55rem);
+		z-index: 150;
+		width: min(18rem, calc(100vw - 2rem));
+		transform: translateX(-50%) translateY(4px) scale(0.98);
+		transform-origin: top center;
+		opacity: 0;
+		pointer-events: none;
+		padding: 0.7rem 0.85rem;
+		border-radius: 0.55rem;
+		border: 1px solid rgba(255, 255, 255, 0.16);
+		background: rgba(8, 20, 38, 0.96);
+		box-shadow:
+			0 10px 20px rgba(2, 6, 23, 0.35),
+			0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+		color: rgba(255, 255, 255, 0.95);
+		font-size: 0.84rem;
+		line-height: 1.35;
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		transition:
+			opacity 150ms ease,
+			transform 150ms ease;
+		transition-delay: 0ms;
+		visibility: hidden;
+	}
+
+	.tooltip-content::before {
+		content: "";
+		position: absolute;
+		left: 50%;
+		top: -5px;
+		width: 10px;
+		height: 10px;
+		background: rgba(2, 6, 23, 0.92);
+		border-top: 1px solid rgba(255, 255, 255, 0.16);
+		border-left: 1px solid rgba(255, 255, 255, 0.16);
+		transform: translateX(-50%) rotate(45deg);
+	}
+
+	.tooltip:hover .tooltip-content,
+	.tooltip:focus-within .tooltip-content {
+		opacity: 1;
+		visibility: visible;
+		transform: translateX(-50%) translateY(0) scale(1);
+		transition-delay: 90ms;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.tooltip-content {
+			transition: none;
+		}
+	}
+
 	/* Reusable squiggly underline effect for links */
 	.squiggle-underline {
 		position: relative;

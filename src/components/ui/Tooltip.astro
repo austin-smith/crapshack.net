@@ -1,0 +1,18 @@
+---
+interface Props {
+	id: string;
+	trigger: string;
+	class?: string;
+}
+
+const { id, trigger, class: className } = Astro.props;
+---
+
+<span class={`tooltip ${className ?? ''}`}>
+	<button type="button" class="tooltip-trigger" aria-describedby={id}>
+		{trigger}
+	</button>
+	<span id={id} class="tooltip-content" role="tooltip">
+		<slot />
+	</span>
+</span>
