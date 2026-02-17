@@ -113,7 +113,7 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 			</p>
 			<div>
 				<button
-					id="klondike-rules-trigger"
+					id="computer-solitaire-guide-trigger"
 					type="button"
 					class="inline-flex items-center rounded-md border border-white/20 px-3 py-1.5 text-sm font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 				>
@@ -122,7 +122,7 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 			</div>
 		</section>
 
-		<Dialog id="klondike-rules-dialog" maxWidth="max-w-3xl" ariaLabel="Klondike rules dialog">
+		<Dialog id="computer-solitaire-guide-dialog" maxWidth="max-w-3xl" ariaLabel="Computer Solitaire guide dialog">
 			<div class="space-y-5 text-white/95">
 				<div class="space-y-2">
 					<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Computer Solitaire Guide</h2>
@@ -130,18 +130,18 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 
 				<div class="flex justify-center sm:justify-start">
 					<ToggleGroup
-						name="klondike-guide-section"
+						name="computer-solitaire-guide-section"
 						options={[
 							{ value: 'rules', label: 'rules' },
 							{ value: 'scoring', label: 'scoring' },
 							{ value: 'terms', label: 'terms' },
 						]}
 						defaultValue="rules"
-						ariaLabel="Klondike guide section"
+						ariaLabel="Computer Solitaire guide section"
 					/>
 				</div>
 
-				<section class="space-y-4" data-guide-panel="rules">
+				<section class="space-y-4" data-computer-solitaire-guide-panel="rules">
 					<div class="space-y-2">
 						<h3 class="text-lg font-semibold text-[var(--color-text)]">Objective</h3>
 						<p>Move all 52 cards to the four foundations, building each suit from Ace to King.</p>
@@ -168,7 +168,7 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 					</div>
 				</section>
 
-				<section class="space-y-3" data-guide-panel="scoring" hidden>
+				<section class="space-y-3" data-computer-solitaire-guide-panel="scoring" hidden>
 					<div class="space-y-2">
 						<h3 class="text-lg font-semibold text-[var(--color-text)]">Move Points</h3>
 						<ul class="list-disc pl-6 space-y-1">
@@ -191,7 +191,7 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 					</div>
 				</section>
 
-				<section class="space-y-2" data-guide-panel="terms" hidden>
+				<section class="space-y-2" data-computer-solitaire-guide-panel="terms" hidden>
 					<ul class="list-disc pl-6 space-y-1">
 						<li><span class="font-semibold text-white">Tableau:</span> the seven play piles where you build down in alternating colors.</li>
 						<li><span class="font-semibold text-white">Foundations:</span> four suit piles built up from Ace to King.</li>
@@ -226,9 +226,10 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 	const screenshotTriggers = document.querySelectorAll<HTMLButtonElement>('[data-screenshot-trigger]');
 	const dialogImg = document.getElementById('screenshot-dialog-img') as HTMLImageElement | null;
 	const toggleGroup = document.querySelector<HTMLElement>('[data-toggle-group="screenshot-platform"]');
-	const klondikeRulesTrigger = document.getElementById('klondike-rules-trigger') as HTMLButtonElement | null;
-	const klondikeGuideToggle = document.querySelector<HTMLElement>('[data-toggle-group="klondike-guide-section"]');
-	const klondikeGuidePanels = document.querySelectorAll<HTMLElement>('[data-guide-panel]');
+	const computerSolitaireGuideTrigger = document.getElementById('computer-solitaire-guide-trigger') as HTMLButtonElement | null;
+	const computerSolitaireGuideDialog = document.getElementById('computer-solitaire-guide-dialog') as HTMLElement | null;
+	const computerSolitaireGuideToggle = document.querySelector<HTMLElement>('[data-toggle-group="computer-solitaire-guide-section"]');
+	const computerSolitaireGuidePanels = document.querySelectorAll<HTMLElement>('[data-computer-solitaire-guide-panel]');
 
 	const screenshotSources: Record<string, { src: string; alt: string }> = {
 		ios: { src: '/images/computer-solitaire/screen-grabs/screen-grab-ios.png', alt: 'Computer Solitaire on iOS' },
@@ -260,19 +261,35 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 		setScreenshot(e.detail.value);
 	}) as EventListener);
 
-	klondikeRulesTrigger?.addEventListener('click', () => {
-		openDialog('klondike-rules-dialog');
+	function syncComputerSolitaireGuideToggle() {
+		const checkedGuideInput = document.querySelector<HTMLInputElement>(
+			'[data-toggle-group="computer-solitaire-guide-section"] input[type="radio"]:checked'
+		);
+		if (!checkedGuideInput) return;
+		document.dispatchEvent(new CustomEvent('toggle-set-value', {
+			detail: { name: 'computer-solitaire-guide-section', value: checkedGuideInput.value }
+		}));
+	}
+
+	computerSolitaireGuideTrigger?.addEventListener('click', () => {
+		openDialog('computer-solitaire-guide-dialog');
+		requestAnimationFrame(() => {
+			syncComputerSolitaireGuideToggle();
+		});
+		computerSolitaireGuideDialog?.querySelector<HTMLElement>('[data-dialog-container]')?.addEventListener('transitionend', () => {
+			syncComputerSolitaireGuideToggle();
+		}, { once: true });
 	});
 
-	function setKlondikeGuideSection(value: string) {
-		klondikeGuidePanels.forEach((panel) => {
-			panel.hidden = panel.dataset.guidePanel !== value;
+	function setComputerSolitaireGuideSection(value: string) {
+		computerSolitaireGuidePanels.forEach((panel) => {
+			panel.hidden = panel.dataset.computerSolitaireGuidePanel !== value;
 		});
 	}
 
-	setKlondikeGuideSection('rules');
+	setComputerSolitaireGuideSection('rules');
 
-	klondikeGuideToggle?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
-		setKlondikeGuideSection(e.detail.value);
+	computerSolitaireGuideToggle?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
+		setComputerSolitaireGuideSection(e.detail.value);
 	}) as EventListener);
 </script>
