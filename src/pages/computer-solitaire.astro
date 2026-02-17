@@ -2,10 +2,12 @@
 import Layout from '../layouts/Layout.astro';
 import Dialog from '../components/ui/Dialog.astro';
 import ToggleGroup from '../components/ui/ToggleGroup.astro';
+import Tooltip from '../components/ui/Tooltip.astro';
 import { Package } from '@lucide/astro';
 
 const repoUrl = 'https://github.com/austin-smith/ComputerSolitaire';
 const releasesUrl = 'https://github.com/austin-smith/ComputerSolitaire/releases';
+const klondikeUrl = 'https://en.wikipedia.org/wiki/Klondike_(solitaire)';
 const iconUrl = '/images/computer-solitaire/computer-solitaire-icon.png';
 const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.png';
 ---
@@ -89,6 +91,117 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 				<li>Other things you enjoy</li>
 			</ul>
 		</section>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># About Klondike</h2>
+			<p class="text-white/95">
+				<a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={klondikeUrl} target="_blank" rel="noopener noreferrer">Klondike</a>
+				is the most popular variant of solitaire, played with a standard 52-card deck and the goal of building all four suits in order from Ace through King.
+			</p>
+			<p class="text-white/95">
+				Computer Solitaire follows classic Klondike rules and supports both
+				<Tooltip id="draw-one-tooltip" trigger="draw-one">
+					<span class="font-semibold text-white">Draw-one:</span>
+					deal one card from the stock to the waste at a time.
+				</Tooltip>
+				and
+				<Tooltip id="draw-three-tooltip" trigger="draw-three">
+					<span class="font-semibold text-white">Draw-three:</span>
+					deal three cards at a time, with only the top card immediately available to play.
+				</Tooltip>
+				play.
+			</p>
+			<div>
+				<button
+					id="klondike-rules-trigger"
+					type="button"
+					class="inline-flex items-center rounded-md border border-white/20 px-3 py-1.5 text-sm font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				>
+					computer solitaire guide
+				</button>
+			</div>
+		</section>
+
+		<Dialog id="klondike-rules-dialog" maxWidth="max-w-3xl" ariaLabel="Klondike rules dialog">
+			<div class="space-y-5 text-white/95">
+				<div class="space-y-2">
+					<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Computer Solitaire Guide</h2>
+				</div>
+
+				<div class="flex justify-center sm:justify-start">
+					<ToggleGroup
+						name="klondike-guide-section"
+						options={[
+							{ value: 'rules', label: 'rules' },
+							{ value: 'scoring', label: 'scoring' },
+							{ value: 'terms', label: 'terms' },
+						]}
+						defaultValue="rules"
+						ariaLabel="Klondike guide section"
+					/>
+				</div>
+
+				<section class="space-y-4" data-guide-panel="rules">
+					<div class="space-y-2">
+						<h3 class="text-lg font-semibold text-[var(--color-text)]">Objective</h3>
+						<p>Move all 52 cards to the four foundations, building each suit from Ace to King.</p>
+					</div>
+
+					<div class="space-y-2">
+						<h3 class="text-lg font-semibold text-[var(--color-text)]">Core Rules</h3>
+						<ul class="list-disc pl-6 space-y-1">
+							<li>Use a standard 52-card deck and deal seven tableau piles, with only the top card face up in each pile.</li>
+							<li>Build tableau piles down in rank while alternating colors.</li>
+							<li>You may move a face-up card or a properly ordered sequence as a unit.</li>
+							<li>Empty tableau spaces may be filled only by a King (or a sequence starting with a King).</li>
+							<li>Build foundations by suit from Ace to King.</li>
+							<li>When the stock is empty, recycle waste to stock and continue (unlimited passes).</li>
+						</ul>
+					</div>
+
+					<div class="space-y-2">
+						<h3 class="text-lg font-semibold text-[var(--color-text)]">Draw Modes</h3>
+						<ul class="list-disc pl-6 space-y-1">
+							<li><span class="font-semibold text-white">1-card draw:</span> turn one card at a time from stock to waste; only the top waste card is playable.</li>
+							<li><span class="font-semibold text-white">3-card draw:</span> turn three cards at a time; only the top waste card is playable.</li>
+						</ul>
+					</div>
+				</section>
+
+				<section class="space-y-3" data-guide-panel="scoring" hidden>
+					<div class="space-y-2">
+						<h3 class="text-lg font-semibold text-[var(--color-text)]">Move Points</h3>
+						<ul class="list-disc pl-6 space-y-1">
+							<li><span class="font-semibold text-white">Waste to Tableau:</span> +5</li>
+							<li><span class="font-semibold text-white">Waste to Foundation:</span> +10</li>
+							<li><span class="font-semibold text-white">Tableau to Foundation:</span> +10</li>
+							<li><span class="font-semibold text-white">Turn over Tableau card:</span> +5</li>
+							<li><span class="font-semibold text-white">Foundation to Tableau:</span> -15</li>
+							<li><span class="font-semibold text-white">Recycle waste in 1-card draw:</span> -100</li>
+						</ul>
+					</div>
+					<div class="space-y-2">
+						<h3 class="text-lg font-semibold text-[var(--color-text)]">Timed Bonus</h3>
+						<ul class="list-disc pl-6 space-y-1">
+							<li>On win, a time bonus is added.</li>
+							<li>Time bonus starts at 600 in 1-card draw and 900 in 3-card draw.</li>
+							<li>The bonus drops by 1 point per second.</li>
+							<li>Score cannot go below 0.</li>
+						</ul>
+					</div>
+				</section>
+
+				<section class="space-y-2" data-guide-panel="terms" hidden>
+					<ul class="list-disc pl-6 space-y-1">
+						<li><span class="font-semibold text-white">Tableau:</span> the seven play piles where you build down in alternating colors.</li>
+						<li><span class="font-semibold text-white">Foundations:</span> four suit piles built up from Ace to King.</li>
+						<li><span class="font-semibold text-white">Stock:</span> the face-down draw pile.</li>
+						<li><span class="font-semibold text-white">Waste:</span> face-up cards drawn from stock; only the top card is playable.</li>
+						<li><span class="font-semibold text-white">Draw mode:</span> how many cards are drawn from stock each time (1-card or 3-card).</li>
+					</ul>
+				</section>
+			</div>
+		</Dialog>
 	</section>
 </Layout>
 
@@ -113,6 +226,9 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 	const screenshotTriggers = document.querySelectorAll<HTMLButtonElement>('[data-screenshot-trigger]');
 	const dialogImg = document.getElementById('screenshot-dialog-img') as HTMLImageElement | null;
 	const toggleGroup = document.querySelector<HTMLElement>('[data-toggle-group="screenshot-platform"]');
+	const klondikeRulesTrigger = document.getElementById('klondike-rules-trigger') as HTMLButtonElement | null;
+	const klondikeGuideToggle = document.querySelector<HTMLElement>('[data-toggle-group="klondike-guide-section"]');
+	const klondikeGuidePanels = document.querySelectorAll<HTMLElement>('[data-guide-panel]');
 
 	const screenshotSources: Record<string, { src: string; alt: string }> = {
 		ios: { src: '/images/computer-solitaire/screen-grabs/screen-grab-ios.png', alt: 'Computer Solitaire on iOS' },
@@ -142,5 +258,21 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 
 	toggleGroup?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
 		setScreenshot(e.detail.value);
+	}) as EventListener);
+
+	klondikeRulesTrigger?.addEventListener('click', () => {
+		openDialog('klondike-rules-dialog');
+	});
+
+	function setKlondikeGuideSection(value: string) {
+		klondikeGuidePanels.forEach((panel) => {
+			panel.hidden = panel.dataset.guidePanel !== value;
+		});
+	}
+
+	setKlondikeGuideSection('rules');
+
+	klondikeGuideToggle?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
+		setKlondikeGuideSection(e.detail.value);
 	}) as EventListener);
 </script>
