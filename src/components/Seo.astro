@@ -23,8 +23,9 @@ const resolvedImage = props.ogImage ?? defaultOgImage;
 // Build absolute URLs using a single source of truth: Astro.site
 const url = new URL(Astro.url.pathname + Astro.url.search, Astro.site);
 const imageUrl = new URL(resolvedImage, Astro.site).toString();
-
-const videoUrl = new URL(defaultOgVideoPath, Astro.site).toString();
+// Avoid advertising both a fallback video and a page-specific image
+// this can lead some preview clients to choose the wrong asset for the page.
+const videoUrl = props.ogImage ? undefined : new URL(defaultOgVideoPath, Astro.site).toString();
 
 const robots = props.noIndex ? 'noindex,follow' : 'index,follow';
 ---
@@ -40,11 +41,11 @@ const robots = props.noIndex ? 'noindex,follow' : 'index,follow';
 <meta property="og:url" content={url.toString()} />
 <meta property="og:site_name" content={siteName} />
 <meta property="og:image" content={imageUrl} />
-<meta property="og:video" content={videoUrl} />
-<meta property="og:video:secure_url" content={videoUrl} />
-<meta property="og:video:type" content={defaultOgVideoType} />
-<meta property="og:video:width" content={String(defaultOgVideoWidth)} />
-<meta property="og:video:height" content={String(defaultOgVideoHeight)} />
+{videoUrl && <meta property="og:video" content={videoUrl} />}
+{videoUrl && <meta property="og:video:secure_url" content={videoUrl} />}
+{videoUrl && <meta property="og:video:type" content={defaultOgVideoType} />}
+{videoUrl && <meta property="og:video:width" content={String(defaultOgVideoWidth)} />}
+{videoUrl && <meta property="og:video:height" content={String(defaultOgVideoHeight)} />}
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary_large_image" />
