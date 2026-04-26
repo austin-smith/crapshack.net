@@ -4,8 +4,13 @@ import Dialog from '../components/ui/Dialog.astro';
 import ToggleGroup from '../components/ui/ToggleGroup.astro';
 import { Package } from '@lucide/astro';
 
+const bitdreamRelease = {
+	releaseTag: 'v1.2.0',
+	dmgAssetName: 'BitDream-v1.2.0-arm64.dmg',
+};
 const repoUrl = 'https://github.com/austin-smith/BitDream';
 const releasesUrl = 'https://github.com/austin-smith/BitDream/releases';
+const directDownloadUrl = `https://github.com/austin-smith/BitDream/releases/download/${bitdreamRelease.releaseTag}/${bitdreamRelease.dmgAssetName}`;
 const rpcSpecUrl = 'https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md';
 const transmissionUrl = 'https://transmissionbt.com/';
 const iconUrl = '/images/bitdream/bitdream.png';
@@ -35,6 +40,10 @@ const screenshotDark = '/images/bitdream/screen-grabs/screen-grab-dark.png';
 			<a href={releasesUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<Package width={16} height={16} stroke-width={2} class="mr-2" />
 				releases
+			</a>
+			<a href={directDownloadUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+				<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
+				<span>download for macOS</span>
 			</a>
 		</div>
 
