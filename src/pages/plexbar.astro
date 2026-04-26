@@ -1,0 +1,189 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Dialog from '../components/ui/Dialog.astro';
+import ToggleGroup from '../components/ui/ToggleGroup.astro';
+import { Package } from '@lucide/astro';
+// import { Activity, MonitorPlay, RadioTower } from '@lucide/astro';
+
+const repoUrl = 'https://github.com/austin-smith/PlexBar';
+const releasesUrl = 'https://github.com/austin-smith/PlexBar/releases';
+const appcastUrl = 'https://austin-smith.github.io/PlexBar/appcast.xml';
+const iconUrl = '/images/plexbar/plexbar.png';
+const screenshotStreams = '/images/plexbar/screen-grabs/screen-grab-streams.png';
+const screenshotHistory = '/images/plexbar/screen-grabs/screen-grab-history.png';
+---
+
+<Layout
+	title="crapshack (PlexBar)"
+	ogImage="/images/plexbar/plexbar.png"
+	noIndex={true}
+>
+	<section class="mx-auto max-w-3xl space-y-8 mt-10">
+		<header class="flex items-center gap-4">
+			<img src={iconUrl} alt="PlexBar icon" width="96" height="96" class="rounded-2xl drop-shadow-md" loading="lazy" />
+			<div>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">PlexBar</h1>
+				<p class="text-white/90">A lightweight macOS menu bar app for Plex server telemetry.</p>
+			</div>
+		</header>
+
+		<div class="flex flex-wrap gap-3">
+			<a
+				href={repoUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
+				<span>github</span>
+			</a>
+			<a
+				href={releasesUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<Package width={16} height={16} stroke-width={2} class="mr-2" />
+				<span>releases</span>
+			</a>
+			<a
+				id="plexbar-download-link"
+				href={releasesUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				data-appcast-url={appcastUrl}
+			>
+				<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
+				<span>download for macOS</span>
+			</a>
+		</div>
+
+		<div class="screenshots flex flex-wrap items-start gap-4">
+			<button
+				type="button"
+				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+				data-screenshot-trigger
+				data-id="streams"
+			>
+				<img src={screenshotStreams} alt="PlexBar active streams view" class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
+			</button>
+			<button
+				type="button"
+				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+				data-screenshot-trigger
+				data-id="history"
+			>
+				<img src={screenshotHistory} alt="PlexBar history view" class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
+			</button>
+		</div>
+
+		<Dialog id="screenshot-dialog" maxWidth="max-w-4xl" ariaLabel="PlexBar screenshot dialog">
+			<img id="screenshot-dialog-img" src="" alt="" class="w-full max-h-[75vh] object-contain rounded-lg" />
+			<div class="flex justify-center">
+				<ToggleGroup
+					name="screenshot-view"
+					options={[
+						{ value: 'streams', label: 'streams' },
+						{ value: 'history', label: 'history' },
+					]}
+					defaultValue="streams"
+					ariaLabel="Screenshot view"
+				/>
+			</div>
+		</Dialog>
+
+		<!-- <section class="grid gap-3 sm:grid-cols-3">
+			<div class="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-lg">
+				<Activity width={20} height={20} stroke-width={2} class="mb-3 text-[var(--color-brand)]" />
+				<h2 class="font-mono font-semibold text-[var(--color-text)]">Live status</h2>
+				<p class="mt-2 text-sm text-white/80">See active Plex sessions without opening a browser.</p>
+			</div>
+			<div class="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-lg">
+				<MonitorPlay width={20} height={20} stroke-width={2} class="mb-3 text-[var(--color-brand)]" />
+				<h2 class="font-mono font-semibold text-[var(--color-text)]">Playback details</h2>
+				<p class="mt-2 text-sm text-white/80">Keep an eye on what is playing and where it is playing.</p>
+			</div>
+			<div class="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-lg">
+				<RadioTower width={20} height={20} stroke-width={2} class="mb-3 text-[var(--color-brand)]" />
+				<h2 class="font-mono font-semibold text-[var(--color-text)]">Server discovery</h2>
+				<p class="mt-2 text-sm text-white/80">Sign in with Plex and connect to the server you want to monitor.</p>
+			</div>
+		</section> -->
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
+			<ul class="list-disc pl-6 space-y-1 text-white/95">
+				<li>Native macOS menu bar app</li>
+				<li>Plex sign-in and server discovery</li>
+				<li>Live view of active sessions with playback details</li>
+				<li>Lightweight status surface for quick checks</li>
+			</ul>
+		</section>
+	</section>
+</Layout>
+
+<script>
+	import { fetchLatestAppcastRelease } from '../lib/appcast';
+	import { openDialog } from '../lib/ui/dialog';
+
+	const downloadLink = document.getElementById('plexbar-download-link') as HTMLAnchorElement | null;
+	const appcastUrl = downloadLink?.dataset.appcastUrl;
+
+	if (downloadLink && appcastUrl) {
+		fetchLatestAppcastRelease(appcastUrl)
+			.then((release) => {
+				downloadLink.href = release.downloadUrl;
+			});
+	}
+
+	const screenshots = document.querySelectorAll<HTMLImageElement>('[data-screenshot]');
+	screenshots.forEach((img, i) => {
+		const fadeIn = () => {
+			setTimeout(() => {
+				img.classList.remove('opacity-0');
+				img.classList.add('opacity-100');
+			}, i * 100);
+		};
+		if (img.complete) {
+			fadeIn();
+		} else {
+			img.addEventListener('load', fadeIn, { once: true });
+		}
+	});
+
+	const screenshotTriggers = document.querySelectorAll<HTMLButtonElement>('[data-screenshot-trigger]');
+	const dialogImg = document.getElementById('screenshot-dialog-img') as HTMLImageElement | null;
+	const toggleGroup = document.querySelector<HTMLElement>('[data-toggle-group="screenshot-view"]');
+
+	const screenshotSources: Record<string, { src: string; alt: string }> = {
+		streams: { src: '/images/plexbar/screen-grabs/screen-grab-streams.png', alt: 'PlexBar active streams' },
+		history: { src: '/images/plexbar/screen-grabs/screen-grab-history.png', alt: 'PlexBar history' },
+	};
+
+	function setScreenshot(view: string) {
+		if (!dialogImg) return;
+		const source = screenshotSources[view];
+		if (source) {
+			dialogImg.src = source.src;
+			dialogImg.alt = source.alt;
+		}
+	}
+
+	screenshotTriggers.forEach((trigger) => {
+		trigger.addEventListener('click', () => {
+			const id = trigger.dataset.id;
+			if (id) {
+				setScreenshot(id);
+				document.dispatchEvent(new CustomEvent('toggle-set-value', {
+					detail: { name: 'screenshot-view', value: id }
+				}));
+				openDialog('screenshot-dialog');
+			}
+		});
+	});
+
+	toggleGroup?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
+		setScreenshot(e.detail.value);
+	}) as EventListener);
+</script>
