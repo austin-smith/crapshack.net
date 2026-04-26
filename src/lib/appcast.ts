@@ -31,7 +31,8 @@ export async function fetchLatestAppcastRelease(appcastUrl: string): Promise<App
 	}
 
 	const latestItem = doc.querySelector('item');
-	const downloadUrl = latestItem?.querySelector('enclosure')?.getAttribute('url')?.trim();
+	const enclosure = latestItem?.querySelector('enclosure');
+	const downloadUrl = enclosure?.getAttribute('url')?.trim();
 	const version = latestItem ? getSparkleText(latestItem, 'shortVersionString') : undefined;
 	if (!latestItem || !downloadUrl || !version) {
 		throw new Error('Appcast did not include a latest release version and download URL');
