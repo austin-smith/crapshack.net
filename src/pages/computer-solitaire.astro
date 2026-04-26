@@ -5,8 +5,13 @@ import ToggleGroup from '../components/ui/ToggleGroup.astro';
 import Tooltip from '../components/ui/Tooltip.astro';
 import { Package } from '@lucide/astro';
 
+const computerSolitaireRelease = {
+	releaseTag: 'v0.6.0',
+	dmgAssetName: 'ComputerSolitaire-v0.6.0-arm64.dmg',
+};
 const repoUrl = 'https://github.com/austin-smith/ComputerSolitaire';
 const releasesUrl = 'https://github.com/austin-smith/ComputerSolitaire/releases';
+const directDownloadUrl = `https://github.com/austin-smith/ComputerSolitaire/releases/download/${computerSolitaireRelease.releaseTag}/${computerSolitaireRelease.dmgAssetName}`;
 const klondikeUrl = 'https://en.wikipedia.org/wiki/Klondike_(solitaire)';
 const iconUrl = '/images/computer-solitaire/computer-solitaire-icon.png';
 const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.png';
@@ -44,6 +49,15 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 			>
 				<Package width={16} height={16} stroke-width={2} class="mr-2" />
 				<span>releases</span>
+			</a>
+			<a
+				href={directDownloadUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
+				<span>download for macOS</span>
 			</a>
 		</div>
 
