@@ -2,8 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Dialog from '../components/ui/Dialog.astro';
 import ToggleGroup from '../components/ui/ToggleGroup.astro';
-import { Package } from '@lucide/astro';
-// import { Activity, MonitorPlay, RadioTower } from '@lucide/astro';
+import { History, Library, MonitorPlay, Package, Users } from '@lucide/astro';
 
 const repoUrl = 'https://github.com/austin-smith/PlexBar';
 const releasesUrl = 'https://github.com/austin-smith/PlexBar/releases';
@@ -34,6 +33,36 @@ const screenshots = [
 		src: '/images/plexbar/screen-grabs/screen-grab-libraries.png',
 		alt: 'PlexBar libraries view',
 	},
+];
+const views = [
+	{
+		title: 'Streams',
+		icon: MonitorPlay,
+		body: 'Active playback and stream status',
+	},
+	{
+		title: 'History',
+		icon: History,
+		body: 'Recent plays and top titles',
+	},
+	{
+		title: 'Users',
+		icon: Users,
+		body: 'Viewer activity and recent watches',
+	},
+	{
+		title: 'Libraries',
+		icon: Library,
+		body: 'Media libraries and recent additions',
+	},
+];
+const features = [
+	'Native macOS menu bar app',
+	'Plex sign-in and server discovery',
+	'Local, remote, and relay connection resolution',
+	'Live view of active sessions with playback details',
+	'Watch history, top titles, and user activity summaries',
+	'Library overview with item counts and status dates'
 ];
 ---
 
@@ -108,31 +137,27 @@ const screenshots = [
 			</div>
 		</Dialog>
 
-		<!-- <section class="grid gap-3 sm:grid-cols-3">
-			<div class="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-lg">
-				<Activity width={20} height={20} stroke-width={2} class="mb-3 text-[var(--color-brand)]" />
-				<h2 class="font-mono font-semibold text-[var(--color-text)]">Live status</h2>
-				<p class="mt-2 text-sm text-white/80">See active Plex sessions without opening a browser.</p>
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Views</h2>
+			<div class="grid gap-3 sm:grid-cols-2">
+				{views.map((view) => (
+					<article class="rounded-lg border border-white/10 bg-white/[0.04] p-4 shadow-lg">
+						<h3 class="flex items-center gap-2 font-mono font-semibold text-[var(--color-text)]">
+							<view.icon width={18} height={18} stroke-width={2} class="text-[var(--color-brand)]" />
+							<span>{view.title}</span>
+						</h3>
+						<p class="mt-2 text-sm text-white/80">{view.body}</p>
+					</article>
+				))}
 			</div>
-			<div class="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-lg">
-				<MonitorPlay width={20} height={20} stroke-width={2} class="mb-3 text-[var(--color-brand)]" />
-				<h2 class="font-mono font-semibold text-[var(--color-text)]">Playback details</h2>
-				<p class="mt-2 text-sm text-white/80">Keep an eye on what is playing and where it is playing.</p>
-			</div>
-			<div class="rounded-xl border border-white/10 bg-white/[0.04] p-4 shadow-lg">
-				<RadioTower width={20} height={20} stroke-width={2} class="mb-3 text-[var(--color-brand)]" />
-				<h2 class="font-mono font-semibold text-[var(--color-text)]">Server discovery</h2>
-				<p class="mt-2 text-sm text-white/80">Sign in with Plex and connect to the server you want to monitor.</p>
-			</div>
-		</section> -->
+		</section>
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
 			<ul class="list-disc pl-6 space-y-1 text-white/95">
-				<li>Native macOS menu bar app</li>
-				<li>Plex sign-in and server discovery</li>
-				<li>Live view of active sessions with playback details</li>
-				<li>Lightweight status surface for quick checks</li>
+				{features.map((feature) => (
+					<li>{feature}</li>
+				))}
 			</ul>
 		</section>
 	</section>
