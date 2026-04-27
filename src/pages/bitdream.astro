@@ -14,8 +14,20 @@ const directDownloadUrl = `https://github.com/austin-smith/BitDream/releases/dow
 const rpcSpecUrl = 'https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md';
 const transmissionUrl = 'https://transmissionbt.com/';
 const iconUrl = '/images/bitdream/bitdream.png';
-const screenshotLight = '/images/bitdream/screen-grabs/screen-grab-light.png';
-const screenshotDark = '/images/bitdream/screen-grabs/screen-grab-dark.png';
+const screenshots = [
+	{
+		id: 'light',
+		label: 'light',
+		src: '/images/bitdream/screen-grabs/screen-grab-light.png',
+		alt: 'BitDream (light mode)',
+	},
+	{
+		id: 'dark',
+		label: 'dark',
+		src: '/images/bitdream/screen-grabs/screen-grab-dark.png',
+		alt: 'BitDream (dark mode)',
+	},
+];
 ---
 
 <Layout
@@ -48,24 +60,16 @@ const screenshotDark = '/images/bitdream/screen-grabs/screen-grab-dark.png';
 		</div>
 
 		<div class="screenshots grid grid-cols-1 sm:grid-cols-2 gap-4">
-			<button
-				type="button"
-				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
-				data-screenshot-trigger
-				data-src={screenshotLight}
-				data-alt="BitDream (light mode)"
-			>
-				<img src={screenshotLight} alt="BitDream (light mode)" class="w-full h-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-			</button>
-			<button
-				type="button"
-				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
-				data-screenshot-trigger
-				data-src={screenshotDark}
-				data-alt="BitDream (dark mode)"
-			>
-				<img src={screenshotDark} alt="BitDream (dark mode)" class="w-full h-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-			</button>
+			{screenshots.map((screenshot) => (
+				<button
+					type="button"
+					class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+					data-screenshot-trigger
+					data-id={screenshot.id}
+				>
+					<img src={screenshot.src} alt={screenshot.alt} class="w-full h-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
+				</button>
+			))}
 		</div>
 
 		<Dialog
@@ -77,10 +81,7 @@ const screenshotDark = '/images/bitdream/screen-grabs/screen-grab-dark.png';
 			<div class="flex justify-center">
 				<ToggleGroup
 					name="screenshot-mode"
-					options={[
-						{ value: 'light', label: 'light' },
-						{ value: 'dark', label: 'dark' },
-					]}
+					options={screenshots.map(({ id, label }) => ({ value: id, label }))}
 					defaultValue="light"
 					ariaLabel="Screenshot mode"
 				/>
@@ -151,13 +152,11 @@ const screenshotDark = '/images/bitdream/screen-grabs/screen-grab-dark.png';
 
 	screenshotTriggers.forEach((trigger) => {
 		trigger.addEventListener('click', () => {
-			const src = trigger.dataset.src;
-			const alt = trigger.dataset.alt;
-			if (dialogImg && src) {
-				dialogImg.src = src;
-				dialogImg.alt = alt ?? '';
+			const id = trigger.dataset.id;
+			if (id) {
+				setScreenshot(id);
 				document.dispatchEvent(new CustomEvent('toggle-set-value', {
-					detail: { name: 'screenshot-mode', value: src.includes('light') ? 'light' : 'dark' }
+					detail: { name: 'screenshot-mode', value: id }
 				}));
 				openDialog('screenshot-dialog');
 			}

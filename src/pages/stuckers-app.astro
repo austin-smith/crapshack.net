@@ -9,9 +9,24 @@ const appStoreUrl = 'https://apps.apple.com/us/app/stuckers/id1173389437';
 const iconUrl = '/images/stuckers/stuckers-icon.png';
 
 const screenshots = [
-	{ id: 'oat-milk-man', src: '/images/stuckers/screen-grabs/screengrab-oat-milk-man.png', alt: 'stucker oat milk man' },
-	{ id: 'wink', src: '/images/stuckers/screen-grabs/screengrab-wink.png', alt: 'stucker wink' },
-	{ id: 'all', src: '/images/stuckers/screen-grabs/screengrab-all.png', alt: 'stucker overview' },
+	{
+		id: 'oat-milk-man',
+		label: 'milk',
+		src: '/images/stuckers/screen-grabs/screengrab-oat-milk-man.png',
+		alt: 'stucker oat milk man',
+	},
+	{
+		id: 'wink',
+		label: 'wink',
+		src: '/images/stuckers/screen-grabs/screengrab-wink.png',
+		alt: 'stucker wink',
+	},
+	{
+		id: 'all',
+		label: 'all',
+		src: '/images/stuckers/screen-grabs/screengrab-all.png',
+		alt: 'stucker overview',
+	},
 ];
 ---
 
@@ -52,8 +67,6 @@ const screenshots = [
 					type="button"
 					class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] max-w-[120px] sm:max-w-[140px]"
 					data-screenshot-trigger
-					data-src={screenshot.src}
-					data-alt={screenshot.alt}
 					data-id={screenshot.id}
 				>
 					<img src={screenshot.src} alt={screenshot.alt} class="w-full h-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
@@ -66,11 +79,7 @@ const screenshots = [
 			<div class="flex justify-center">
 				<ToggleGroup
 					name="screenshot-view"
-					options={[
-						{ value: 'oat-milk-man', label: 'milk' },
-						{ value: 'wink', label: 'wink' },
-						{ value: 'all', label: 'all' },
-					]}
+					options={screenshots.map(({ id, label }) => ({ value: id, label }))}
 					defaultValue="oat-milk-man"
 					ariaLabel="Switch screenshot view"
 				/>
@@ -168,17 +177,12 @@ const screenshots = [
 
 	screenshotTriggers.forEach((trigger) => {
 		trigger.addEventListener('click', () => {
-			const src = trigger.dataset.src;
-			const alt = trigger.dataset.alt;
 			const id = trigger.dataset.id;
-			if (dialogImg && src) {
-				dialogImg.src = src;
-				dialogImg.alt = alt ?? '';
-				if (id) {
-					document.dispatchEvent(new CustomEvent('toggle-set-value', {
-						detail: { name: 'screenshot-view', value: id }
-					}));
-				}
+			if (id) {
+				setScreenshot(id);
+				document.dispatchEvent(new CustomEvent('toggle-set-value', {
+					detail: { name: 'screenshot-view', value: id }
+				}));
 				openDialog('screenshot-dialog');
 			}
 		});

@@ -14,7 +14,20 @@ const releasesUrl = 'https://github.com/austin-smith/ComputerSolitaire/releases'
 const directDownloadUrl = `https://github.com/austin-smith/ComputerSolitaire/releases/download/${computerSolitaireRelease.releaseTag}/${computerSolitaireRelease.dmgAssetName}`;
 const klondikeUrl = 'https://en.wikipedia.org/wiki/Klondike_(solitaire)';
 const iconUrl = '/images/computer-solitaire/computer-solitaire-icon.png';
-const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.png';
+const screenshots = [
+	{
+		id: 'ios',
+		label: 'ios',
+		src: '/images/computer-solitaire/screen-grabs/screen-grab-ios.png',
+		alt: 'Computer Solitaire on iOS',
+	},
+	{
+		id: 'macos',
+		label: 'macos',
+		src: '/images/computer-solitaire/screen-grabs/screen-grab-macos.png',
+		alt: 'Computer Solitaire on macOS',
+	},
+];
 ---
 
 <Layout
@@ -62,22 +75,16 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 		</div>
 
 		<div class="screenshots flex flex-wrap items-start gap-4">
-			<button
-				type="button"
-				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
-				data-screenshot-trigger
-				data-id="ios"
-			>
-				<img src={screenshotIos} alt="Computer Solitaire on iOS" class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-			</button>
-			<button
-				type="button"
-				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
-				data-screenshot-trigger
-				data-id="macos"
-			>
-				<img src="/images/computer-solitaire/screen-grabs/screen-grab-macos.png" alt="Computer Solitaire on macOS" class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-			</button>
+			{screenshots.map((screenshot) => (
+				<button
+					type="button"
+					class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+					data-screenshot-trigger
+					data-id={screenshot.id}
+				>
+					<img src={screenshot.src} alt={screenshot.alt} class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
+				</button>
+			))}
 		</div>
 
 		<Dialog id="screenshot-dialog" maxWidth="max-w-4xl" ariaLabel="Computer Solitaire screenshot dialog">
@@ -85,10 +92,7 @@ const screenshotIos = '/images/computer-solitaire/screen-grabs/screen-grab-ios.p
 			<div class="flex justify-center">
 				<ToggleGroup
 					name="screenshot-platform"
-					options={[
-						{ value: 'ios', label: 'ios' },
-						{ value: 'macos', label: 'macos' },
-					]}
+					options={screenshots.map(({ id, label }) => ({ value: id, label }))}
 					defaultValue="ios"
 					ariaLabel="Screenshot platform"
 				/>
