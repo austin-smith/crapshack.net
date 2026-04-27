@@ -9,12 +9,36 @@ const repoUrl = 'https://github.com/austin-smith/PlexBar';
 const releasesUrl = 'https://github.com/austin-smith/PlexBar/releases';
 const appcastUrl = 'https://austin-smith.github.io/PlexBar/appcast.xml';
 const iconUrl = '/images/plexbar/plexbar.png';
-const screenshotStreams = '/images/plexbar/screen-grabs/screen-grab-streams.png';
-const screenshotHistory = '/images/plexbar/screen-grabs/screen-grab-history.png';
+const screenshots = [
+	{
+		id: 'streams',
+		label: 'streams',
+		src: '/images/plexbar/screen-grabs/screen-grab-streams.png',
+		alt: 'PlexBar active streams view',
+	},
+	{
+		id: 'history',
+		label: 'history',
+		src: '/images/plexbar/screen-grabs/screen-grab-history.png',
+		alt: 'PlexBar history view',
+	},
+	{
+		id: 'users',
+		label: 'users',
+		src: '/images/plexbar/screen-grabs/screen-grab-users.png',
+		alt: 'PlexBar users view',
+	},
+	{
+		id: 'libraries',
+		label: 'libraries',
+		src: '/images/plexbar/screen-grabs/screen-grab-libraries.png',
+		alt: 'PlexBar libraries view',
+	},
+];
 ---
 
 <Layout
-	title="crapshack (PlexBar)"
+	title="crapshack (plexbar)"
 	ogImage="/images/plexbar/plexbar.png"
 	noIndex={true}
 >
@@ -60,22 +84,16 @@ const screenshotHistory = '/images/plexbar/screen-grabs/screen-grab-history.png'
 		</div>
 
 		<div class="screenshots flex flex-wrap items-start gap-4">
-			<button
-				type="button"
-				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
-				data-screenshot-trigger
-				data-id="streams"
-			>
-				<img src={screenshotStreams} alt="PlexBar active streams view" class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-			</button>
-			<button
-				type="button"
-				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
-				data-screenshot-trigger
-				data-id="history"
-			>
-				<img src={screenshotHistory} alt="PlexBar history view" class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-			</button>
+			{screenshots.map((screenshot) => (
+				<button
+					type="button"
+					class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+					data-screenshot-trigger
+					data-id={screenshot.id}
+				>
+					<img src={screenshot.src} alt={screenshot.alt} class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
+				</button>
+			))}
 		</div>
 
 		<Dialog id="screenshot-dialog" maxWidth="max-w-4xl" ariaLabel="PlexBar screenshot dialog">
@@ -83,10 +101,7 @@ const screenshotHistory = '/images/plexbar/screen-grabs/screen-grab-history.png'
 			<div class="flex justify-center">
 				<ToggleGroup
 					name="screenshot-view"
-					options={[
-						{ value: 'streams', label: 'streams' },
-						{ value: 'history', label: 'history' },
-					]}
+					options={screenshots.map(({ id, label }) => ({ value: id, label }))}
 					defaultValue="streams"
 					ariaLabel="Screenshot view"
 				/>
@@ -159,6 +174,8 @@ const screenshotHistory = '/images/plexbar/screen-grabs/screen-grab-history.png'
 	const screenshotSources: Record<string, { src: string; alt: string }> = {
 		streams: { src: '/images/plexbar/screen-grabs/screen-grab-streams.png', alt: 'PlexBar active streams' },
 		history: { src: '/images/plexbar/screen-grabs/screen-grab-history.png', alt: 'PlexBar history' },
+		users: { src: '/images/plexbar/screen-grabs/screen-grab-users.png', alt: 'PlexBar users' },
+		libraries: { src: '/images/plexbar/screen-grabs/screen-grab-libraries.png', alt: 'PlexBar libraries' },
 	};
 
 	function setScreenshot(view: string) {
