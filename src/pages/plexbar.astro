@@ -1,7 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Dialog from '../components/ui/Dialog.astro';
-import ToggleGroup from '../components/ui/ToggleGroup.astro';
+import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import { History, Library, MonitorPlay, Package, Users } from '@lucide/astro';
 
 const repoUrl = 'https://github.com/austin-smith/PlexBar';
@@ -80,7 +79,7 @@ const features = [
 			</div>
 		</header>
 
-		<div class="flex flex-wrap gap-3">
+		<div class="flex flex-wrap gap-2 sm:gap-3">
 			<a
 				href={repoUrl}
 				target="_blank"
@@ -108,38 +107,20 @@ const features = [
 				data-appcast-url={appcastUrl}
 			>
 				<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
-				<span>download for macOS</span>
+				<span>macOS</span>
 			</a>
 		</div>
 
-		<div class="screenshots flex flex-wrap items-start gap-4">
-			{screenshots.map((screenshot) => (
-				<button
-					type="button"
-					class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg h-[13rem] sm:h-[18rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
-					data-screenshot-trigger
-					data-id={screenshot.id}
-				>
-					<img src={screenshot.src} alt={screenshot.alt} class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-				</button>
-			))}
-		</div>
-
-		<Dialog id="screenshot-dialog" maxWidth="max-w-4xl" ariaLabel="PlexBar screenshot dialog">
-			<img id="screenshot-dialog-img" src="" alt="" class="w-full max-h-[75vh] object-contain rounded-lg" />
-			<div class="flex justify-center">
-				<ToggleGroup
-					name="screenshot-view"
-					options={screenshots.map(({ id, label }) => ({ value: id, label }))}
-					defaultValue="streams"
-					ariaLabel="Screenshot view"
-				/>
-			</div>
-		</Dialog>
+		<ScreenshotGallery
+			name="plexbar"
+			screenshots={screenshots}
+			dialogAriaLabel="PlexBar screenshot dialog"
+			toggleAriaLabel="Screenshot view"
+		/>
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Views</h2>
-			<div class="grid gap-3 sm:grid-cols-2">
+			<div class="grid grid-cols-2 gap-3">
 				{views.map((view) => (
 					<article class="rounded-lg border border-white/10 bg-white/[0.04] p-4 shadow-lg">
 						<h3 class="flex items-center gap-2 font-mono font-semibold text-[var(--color-text)]">
@@ -165,7 +146,6 @@ const features = [
 
 <script>
 	import { fetchLatestAppcastRelease } from '../lib/appcast';
-	import { openDialog } from '../lib/ui/dialog';
 
 	const downloadLink = document.getElementById('plexbar-download-link') as HTMLAnchorElement | null;
 	const appcastUrl = downloadLink?.dataset.appcastUrl;
@@ -176,56 +156,4 @@ const features = [
 				downloadLink.href = release.downloadUrl;
 			});
 	}
-
-	const screenshots = document.querySelectorAll<HTMLImageElement>('[data-screenshot]');
-	screenshots.forEach((img, i) => {
-		const fadeIn = () => {
-			setTimeout(() => {
-				img.classList.remove('opacity-0');
-				img.classList.add('opacity-100');
-			}, i * 100);
-		};
-		if (img.complete) {
-			fadeIn();
-		} else {
-			img.addEventListener('load', fadeIn, { once: true });
-		}
-	});
-
-	const screenshotTriggers = document.querySelectorAll<HTMLButtonElement>('[data-screenshot-trigger]');
-	const dialogImg = document.getElementById('screenshot-dialog-img') as HTMLImageElement | null;
-	const toggleGroup = document.querySelector<HTMLElement>('[data-toggle-group="screenshot-view"]');
-
-	const screenshotSources: Record<string, { src: string; alt: string }> = {
-		streams: { src: '/images/plexbar/screen-grabs/screen-grab-streams.png', alt: 'PlexBar active streams' },
-		history: { src: '/images/plexbar/screen-grabs/screen-grab-history.png', alt: 'PlexBar history' },
-		users: { src: '/images/plexbar/screen-grabs/screen-grab-users.png', alt: 'PlexBar users' },
-		libraries: { src: '/images/plexbar/screen-grabs/screen-grab-libraries.png', alt: 'PlexBar libraries' },
-	};
-
-	function setScreenshot(view: string) {
-		if (!dialogImg) return;
-		const source = screenshotSources[view];
-		if (source) {
-			dialogImg.src = source.src;
-			dialogImg.alt = source.alt;
-		}
-	}
-
-	screenshotTriggers.forEach((trigger) => {
-		trigger.addEventListener('click', () => {
-			const id = trigger.dataset.id;
-			if (id) {
-				setScreenshot(id);
-				document.dispatchEvent(new CustomEvent('toggle-set-value', {
-					detail: { name: 'screenshot-view', value: id }
-				}));
-				openDialog('screenshot-dialog');
-			}
-		});
-	});
-
-	toggleGroup?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
-		setScreenshot(e.detail.value);
-	}) as EventListener);
 </script>

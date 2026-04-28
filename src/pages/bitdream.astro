@@ -1,7 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Dialog from '../components/ui/Dialog.astro';
-import ToggleGroup from '../components/ui/ToggleGroup.astro';
+import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import { Package } from '@lucide/astro';
 
 const bitdreamRelease = {
@@ -44,7 +43,7 @@ const screenshots = [
 			</div>
 		</header>
 
-		<div class="flex flex-wrap gap-3">
+		<div class="flex flex-wrap gap-2 sm:gap-3">
 			<a href={repoUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
 				<span>github</span>
@@ -55,38 +54,16 @@ const screenshots = [
 			</a>
 			<a href={directDownloadUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
-				<span>download for macOS</span>
+				<span>macOS</span>
 			</a>
 		</div>
 
-		<div class="screenshots grid grid-cols-1 sm:grid-cols-2 gap-4">
-			{screenshots.map((screenshot) => (
-				<button
-					type="button"
-					class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
-					data-screenshot-trigger
-					data-id={screenshot.id}
-				>
-					<img src={screenshot.src} alt={screenshot.alt} class="w-full h-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-				</button>
-			))}
-		</div>
-
-		<Dialog
-			id="screenshot-dialog"
-			maxWidth="max-w-4xl"
-			ariaLabel="BitDream screenshot dialog"
-		>
-			<img id="screenshot-dialog-img" src="" alt="" class="w-full h-auto rounded-lg" />
-			<div class="flex justify-center">
-				<ToggleGroup
-					name="screenshot-mode"
-					options={screenshots.map(({ id, label }) => ({ value: id, label }))}
-					defaultValue="light"
-					ariaLabel="Screenshot mode"
-				/>
-			</div>
-		</Dialog>
+		<ScreenshotGallery
+			name="bitdream"
+			screenshots={screenshots}
+			dialogAriaLabel="BitDream screenshot dialog"
+			toggleAriaLabel="Screenshot mode"
+		/>
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
@@ -113,57 +90,3 @@ const screenshots = [
 		</section>
 	</section>
 </Layout>
-
-<script>
-	import { openDialog } from '../lib/ui/dialog';
-
-	const screenshots = document.querySelectorAll<HTMLImageElement>('[data-screenshot]');
-	screenshots.forEach((img, i) => {
-		const fadeIn = () => {
-			setTimeout(() => {
-				img.classList.remove('opacity-0');
-				img.classList.add('opacity-100');
-			}, i * 100);
-		};
-		if (img.complete) {
-			fadeIn();
-		} else {
-			img.addEventListener('load', fadeIn, { once: true });
-		}
-	});
-
-	const screenshotTriggers = document.querySelectorAll<HTMLButtonElement>('[data-screenshot-trigger]');
-	const dialogImg = document.getElementById('screenshot-dialog-img') as HTMLImageElement | null;
-	const toggleGroup = document.querySelector<HTMLElement>('[data-toggle-group="screenshot-mode"]');
-
-	const screenshotSources: Record<string, { src: string; alt: string }> = {
-		light: { src: '/images/bitdream/screen-grabs/screen-grab-light.png', alt: 'BitDream (light mode)' },
-		dark: { src: '/images/bitdream/screen-grabs/screen-grab-dark.png', alt: 'BitDream (dark mode)' },
-	};
-
-	function setScreenshot(mode: string) {
-		if (!dialogImg) return;
-		const source = screenshotSources[mode];
-		if (source) {
-			dialogImg.src = source.src;
-			dialogImg.alt = source.alt;
-		}
-	}
-
-	screenshotTriggers.forEach((trigger) => {
-		trigger.addEventListener('click', () => {
-			const id = trigger.dataset.id;
-			if (id) {
-				setScreenshot(id);
-				document.dispatchEvent(new CustomEvent('toggle-set-value', {
-					detail: { name: 'screenshot-mode', value: id }
-				}));
-				openDialog('screenshot-dialog');
-			}
-		});
-	});
-
-	toggleGroup?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
-		setScreenshot(e.detail.value);
-	}) as EventListener);
-</script>

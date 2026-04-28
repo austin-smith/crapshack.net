@@ -1,7 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Dialog from '../components/ui/Dialog.astro';
-import ToggleGroup from '../components/ui/ToggleGroup.astro';
+import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import { Copy, CopyCheck } from '@lucide/astro';
 
 const repoUrl = 'https://github.com/austin-smith/Stuckers';
@@ -44,7 +43,7 @@ const screenshots = [
 			</div>
 		</header>
 
-		<div class="flex flex-wrap gap-3">
+		<div class="flex flex-wrap gap-2 sm:gap-3">
 			<a href={repoUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
 				<span>github</span>
@@ -61,30 +60,12 @@ const screenshots = [
 			</a>
 		</div>
 
-		<div class="screenshots flex flex-wrap gap-4">
-			{screenshots.map((screenshot) => (
-				<button
-					type="button"
-					class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] max-w-[120px] sm:max-w-[140px]"
-					data-screenshot-trigger
-					data-id={screenshot.id}
-				>
-					<img src={screenshot.src} alt={screenshot.alt} class="w-full h-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-				</button>
-			))}
-		</div>
-
-		<Dialog id="screenshot-dialog" maxWidth="max-w-sm" ariaLabel="Stuckers screenshot preview">
-			<img id="screenshot-dialog-img" src="" alt="" class="w-full h-auto max-h-[70vh] object-contain rounded-lg" />
-			<div class="flex justify-center">
-				<ToggleGroup
-					name="screenshot-view"
-					options={screenshots.map(({ id, label }) => ({ value: id, label }))}
-					defaultValue="oat-milk-man"
-					ariaLabel="Switch screenshot view"
-				/>
-			</div>
-		</Dialog>
+		<ScreenshotGallery
+			name="stuckers"
+			screenshots={screenshots}
+			dialogAriaLabel="Stuckers screenshot preview"
+			toggleAriaLabel="Switch screenshot view"
+		/>
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Roster</h2>
@@ -135,63 +116,7 @@ const screenshots = [
 </Layout>
 
 <script>
-	import { openDialog } from '../lib/ui/dialog';
 	import { copyTextToClipboard, toAbsoluteUrl } from '../lib/clipboard';
-
-	// Fade in screenshots on load
-	const screenshots = document.querySelectorAll<HTMLImageElement>('[data-screenshot]');
-	screenshots.forEach((img, i) => {
-		const fadeIn = () => {
-			setTimeout(() => {
-				img.classList.remove('opacity-0');
-				img.classList.add('opacity-100');
-			}, i * 100);
-		};
-		if (img.complete) {
-			fadeIn();
-		} else {
-			img.addEventListener('load', fadeIn, { once: true });
-		}
-	});
-
-	// Screenshot dialog
-	const screenshotTriggers = document.querySelectorAll<HTMLButtonElement>('[data-screenshot-trigger]');
-	const dialogImg = document.getElementById('screenshot-dialog-img') as HTMLImageElement | null;
-	const toggleGroup = document.querySelector<HTMLElement>('[data-toggle-group="screenshot-view"]');
-
-	// Screenshot sources
-	const screenshotSources: Record<string, { src: string; alt: string }> = {
-		'all': { src: '/images/stuckers/screen-grabs/screengrab-all.png', alt: 'stucker overview' },
-		'oat-milk-man': { src: '/images/stuckers/screen-grabs/screengrab-oat-milk-man.png', alt: 'stucker oat milk man' },
-		'wink': { src: '/images/stuckers/screen-grabs/screengrab-wink.png', alt: 'stucker wink' },
-	};
-
-	function setScreenshot(mode: string) {
-		if (!dialogImg) return;
-		const source = screenshotSources[mode];
-		if (source) {
-			dialogImg.src = source.src;
-			dialogImg.alt = source.alt;
-		}
-	}
-
-	screenshotTriggers.forEach((trigger) => {
-		trigger.addEventListener('click', () => {
-			const id = trigger.dataset.id;
-			if (id) {
-				setScreenshot(id);
-				document.dispatchEvent(new CustomEvent('toggle-set-value', {
-					detail: { name: 'screenshot-view', value: id }
-				}));
-				openDialog('screenshot-dialog');
-			}
-		});
-	});
-
-	// Listen for toggle changes
-	toggleGroup?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
-		setScreenshot(e.detail.value);
-	}) as EventListener);
 
 	// Fade in sticker images as they load with staggered timing
 	const stickerImages = Array.from(document.querySelectorAll('[data-sticker-img]'));
