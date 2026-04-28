@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import ToggleGroup from '../components/ui/ToggleGroup.astro';
-import { Copy, Check, Container } from '@lucide/astro';
+import { Copy, Check, Container, Package } from '@lucide/astro';
 
 const repoUrl = 'https://github.com/austin-smith/crapdash';
 const releasesUrl = 'https://github.com/austin-smith/crapdash/releases';
@@ -43,9 +43,14 @@ const screenshots = [
 				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
 				<span>github</span>
 			</a>
+			<a href={releasesUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+				<Package width={16} height={16} stroke-width={2} class="mr-2" />
+				<span>releases</span>
+			</a>
 			<a href={dockerUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<Container width={16} height={16} stroke-width={2} class="mr-2" />
-				<span>docker image</span>
+				<span class="sm:hidden">docker</span>
+				<span class="hidden sm:inline">docker image</span>
 			</a>
 		</div>
 
