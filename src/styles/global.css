@@ -237,7 +237,6 @@
 		text-decoration-color: color-mix(in srgb, var(--color-brand) 80%, white 20%);
 		text-underline-offset: 0.18em;
 		transition: color 150ms ease;
-		cursor: help;
 	}
 
 	.tooltip-trigger:hover {
