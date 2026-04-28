@@ -29,25 +29,27 @@ const toggleName = `${name}-screenshot-view`;
 ---
 
 <div data-screenshot-gallery data-dialog-id={dialogId} data-toggle-name={toggleName}>
-	<div class="screenshots screenshots-scroll -mb-5 -mr-5 flex items-start gap-4 overflow-x-auto pb-5 pr-5 snap-x snap-mandatory overscroll-x-contain">
-		{screenshots.map((screenshot) => (
-			<button
-				type="button"
-				class="screenshot-trigger group relative h-[15rem] shrink-0 snap-start rounded-xl border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] sm:h-[18rem]"
-				data-screenshot-trigger
-				data-id={screenshot.id}
-				data-src={screenshot.src}
-				data-alt={screenshot.alt}
-			>
-				<img
-					src={screenshot.src}
-					alt={screenshot.alt}
-					class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]"
-					data-screenshot
-					loading="lazy"
-				/>
-			</button>
-		))}
+	<div class="screenshots-frame relative -mr-5">
+		<div class="screenshots screenshots-scroll -mb-5 flex items-start gap-4 overflow-x-auto pb-5 pr-5 snap-x snap-mandatory overscroll-x-contain">
+			{screenshots.map((screenshot) => (
+				<button
+					type="button"
+					class="screenshot-trigger group relative h-[15rem] shrink-0 snap-start rounded-xl border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] sm:h-[18rem]"
+					data-screenshot-trigger
+					data-id={screenshot.id}
+					data-src={screenshot.src}
+					data-alt={screenshot.alt}
+				>
+					<img
+						src={screenshot.src}
+						alt={screenshot.alt}
+						class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]"
+						data-screenshot
+						loading="lazy"
+					/>
+				</button>
+			))}
+		</div>
 	</div>
 
 	<Dialog id={dialogId} maxWidth="max-w-4xl" ariaLabel={dialogAriaLabel}>
@@ -90,14 +92,3 @@ const toggleName = `${name}-screenshot-view`;
 		}
 	}
 </script>
-
-<style>
-	.screenshots-scroll {
-		scrollbar-width: none;
-		-ms-overflow-style: none;
-	}
-
-	.screenshots-scroll::-webkit-scrollbar {
-		display: none;
-	}
-</style>
