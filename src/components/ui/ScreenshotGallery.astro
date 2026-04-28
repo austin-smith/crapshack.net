@@ -1,0 +1,94 @@
+---
+import Dialog from './Dialog.astro';
+import ToggleGroup from './ToggleGroup.astro';
+
+type Screenshot = {
+	id: string;
+	label: string;
+	src: string;
+	alt: string;
+};
+
+interface Props {
+	name: string;
+	screenshots: Screenshot[];
+	dialogAriaLabel: string;
+	toggleAriaLabel: string;
+}
+
+const {
+	name,
+	screenshots,
+	dialogAriaLabel,
+	toggleAriaLabel,
+} = Astro.props;
+
+const selectedScreenshot = screenshots[0];
+const dialogId = `${name}-screenshot-dialog`;
+const toggleName = `${name}-screenshot-view`;
+---
+
+<div data-screenshot-gallery data-dialog-id={dialogId} data-toggle-name={toggleName}>
+	<div class="screenshots-frame relative -mr-4">
+		<div class="screenshots screenshots-scroll -mb-5 flex items-start gap-4 overflow-x-auto pb-5 pr-4 overscroll-x-contain">
+			{screenshots.map((screenshot) => (
+				<button
+					type="button"
+					class="screenshot-trigger group relative h-[15rem] shrink-0 rounded-xl border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] sm:h-[18rem]"
+					data-screenshot-trigger
+					data-id={screenshot.id}
+					data-src={screenshot.src}
+					data-alt={screenshot.alt}
+				>
+					<img
+						src={screenshot.src}
+						alt={screenshot.alt}
+						class="h-full w-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]"
+						data-screenshot
+						loading="lazy"
+					/>
+				</button>
+			))}
+		</div>
+	</div>
+
+	<Dialog id={dialogId} maxWidth="max-w-4xl" ariaLabel={dialogAriaLabel}>
+		<img
+			data-screenshot-dialog-img
+			src={selectedScreenshot?.src}
+			alt={selectedScreenshot?.alt}
+			class="w-full max-h-[75vh] rounded-lg object-contain"
+		/>
+		<div class="flex justify-center">
+			<ToggleGroup
+				name={toggleName}
+				options={screenshots.map(({ id, label }) => ({ value: id, label }))}
+				defaultValue={selectedScreenshot.id}
+				ariaLabel={toggleAriaLabel}
+			/>
+		</div>
+	</Dialog>
+</div>
+
+<script>
+	import { initScreenshotGalleries } from '../../lib/ui/screenshot-gallery';
+
+	if (typeof window !== 'undefined') {
+		// Guard to avoid wiring multiple listeners when component is rendered multiple times
+		// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+		// @ts-ignore allow attaching a flag on window
+		if (!window.__screenshotGalleryInitRegistered) {
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore allow attaching a flag on window
+			window.__screenshotGalleryInitRegistered = true;
+
+			const runScreenshotGalleryInit = () => initScreenshotGalleries();
+
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', runScreenshotGalleryInit, { once: true });
+			} else {
+				runScreenshotGalleryInit();
+			}
+		}
+	}
+</script>

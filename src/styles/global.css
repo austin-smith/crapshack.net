@@ -216,6 +216,27 @@
 		}
 	}
 
+	/* ScreenshotGallery component */
+	.screenshots-frame::after {
+		content: "";
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 1.25rem;
+		width: 0.75rem;
+		background: linear-gradient(to right, transparent, color-mix(in srgb, var(--color-bg) 70%, transparent));
+		pointer-events: none;
+	}
+
+	.screenshots-scroll {
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.screenshots-scroll::-webkit-scrollbar {
+		display: none;
+	}
+
 	/* Tooltip component */
 	.tooltip {
 		position: relative;
@@ -237,7 +258,6 @@
 		text-decoration-color: color-mix(in srgb, var(--color-brand) 80%, white 20%);
 		text-underline-offset: 0.18em;
 		transition: color 150ms ease;
-		cursor: help;
 	}
 
 	.tooltip-trigger:hover {

@@ -1,15 +1,27 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Dialog from '../components/ui/Dialog.astro';
+import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import ToggleGroup from '../components/ui/ToggleGroup.astro';
-import { Copy, Check, Container } from '@lucide/astro';
+import { Copy, Check, Container, Package } from '@lucide/astro';
 
 const repoUrl = 'https://github.com/austin-smith/crapdash';
 const releasesUrl = 'https://github.com/austin-smith/crapdash/releases';
 const dockerUrl = 'https://github.com/austin-smith/crapdash/pkgs/container/crapdash';
 const iconUrl = '/images/crapdash/compy.png';
-const screenshotLight = '/images/crapdash/screen-grabs/screen-grab-light.png';
-const screenshotDark = '/images/crapdash/screen-grabs/screen-grab-dark.png';
+const screenshots = [
+	{
+		id: 'light',
+		label: 'light',
+		src: '/images/crapdash/screen-grabs/screen-grab-light.png',
+		alt: 'crapdash (light mode)',
+	},
+	{
+		id: 'dark',
+		label: 'dark',
+		src: '/images/crapdash/screen-grabs/screen-grab-dark.png',
+		alt: 'crapdash (dark mode)',
+	},
+];
 ---
 
 <Layout
@@ -19,59 +31,35 @@ const screenshotDark = '/images/crapdash/screen-grabs/screen-grab-dark.png';
 >
 	<section class="mx-auto max-w-3xl space-y-8 mt-10">
 		<header class="flex items-center gap-4">
-			<img src={iconUrl} alt="crapdash icon" width="96" height="96" class="rounded-2xl drop-shadow-md" loading="lazy" />
+			<img src={iconUrl} alt="crapdash icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
 			<div>
 				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">crapdash</h1>
 				<p class="text-white/90">Low-frills, customizable homepage to organize your links and services.</p>
 			</div>
 		</header>
 
-		<div class="flex flex-wrap gap-3">
+		<div class="flex flex-wrap gap-2 sm:gap-3">
 			<a href={repoUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
 				<span>github</span>
 			</a>
+			<a href={releasesUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+				<Package width={16} height={16} stroke-width={2} class="mr-2" />
+				<span>releases</span>
+			</a>
 			<a href={dockerUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<Container width={16} height={16} stroke-width={2} class="mr-2" />
-				<span>docker image</span>
+				<span class="sm:hidden">docker</span>
+				<span class="hidden sm:inline">docker image</span>
 			</a>
 		</div>
 
-		<div class="screenshots grid grid-cols-1 sm:grid-cols-2 gap-4">
-			<button
-				type="button"
-				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
-				data-screenshot-trigger
-				data-src={screenshotLight}
-				data-alt="crapdash (light mode)"
-			>
-				<img src={screenshotLight} alt="crapdash (light mode)" class="w-full h-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-			</button>
-			<button
-				type="button"
-				class="screenshot-trigger group relative rounded-xl overflow-hidden border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
-				data-screenshot-trigger
-				data-src={screenshotDark}
-				data-alt="crapdash (dark mode)"
-			>
-				<img src={screenshotDark} alt="crapdash (dark mode)" class="w-full h-auto opacity-0 transition-all duration-300 group-hover:scale-[1.02]" data-screenshot loading="lazy" />
-			</button>
-		</div>
-
-		<Dialog id="screenshot-dialog" maxWidth="max-w-4xl" ariaLabel="screengrab preview dialog">
-			<img id="screenshot-dialog-img" src="" alt="" class="w-full h-auto rounded-lg" />
-			<div class="flex justify-center">
-				<ToggleGroup
-					name="screenshot-mode"
-					options={[
-						{ value: 'light', label: 'light' },
-						{ value: 'dark', label: 'dark' },
-					]}
-					defaultValue="light"
-					ariaLabel="Switch screengrab"
-				/>
-			</div>
-		</Dialog>
+		<ScreenshotGallery
+			name="crapdash"
+			screenshots={screenshots}
+			dialogAriaLabel="screengrab preview dialog"
+			toggleAriaLabel="Switch screengrab"
+		/>
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
@@ -124,63 +112,6 @@ const screenshotDark = '/images/crapdash/screen-grabs/screen-grab-dark.png';
 
 <script>
 	import { copyTextToClipboard } from '../lib/clipboard';
-	import { openDialog } from '../lib/ui/dialog';
-
-	// Fade in screenshots on load
-	const screenshots = document.querySelectorAll<HTMLImageElement>('[data-screenshot]');
-	screenshots.forEach((img, i) => {
-		const fadeIn = () => {
-			setTimeout(() => {
-				img.classList.remove('opacity-0');
-				img.classList.add('opacity-100');
-			}, i * 100);
-		};
-		if (img.complete) {
-			fadeIn();
-		} else {
-			img.addEventListener('load', fadeIn, { once: true });
-		}
-	});
-
-	// Screenshot dialog
-	const screenshotTriggers = document.querySelectorAll<HTMLButtonElement>('[data-screenshot-trigger]');
-	const dialogImg = document.getElementById('screenshot-dialog-img') as HTMLImageElement | null;
-	const toggleGroup = document.querySelector<HTMLElement>('[data-toggle-group="screenshot-mode"]');
-
-	// Screenshot sources
-	const screenshotSources: Record<string, { src: string; alt: string }> = {
-		light: { src: '/images/crapdash/screen-grabs/screen-grab-light.png', alt: 'crapdash (light mode)' },
-		dark: { src: '/images/crapdash/screen-grabs/screen-grab-dark.png', alt: 'crapdash (dark mode)' },
-	};
-
-	function setScreenshot(mode: string) {
-		if (!dialogImg) return;
-		const source = screenshotSources[mode];
-		if (source) {
-			dialogImg.src = source.src;
-			dialogImg.alt = source.alt;
-		}
-	}
-
-	screenshotTriggers.forEach((trigger) => {
-		trigger.addEventListener('click', () => {
-			const src = trigger.dataset.src;
-			const alt = trigger.dataset.alt;
-			if (dialogImg && src) {
-				dialogImg.src = src;
-				dialogImg.alt = alt ?? '';
-				document.dispatchEvent(new CustomEvent('toggle-set-value', {
-					detail: { name: 'screenshot-mode', value: src.includes('light') ? 'light' : 'dark' }
-				}));
-				openDialog('screenshot-dialog');
-			}
-		});
-	});
-
-	// Listen for toggle changes
-	toggleGroup?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
-		setScreenshot(e.detail.value);
-	}) as EventListener);
 
 	// Docker method toggle
 	const dockerMethodToggle = document.querySelector<HTMLElement>('[data-toggle-group="docker-method"]');
