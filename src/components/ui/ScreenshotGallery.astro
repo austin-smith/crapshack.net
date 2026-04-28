@@ -30,11 +30,11 @@ const toggleName = `${name}-screenshot-view`;
 
 <div data-screenshot-gallery data-dialog-id={dialogId} data-toggle-name={toggleName}>
 	<div class="screenshots-frame relative -mr-4">
-		<div class="screenshots screenshots-scroll -mb-5 flex items-start gap-4 overflow-x-auto pb-5 pr-4 snap-x snap-mandatory overscroll-x-contain">
+		<div class="screenshots screenshots-scroll -mb-5 flex items-start gap-4 overflow-x-auto pb-5 pr-4 overscroll-x-contain">
 			{screenshots.map((screenshot) => (
 				<button
 					type="button"
-					class="screenshot-trigger group relative h-[15rem] shrink-0 snap-start rounded-xl border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] sm:h-[18rem]"
+					class="screenshot-trigger group relative h-[15rem] shrink-0 rounded-xl border border-white/10 shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] sm:h-[18rem]"
 					data-screenshot-trigger
 					data-id={screenshot.id}
 					data-src={screenshot.src}
