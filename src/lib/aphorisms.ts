@@ -33,8 +33,8 @@ const aphorisms: Aphorism[] = [
 	{ text: 'uniquely, completely, imperially' },
 ];
 
-export function pickAphorism(list: Aphorism[] = aphorisms): Aphorism | null {
-	const valid = list.filter((i) => (i.weight ?? 1) > 0);
+export function pickAphorism(excludeText?: string): Aphorism | null {
+	const valid = aphorisms.filter((i) => (i.weight ?? 1) > 0 && i.text !== excludeText);
 	if (valid.length === 0) return null;
 
 	const total = valid.reduce((sum, i) => sum + (i.weight ?? 1), 0);

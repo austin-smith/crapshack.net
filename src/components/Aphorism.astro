@@ -1,16 +1,42 @@
 <div class="grid grid-flow-row justify-items-center">
-	<p data-aphorism class="mb-10 text-white font-mono text-[clamp(18px,2.5vw,20px)] drop-shadow-lg"><noscript>a dead dream</noscript></p>
-<img data-random aria-hidden="true" width="240" height="240" decoding="async" loading="eager" fetchpriority="high" class="block opacity-0 drop-shadow-lg" />
+	<button type="button" data-aphorism class="mb-10 appearance-none border-0 bg-transparent p-0 text-center text-white font-mono text-[clamp(18px,2.5vw,20px)] drop-shadow-lg cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/80"><noscript>a dead dream</noscript></button>
+	<img data-random aria-hidden="true" width="240" height="240" decoding="async" loading="eager" fetchpriority="high" class="block opacity-0 drop-shadow-lg" />
 </div>
 <script>
 	import { pickAphorism } from '../lib/aphorisms.ts';
-	import { typedText } from '../lib/ui/typed-text.ts';
+	import { eraseTypedText, typedText } from '../lib/ui/typed-text.ts';
 
 	const target = document.querySelector<HTMLElement>('[data-aphorism]');
-	const picked = pickAphorism();
+	let currentTextController: AbortController | null = null;
+	let currentAphorismText: string | undefined;
 
-	if (target && picked) {
-		typedText(target, picked.text);
+	const recycleAphorism = async ({ erase = false }: { erase?: boolean } = {}) => {
+		const picked = pickAphorism(currentAphorismText);
+		if (!target || !picked) return;
+
+		currentTextController?.abort();
+		const textController = new AbortController();
+		currentTextController = textController;
+		currentAphorismText = picked.text;
+
+		if (erase) {
+			await eraseTypedText(target, {
+				signal: textController.signal,
+			});
+		}
+
+		if (textController.signal.aborted) return;
+
+		await typedText(target, picked.text, {
+			signal: textController.signal,
+		});
+	};
+
+	if (target) {
+		recycleAphorism();
+		target.addEventListener('click', () => {
+			recycleAphorism({ erase: true });
+		});
 	}
 
 	const image = document.querySelector<HTMLImageElement>('[data-random]');
