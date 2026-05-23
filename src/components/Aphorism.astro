@@ -8,14 +8,16 @@
 
 	const target = document.querySelector<HTMLElement>('[data-aphorism]');
 	let currentTextController: AbortController | null = null;
+	let currentAphorismText: string | undefined;
 
 	const recycleAphorism = async ({ erase = false }: { erase?: boolean } = {}) => {
-		const picked = pickAphorism();
+		const picked = pickAphorism(currentAphorismText);
 		if (!target || !picked) return;
 
 		currentTextController?.abort();
 		const textController = new AbortController();
 		currentTextController = textController;
+		currentAphorismText = picked.text;
 
 		if (erase) {
 			await eraseTypedText(target, {
