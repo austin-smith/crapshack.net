@@ -15,6 +15,11 @@ export type TypedTextOptions = {
   ellipsisPauseMs?: number;
 };
 
+type CursorSession = {
+  cleanup: () => void;
+  textNode: Text;
+};
+
 function getReducedMotionPreferred(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return false;
@@ -30,49 +35,36 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Reveal text inside an element character-by-character with light jitter.
- * - Respects user reduced motion preference by rendering instantly.
- * - Stops cleanly if the element is disconnected or the provided AbortSignal is aborted.
- */
-export async function typedText(
-  element: HTMLElement | null,
-  text: string,
-  options: TypedTextOptions = {}
-): Promise<void> {
-  if (!element) return;
+function getDelay(baseDelayMs: number, jitterMs: number): number {
+  return baseDelayMs + Math.floor(Math.random() * (jitterMs + 1));
+}
 
-  const baseDelayMs = options.baseDelayMs ?? 28;
-  const jitterMs = options.jitterMs ?? 32;
+function getFinalText(text: string, options: TypedTextOptions): string {
+  const appendEllipsis = options.appendEllipsis ?? true;
+  const ellipsisText = options.ellipsisText ?? '...';
+  const needsEllipsis = appendEllipsis && ellipsisText && !text.trimEnd().endsWith(ellipsisText);
+  return needsEllipsis ? text + ellipsisText : text;
+}
+
+function shouldStop(element: HTMLElement, signal?: AbortSignal): boolean {
+  return Boolean(signal?.aborted || !element.isConnected);
+}
+
+function startCursor(
+  element: HTMLElement,
+  initialText: string,
+  options: TypedTextOptions
+): CursorSession {
   const signal = options.signal;
-  const cursorBlinkMs = options.cursorBlinkMs ?? 600; // slower default blink
-  const preTypeDelayMs = options.preTypeDelayMs ?? 1200; // longer pre-type pause
-  const keepCursorMs = options.keepCursorMs; // undefined => keep blinking indefinitely
-  const cursorWidthPx = options.cursorWidthPx ?? 1;
+  const cursorBlinkMs = options.cursorBlinkMs ?? 600;
+  const cursorWidthPx = options.cursorWidthPx ?? 2;
   const cursorHeight = options.cursorHeight ?? '1em';
   const cursorVerticalAlign = options.cursorVerticalAlign ?? 'text-bottom';
   const cursorFadeMs = options.cursorFadeMs ?? 120;
-  const appendEllipsis = options.appendEllipsis ?? true;
-  const ellipsisText = options.ellipsisText ?? '...';
-  const ellipsisPauseMs = options.ellipsisPauseMs ?? 0;
-
-  // If user prefers reduced motion, render instantly
-  if (getReducedMotionPreferred()) {
-    const needsEllipsis = appendEllipsis && ellipsisText && !text.trimEnd().endsWith(ellipsisText);
-    element.textContent = needsEllipsis ? text + ellipsisText : text;
-    return;
-  }
-
-  // If already aborted or element is gone, render final text and exit
-  if (signal?.aborted || !element.isConnected) {
-    element.textContent = text;
-    return;
-  }
 
   element.textContent = '';
 
-  // Create dedicated text node and blinking cursor element
-  const textNode = document.createTextNode('');
+  const textNode = document.createTextNode(initialText);
   const cursorEl = document.createElement('span');
   cursorEl.textContent = '';
   cursorEl.setAttribute('aria-hidden', 'true');
@@ -85,17 +77,13 @@ export async function typedText(
   cursorEl.style.transition = `opacity ${cursorFadeMs}ms linear`;
   element.append(textNode, cursorEl);
 
-  // terminal cursor
-  cursorEl.style.width = '2px';
-
   let blinkVisible = true;
   const blinkIntervalId = window.setInterval(() => {
-    // Auto-cleanup if element is gone or aborted
-    if (signal?.aborted || !element.isConnected) {
+    if (shouldStop(element, signal)) {
       cleanup();
       return;
     }
-    // Toggle visibility instead of layout-affecting changes
+
     blinkVisible = !blinkVisible;
     cursorEl.style.opacity = blinkVisible ? '1' : '0';
   }, cursorBlinkMs);
@@ -105,48 +93,87 @@ export async function typedText(
     if (cursorEl.isConnected) cursorEl.remove();
   };
 
+  return { cleanup, textNode };
+}
+
+async function typeIntoSession(
+  element: HTMLElement,
+  session: CursorSession,
+  text: string,
+  options: TypedTextOptions
+): Promise<boolean> {
+  const baseDelayMs = options.baseDelayMs ?? 28;
+  const jitterMs = options.jitterMs ?? 32;
+  const signal = options.signal;
+
+  for (const ch of text) {
+    if (shouldStop(element, signal)) return false;
+
+    session.textNode.data += ch;
+    await sleep(getDelay(baseDelayMs, jitterMs));
+  }
+
+  return !shouldStop(element, signal);
+}
+
+/**
+ * Reveal text inside an element character-by-character with light jitter.
+ * - Respects user reduced motion preference by rendering instantly.
+ * - Stops cleanly if the element is disconnected or the provided AbortSignal is aborted.
+ */
+export async function typedText(
+  element: HTMLElement | null,
+  text: string,
+  options: TypedTextOptions = {}
+): Promise<void> {
+  if (!element) return;
+
+  const signal = options.signal;
+  const preTypeDelayMs = options.preTypeDelayMs ?? 1200; // longer pre-type pause
+  const keepCursorMs = options.keepCursorMs; // undefined => keep blinking indefinitely
+  const ellipsisText = options.ellipsisText ?? '...';
+  const ellipsisPauseMs = options.ellipsisPauseMs ?? 0;
+  const finalText = getFinalText(text, options);
+
+  // If user prefers reduced motion, render instantly
+  if (getReducedMotionPreferred()) {
+    element.textContent = finalText;
+    return;
+  }
+
+  // If already aborted or element is gone, stop without mutating the element.
+  if (shouldStop(element, signal)) {
+    return;
+  }
+
+  const session = startCursor(element, '', options);
+
   // Brief pre-type blink
   if (preTypeDelayMs > 0) {
-    if (signal?.aborted || !element.isConnected) {
-      element.textContent = text;
-      cleanup();
+    if (shouldStop(element, signal)) {
+      session.cleanup();
       return;
     }
     await sleep(preTypeDelayMs);
   }
 
-  for (const ch of text) {
-    if (signal?.aborted || !element.isConnected) {
-      element.textContent = text;
-      cleanup();
-      return;
-    }
-
-    textNode.data += ch;
-
-    const delay = baseDelayMs + Math.floor(Math.random() * (jitterMs + 1));
-    await sleep(delay);
+  if (!(await typeIntoSession(element, session, text, options))) {
+    session.cleanup();
+    return;
   }
 
   // Optional ellipsis after a brief pause
-  if (appendEllipsis && ellipsisText && !text.trimEnd().endsWith(ellipsisText)) {
-    if (signal?.aborted || !element.isConnected) {
-      element.textContent = text;
-      cleanup();
+  if (finalText !== text) {
+    if (shouldStop(element, signal)) {
+      session.cleanup();
       return;
     }
     if (ellipsisPauseMs > 0) {
       await sleep(ellipsisPauseMs);
     }
-    for (const ch of ellipsisText) {
-      if (signal?.aborted || !element.isConnected) {
-        element.textContent = text + ellipsisText;
-        cleanup();
-        return;
-      }
-      textNode.data += ch;
-      const delay = baseDelayMs + Math.floor(Math.random() * (jitterMs + 1));
-      await sleep(delay);
+    if (!(await typeIntoSession(element, session, ellipsisText, options))) {
+      session.cleanup();
+      return;
     }
   }
 
@@ -154,8 +181,39 @@ export async function typedText(
   // Otherwise, keep cursor blinking indefinitely until element disconnects or signal aborts.
   if (typeof keepCursorMs === 'number' && keepCursorMs >= 0) {
     await sleep(keepCursorMs);
-    cleanup();
+    session.cleanup();
   }
+}
+
+export async function eraseTypedText(
+  element: HTMLElement | null,
+  options: TypedTextOptions = {}
+): Promise<void> {
+  if (!element) return;
+
+  const signal = options.signal;
+  const eraseDelayMs = 16;
+  const eraseJitterMs = 18;
+
+  if (getReducedMotionPreferred() || shouldStop(element, signal)) {
+    element.textContent = '';
+    return;
+  }
+
+  const session = startCursor(element, element.innerText || element.textContent || '', options);
+  const text = session.textNode.data;
+
+  for (let i = text.length - 1; i >= 0; i -= 1) {
+    if (shouldStop(element, signal)) {
+      session.cleanup();
+      return;
+    }
+
+    await sleep(getDelay(eraseDelayMs, eraseJitterMs));
+    session.textNode.data = text.slice(0, i);
+  }
+
+  session.cleanup();
 }
 
 export default typedText;
