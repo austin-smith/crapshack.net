@@ -71,19 +71,21 @@ const repoUrl = typeof packageJson.repository === 'string'
 		<WeatherToggle />
 		<div 
 			id="sidebar-info"
-			class="hidden items-center justify-between text-xs border-t border-white/10 pt-3"
+			class="hidden text-xs border-t border-white/10 pt-3"
 		>
 			<a 
 				href={repoUrl}
 				target="_blank" 
 				rel="noopener noreferrer"
-				class="inline-flex items-center gap-2 text-white/60 hover:text-[var(--color-brand)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70 rounded-sm"
+				class="group flex w-full items-center justify-between gap-3 text-white/60 hover:text-[var(--color-brand)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70 rounded-sm"
 				aria-label="View source on GitHub"
 			>
-				<span aria-hidden="true" class="h-4 w-4 shrink-0 icon-github"></span>
-				<span>crapshack.net</span>
+				<span class="inline-flex min-w-0 items-center gap-2">
+					<span aria-hidden="true" class="h-4 w-4 shrink-0 icon-github"></span>
+					<span class="truncate">crapshack.net</span>
+				</span>
+				<span class="shrink-0 text-white/40 transition-colors group-hover:text-[var(--color-brand)]">v{version}</span>
 			</a>
-			<span class="text-white/40">v{version}</span>
 		</div>
 	</div>
 </aside>
