@@ -1,0 +1,209 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
+import {
+	BookOpenText,
+	Braces,
+	Check,
+	Copy,
+	ExternalLink,
+	Forward,
+	Package,
+	Repeat2,
+	SlidersHorizontal,
+	Terminal,
+	Webhook,
+} from '@lucide/astro';
+
+const appUrl = 'https://webhooks.lol';
+const docsUrl = 'https://docs.webhooks.lol';
+const npmUrl = 'https://www.npmjs.com/package/whlol';
+const repoUrl = 'https://github.com/austin-smith/webhooks.lol';
+const iconUrl = '/images/webhooks-lol/webhooks-lol.png';
+const receiveUrl = 'https://webhooks.lol/api/hook/<endpoint-id>';
+const curlExample = `curl -X POST "${receiveUrl}" \\
+  -H "content-type: application/json" \\
+  -d '{"event":"created","id":"evt_123"}'`;
+const screenshots = [
+	{
+		id: 'light',
+		label: 'light',
+		src: '/images/webhooks-lol/screen-grabs/screen-grab-light.png',
+		alt: 'webhooks.lol (light mode)',
+	},
+	{
+		id: 'dark',
+		label: 'dark',
+		src: '/images/webhooks-lol/screen-grabs/screen-grab-dark.png',
+		alt: 'webhooks.lol (dark mode)',
+	},
+];
+
+const features = [
+	{
+		title: 'Webhook capture',
+		icon: Webhook,
+		body: 'Receive requests at a private webhook URL.',
+	},
+	{
+		title: 'Request inspection',
+		icon: Braces,
+		body: 'Inspect and search by method, path, headers, query, body, IP, and raw HTTP.',
+	},
+	{
+		title: 'Request forwarding',
+		icon: Forward,
+		body: 'Send captured requests to HTTPS or local targets.',
+	},
+	{
+		title: 'Request replay',
+		icon: Repeat2,
+		body: 'Replay stored requests with the original method, headers, path, and body.',
+	},
+	{
+		title: 'Custom responses',
+		icon: SlidersHorizontal,
+		body: 'Set the status, content type, and body returned by an endpoint.',
+	},
+	{
+		title: 'CLI',
+		icon: Terminal,
+		body: 'Forward, tail, and replay endpoint traffic from the terminal.',
+	},
+];
+---
+
+<Layout
+	title="crapshack (webhooks.lol)"
+	ogImage="/open-graph/webhooks-lol.png"
+	noIndex={true}
+>
+	<section class="mx-auto mt-10 max-w-3xl space-y-8">
+		<header class="flex items-center gap-4">
+			<img src={iconUrl} alt="webhooks.lol icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
+			<div>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">webhooks.lol</h1>
+				<p class="text-white/90">A small webhook endpoint for receiving and inspecting HTTP requests.</p>
+			</div>
+		</header>
+
+		<div class="flex flex-wrap gap-2 sm:gap-3">
+			<a
+				href={repoUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-black hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
+				<span>github</span>
+			</a>
+			<a
+				href={appUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<ExternalLink width={16} height={16} stroke-width={2} class="mr-2" />
+				<span>web app</span>
+			</a>
+			<a
+				href={docsUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<BookOpenText width={16} height={16} stroke-width={2} class="mr-2" />
+				<span>docs</span>
+			</a>
+			<a
+				href={npmUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<Package width={16} height={16} stroke-width={2} class="mr-2" />
+				<span>npm</span>
+			</a>
+		</div>
+
+		<ScreenshotGallery
+			name="webhooks-lol"
+			screenshots={screenshots}
+			dialogAriaLabel="webhooks.lol screenshot dialog"
+			toggleAriaLabel="Screenshot mode"
+		/>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
+			<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				{features.map((feature) => (
+					<article class="rounded-lg border border-white/10 bg-white/[0.04] p-4 shadow-lg">
+						<h3 class="flex items-center gap-2 font-mono font-semibold text-[var(--color-text)]">
+							<feature.icon width={18} height={18} stroke-width={2} class="text-[var(--color-brand)]" />
+							<span>{feature.title}</span>
+						</h3>
+						{feature.title === 'CLI' ? (
+							<p class="mt-2 text-sm text-white/80">
+								Forward, tail, and replay endpoint traffic from the terminal.{' '}
+								<a
+									href={npmUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]"
+								>
+									Install the CLI from npm
+								</a>.
+							</p>
+						) : (
+							<p class="mt-2 text-sm text-white/80">{feature.body}</p>
+						)}
+					</article>
+				))}
+			</div>
+		</section>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Use</h2>
+			<p class="text-white/95">Copy the receive URL, set it as the webhook target, then send a test request.</p>
+			<div class="relative group">
+				<pre class="overflow-x-auto rounded-lg bg-black/40 p-4 pr-12 text-sm"><code id="webhooks-lol-curl-command" class="text-white/90">{curlExample}</code></pre>
+				<button
+					id="webhooks-lol-copy-btn"
+					type="button"
+					class="absolute top-3 right-3 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+					aria-label="Copy curl example"
+				>
+					<Copy id="webhooks-lol-copy-icon" width={16} height={16} stroke-width={2} />
+					<Check id="webhooks-lol-check-icon" class="hidden" width={16} height={16} stroke-width={2} />
+				</button>
+			</div>
+			<p class="text-white/95">
+				Requests appear live in the inspector, with body, headers, query, and raw views in the detail pane.
+			</p>
+		</section>
+	</section>
+</Layout>
+
+<script>
+	import { copyTextToClipboard } from '../lib/clipboard';
+
+	const copyBtn = document.getElementById('webhooks-lol-copy-btn');
+	const copyIcon = document.getElementById('webhooks-lol-copy-icon');
+	const checkIcon = document.getElementById('webhooks-lol-check-icon');
+	const codeEl = document.getElementById('webhooks-lol-curl-command');
+
+	copyBtn?.addEventListener('click', async () => {
+		const text = codeEl?.textContent ?? '';
+		const success = await copyTextToClipboard(text);
+
+		if (success && copyIcon && checkIcon) {
+			copyIcon.classList.add('hidden');
+			checkIcon.classList.remove('hidden');
+
+			setTimeout(() => {
+				copyIcon.classList.remove('hidden');
+				checkIcon.classList.add('hidden');
+			}, 2000);
+		}
+	});
+</script>
