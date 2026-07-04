@@ -94,27 +94,34 @@ const screenshots = [
 			</ul>
 		</section>
 
-		<section class="space-y-3">
+		<section class="space-y-4">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Game Variants</h2>
-			<p class="text-white/95">
-				<a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={klondikeUrl} target="_blank" rel="noopener noreferrer">Klondike</a>
-				is the most popular variant of solitaire, played with a standard 52-card deck and the goal of building all four suits in order from Ace through King.
-				Computer Solitaire follows classic Klondike rules and supports both
-				<Tooltip id="draw-one-tooltip" trigger="draw-one">
-					<span class="font-semibold text-white">Draw-one:</span>
-					deal one card from the stock to the waste at a time.
-				</Tooltip>
-				and
-				<Tooltip id="draw-three-tooltip" trigger="draw-three">
-					<span class="font-semibold text-white">Draw-three:</span>
-					deal three cards at a time, with only the top card immediately available to play.
-				</Tooltip>
-				play.
-			</p>
-			<p class="text-white/95">
-				<a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={freecellUrl} target="_blank" rel="noopener noreferrer">FreeCell</a>
-				is a strategy-focused variant where every card is dealt face up from the start. With four free cells for temporary storage and nearly every deal winnable, it rewards planning over luck.
-			</p>
+			<p class="text-white/95">Computer Solitaire includes two game variants.</p>
+			<div class="space-y-2">
+				<h3 class="text-lg font-semibold text-[var(--color-text)]">Klondike</h3>
+				<p class="text-white/95">
+					<a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={klondikeUrl} target="_blank" rel="noopener noreferrer">Klondike</a>
+					is the most popular variant of solitaire, played with a standard 52-card deck and the goal of building all four suits in order from Ace through King.
+					Computer Solitaire follows classic Klondike rules and supports both
+					<Tooltip id="draw-one-tooltip" trigger="draw-one">
+						<span class="font-semibold text-white">Draw-one:</span>
+						deal one card from the stock to the waste at a time.
+					</Tooltip>
+					and
+					<Tooltip id="draw-three-tooltip" trigger="draw-three">
+						<span class="font-semibold text-white">Draw-three:</span>
+						deal three cards at a time, with only the top card immediately available to play.
+					</Tooltip>
+					play.
+				</p>
+			</div>
+			<div class="space-y-2">
+				<h3 class="text-lg font-semibold text-[var(--color-text)]">FreeCell</h3>
+				<p class="text-white/95">
+					<a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={freecellUrl} target="_blank" rel="noopener noreferrer">FreeCell</a>
+					is a strategy-focused variant where every card is dealt face up from the start. With four free cells for temporary storage and nearly every deal winnable, it rewards planning over luck.
+				</p>
+			</div>
 			<div>
 				<button
 					id="computer-solitaire-guide-trigger"
