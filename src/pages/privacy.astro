@@ -1,0 +1,56 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const lastUpdated = 'July 5, 2026';
+const contactEmail = 'hello@crapshack.net';
+const apps = [
+	{
+		name: 'Computer Solitaire',
+		href: '/computer-solitaire',
+		icon: '/images/computer-solitaire/computer-solitaire-icon.png',
+	},
+	{
+		name: 'Stuckers',
+		href: '/stuckers-app',
+		icon: '/images/stuckers/stuckers-icon.png',
+	},
+];
+---
+
+<Layout title="crapshack (privacy policy)">
+	<section class="mx-auto mt-10 max-w-3xl space-y-8">
+		<header class="space-y-3">
+			<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">Privacy Policy</h1>
+			<p class="font-mono text-sm text-white/65">Last updated: {lastUpdated}</p>
+			<p class="text-lg text-white/90">
+				This privacy policy applies to:
+			</p>
+			<div class="flex flex-wrap gap-2 pt-1">
+				{apps.map((app) => (
+					<a
+						href={app.href}
+						class="inline-flex items-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+					>
+						<img src={app.icon} alt="" aria-hidden="true" class="h-6 w-6 rounded object-contain" loading="lazy" />
+						<span>{app.name}</span>
+					</a>
+				))}
+			</div>
+		</header>
+
+		<section class="space-y-3">
+			<h2 class="font-mono text-2xl font-semibold text-[var(--color-text)]"># Privacy</h2>
+			<p class="text-white/95">
+				These apps do not collect, store, sell, or share personal data. They do not include ads, third-party analytics, tracking SDKs, or accounts.
+			</p>
+		</section>
+
+		<section class="space-y-3">
+			<h2 class="font-mono text-2xl font-semibold text-[var(--color-text)]"># Contact</h2>
+			<p class="text-white/95">
+				For privacy questions, contact
+				<a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={`mailto:${contactEmail}`}>{contactEmail}</a>.
+			</p>
+		</section>
+	</section>
+</Layout>
