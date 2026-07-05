@@ -12,7 +12,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "lint": "eslint . --ext .ts,.astro",
-    "lint:fix": "eslint . --ext .ts,.astro --fix"
+    "lint:fix": "eslint . --ext .ts,.astro --fix",
+    "tag:version": "v=$(node -p \"require('./package.json').version\") && git tag v$v && git push origin v$v"
   },
   "dependencies": {
     "@lucide/astro": "^1.16.0",
