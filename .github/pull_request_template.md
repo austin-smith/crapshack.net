@@ -8,12 +8,11 @@
 
 ## UI Changes
 
-<!-- If this PR changes UI, include clear before/after screenshots at relevant desktop and mobile sizes.
+<!-- If this PR changes UI, include clear before/after screenshots.
      If the change involves motion or interaction, include a short video.
      Delete this section if not applicable. -->
 
 ## Validation
 
-<!-- List the checks performed and their results. Include pnpm lint and pnpm build.
-     For UI work, include relevant browser, desktop/mobile, keyboard, and reduced-motion checks.
-     If a check was not performed, explain why. -->
+<!-- List the builds, tests, lint checks, and manual checks performed, including results.
+     If none were performed, explain why. -->

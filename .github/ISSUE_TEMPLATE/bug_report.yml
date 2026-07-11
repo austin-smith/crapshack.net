@@ -1,5 +1,5 @@
 name: Bug report
-description: Report broken behavior, a regression, or a rendering problem.
+description: Report broken behavior or a regression.
 labels:
   - bug
 body:
@@ -25,29 +25,15 @@ body:
         1.
         2.
         3.
-    validations:
-      required: true
-
   - type: input
-    id: page
-    attributes:
-      label: Affected page
-      description: Include the page URL or route where the problem occurs.
-      placeholder: https://crapshack.net/example
-    validations:
-      required: true
-
-  - type: textarea
     id: environment
     attributes:
       label: Environment
-      description: Include your browser and version, operating system, device or viewport, and whether the issue occurs in a private window.
-      placeholder: Safari 26 on macOS 26, 1440 x 900; also reproducible in a private window
-    validations:
-      required: true
+      description: Include the browser, operating system, device, and affected page when known.
+      placeholder: Safari 26 on macOS 26, https://crapshack.net/example
 
   - type: textarea
     id: evidence
     attributes:
       label: Additional evidence
-      description: Add relevant screenshots, recordings, console output, or other context. Remove personal or sensitive information.
+      description: Add relevant screenshots, recordings, or console output. Redact sensitive information.

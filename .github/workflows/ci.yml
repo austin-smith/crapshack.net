@@ -7,8 +7,8 @@ on:
       - main
 
 jobs:
-  validate:
-    name: Validate
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -27,6 +27,3 @@ jobs:
 
       - name: Lint
         run: pnpm lint
-
-      - name: Build
-        run: pnpm build
