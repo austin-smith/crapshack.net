@@ -1,22 +1,6 @@
 # crapshack.net Agent Guide
 
-This file defines project constraints for coding agents working in this repository.
-
-## Project Contract
-
-- This is a static website built with Astro 6, strict TypeScript, Tailwind CSS 4, and pnpm.
-- Prefer static Astro markup and CSS. Add client-side TypeScript only when interaction requires it.
-- Reuse existing layouts, components, utilities, and design tokens before adding page-specific duplicates.
-- Preserve semantic HTML, responsive behavior, keyboard access, focus behavior, and reduced-motion support.
-
-## File Boundaries
-
-- `src/pages/` contains routes.
-- `src/layouts/` and `src/components/` contain shared UI.
-- `src/lib/` contains shared TypeScript behavior.
-- `src/styles/` contains global styles and design tokens.
-- `public/` contains static assets.
-- Do not edit generated or dependency directories such as `dist/`, `.astro/`, `node_modules/`, or `.pnpm-store/`.
+This file defines GitHub contribution conventions for coding agents working in this repository.
 
 ## Branches, Commits, and Pull Requests
 
@@ -41,14 +25,3 @@ This file defines project constraints for coding agents working in this reposito
 - For UI issues, include screenshots. Include a short video when motion or interaction is relevant.
 - Link any related issues and pull requests.
 - Apply the appropriate existing label: `bug` for bugs, `enhancement` for feature requests, and `documentation` for documentation work.
-
-## Validation
-
-From the repository root, run:
-
-```bash
-pnpm lint
-pnpm build
-```
-
-There is no automated test suite. For UI changes, manually check the affected pages at relevant desktop and mobile sizes.
