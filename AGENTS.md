@@ -1,7 +1,3 @@
-# crapshack.net Agent Guide
-
-This file defines GitHub contribution conventions for coding agents working in this repository.
-
 ## Branches, Commits, and Pull Requests
 
 - Use plain lowercase kebab-case for branch names. Keep names descriptive and do not include issue numbers, prefixes, or namespaces such as `feature/`, `fix/`, usernames, or agent names.
