@@ -25,13 +25,6 @@ body:
         1.
         2.
         3.
-  - type: input
-    id: environment
-    attributes:
-      label: Environment
-      description: Include the browser, operating system, device, and affected page when known.
-      placeholder: Safari 26 on macOS 26, https://crapshack.net/example
-
   - type: textarea
     id: evidence
     attributes:
