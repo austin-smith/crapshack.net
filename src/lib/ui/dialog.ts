@@ -19,7 +19,7 @@ function bindGlobalEscapeHandler(): void {
 	escapeHandlerBound = true;
 
 	document.addEventListener('keydown', (e: KeyboardEvent) => {
-		if (e.key !== 'Escape') return;
+		if (e.key !== 'Escape' || e.defaultPrevented) return;
 
 		// Close the most recently opened dialog that is still in the DOM
 		while (openDialogStack.length > 0) {

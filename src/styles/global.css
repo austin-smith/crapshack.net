@@ -107,6 +107,101 @@
 		box-shadow: 0 0 0 2px var(--color-brand, #fdd0e0);
 	}
 
+	/* Dropdown component */
+	.dropdown {
+		--control-height: 2.25rem;
+		position: relative;
+		width: 10rem;
+	}
+
+	.dropdown[data-size="compact"] {
+		--control-height: 2rem;
+	}
+
+	.dropdown-trigger {
+		display: flex;
+		width: 100%;
+		height: var(--control-height);
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding: 0 0.75rem;
+		border-radius: 0.375rem;
+		background: rgba(0, 0, 0, 0.2);
+		color: rgba(255, 255, 255, 0.9);
+		font-size: 0.875rem;
+		font-weight: 500;
+		transition: background 150ms ease, color 150ms ease;
+	}
+
+	.dropdown-trigger:hover {
+		background: rgba(0, 0, 0, 0.3);
+		color: white;
+	}
+
+	.dropdown-trigger:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand) 70%, transparent);
+	}
+
+	.dropdown-chevron {
+		flex-shrink: 0;
+		color: rgba(255, 255, 255, 0.45);
+		transition: transform 150ms ease;
+	}
+
+	.dropdown-trigger[aria-expanded="true"] .dropdown-chevron {
+		transform: rotate(180deg);
+	}
+
+	.dropdown-menu {
+		position: absolute;
+		left: 0;
+		z-index: 30;
+		width: 100%;
+		margin-top: 0.375rem;
+		padding: 0.25rem;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-radius: 0.375rem;
+		background: rgba(16, 24, 39, 0.95);
+		box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+	}
+
+	.dropdown-options {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	.dropdown-option {
+		display: flex;
+		width: 100%;
+		height: var(--control-height);
+		align-items: center;
+		padding: 0 0.75rem;
+		border-radius: 0.25rem;
+		background: transparent;
+		color: rgba(255, 255, 255, 0.65);
+		font-size: 0.875rem;
+		text-align: left;
+		transition: background 150ms ease, color 150ms ease;
+	}
+
+	.dropdown-option:hover,
+	.dropdown-option:focus-visible {
+		outline: none;
+		background: rgba(255, 255, 255, 0.06);
+		color: white;
+	}
+
+	.dropdown-option[aria-selected="true"] {
+		background: rgba(255, 255, 255, 0.1);
+		color: white;
+		font-weight: 500;
+	}
+
 	/* Dialog component */
 	.dialog-root {
 		position: fixed;

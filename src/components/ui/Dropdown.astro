@@ -1,0 +1,73 @@
+---
+import { ChevronDown } from '@lucide/astro';
+
+interface Option {
+	value: string;
+	label: string;
+}
+
+interface Props {
+	/** Unique id used to target the dropdown and its change event. */
+	id: string;
+	options: Option[];
+	defaultValue?: string;
+	/** Accessible label for the dropdown. */
+	ariaLabel: string;
+	size?: 'default' | 'compact';
+	class?: string;
+}
+
+const { id, options, defaultValue, ariaLabel, size = 'default', class: className } = Astro.props;
+const selectedValue = defaultValue ?? options[0]?.value;
+const selectedOption = options.find((option) => option.value === selectedValue) ?? options[0];
+---
+
+<div
+	id={id}
+	class={`dropdown ${className ?? ''}`}
+	data-dropdown
+	data-dropdown-value={selectedOption?.value}
+	data-size={size}
+>
+	<button
+		id={`${id}-trigger`}
+		type="button"
+		class="dropdown-trigger"
+		aria-label={ariaLabel}
+		aria-haspopup="listbox"
+		aria-controls={`${id}-menu`}
+		aria-expanded="false"
+		data-dropdown-trigger
+	>
+		<span data-dropdown-label>{selectedOption?.label}</span>
+		<ChevronDown aria-hidden="true" width={14} height={14} stroke-width={2} class="dropdown-chevron" />
+	</button>
+	<div
+		id={`${id}-menu`}
+		class="dropdown-menu"
+		role="listbox"
+		aria-label={ariaLabel}
+		data-dropdown-menu
+		hidden
+	>
+		<div class="dropdown-options">
+			{options.map((option) => (
+				<button
+					type="button"
+					class="dropdown-option"
+					role="option"
+					aria-selected={option.value === selectedOption?.value ? 'true' : 'false'}
+					data-dropdown-option={option.value}
+				>
+					{option.label}
+				</button>
+			))}
+		</div>
+	</div>
+</div>
+
+<script>
+	import { initDropdowns } from '../../lib/ui/dropdown';
+
+	initDropdowns();
+</script>
