@@ -99,7 +99,10 @@ export function initDropdowns(): void {
 				setOpen(dropdown, true);
 				focusOption(dropdown, event.key === 'ArrowDown' ? 'first' : 'last');
 			}
-			if (event.key === 'Escape') setOpen(dropdown, false);
+			if (event.key === 'Escape' && trigger.getAttribute('aria-expanded') === 'true') {
+				event.preventDefault();
+				setOpen(dropdown, false);
+			}
 			return;
 		}
 
