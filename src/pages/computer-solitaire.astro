@@ -1,20 +1,19 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Dialog from '../components/ui/Dialog.astro';
+import Dropdown from '../components/ui/Dropdown.astro';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import ToggleGroup from '../components/ui/ToggleGroup.astro';
-import Tooltip from '../components/ui/Tooltip.astro';
-import { Package } from '@lucide/astro';
+import { computerSolitaireVariants as variants } from '../lib/computer-solitaire';
+import { BookText, Package } from '@lucide/astro';
 
 const computerSolitaireRelease = {
-	releaseTag: 'v0.6.0',
-	dmgAssetName: 'ComputerSolitaire-v0.6.0-arm64.dmg',
+	releaseTag: 'v0.7.0',
+	dmgAssetName: 'ComputerSolitaire-v0.7.0-arm64.dmg',
 };
 const repoUrl = 'https://github.com/austin-smith/ComputerSolitaire';
 const releasesUrl = 'https://github.com/austin-smith/ComputerSolitaire/releases';
 const directDownloadUrl = `https://github.com/austin-smith/ComputerSolitaire/releases/download/${computerSolitaireRelease.releaseTag}/${computerSolitaireRelease.dmgAssetName}`;
-const klondikeUrl = 'https://en.wikipedia.org/wiki/Klondike_(solitaire)';
-const freecellUrl = 'https://en.wikipedia.org/wiki/FreeCell';
 const iconUrl = '/images/computer-solitaire/computer-solitaire-icon.png';
 const screenshots = [
 	{
@@ -87,226 +86,191 @@ const screenshots = [
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
 			<ul class="list-disc pl-6 space-y-1 text-white/95">
 				<li>Fully native apps for iOS, iPadOS, and macOS</li>
+				<li>10 game variants, including Klondike, Spider, and FreeCell</li>
+				<li>Solver-computed hints</li>
+				<li>Game statistics for every variant</li>
 				<li>Automatic game persistence and resume</li>
-				<li>Multiple game variants: Klondike (1-card and 3-card draw) and FreeCell</li>
-				<li>Customizable table appearance</li>
+				<li>Customizable cards and table appearance</li>
 				<li>Other things you enjoy</li>
 			</ul>
 		</section>
 
-		<section class="space-y-4">
-			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Game Variants</h2>
-			<p class="text-white/95">Computer Solitaire includes two game variants.</p>
-			<div class="space-y-2">
-				<h3 class="text-lg font-semibold text-[var(--color-text)]">Klondike</h3>
-				<p class="text-white/95">
-					<a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={klondikeUrl} target="_blank" rel="noopener noreferrer">Klondike</a>
-					is the most popular variant of solitaire, played with a standard 52-card deck and the goal of building all four suits in order from Ace through King.
-					Computer Solitaire follows classic Klondike rules and supports both
-					<Tooltip id="draw-one-tooltip" trigger="draw-one">
-						<span class="font-semibold text-white">Draw-one:</span>
-						deal one card from the stock to the waste at a time.
-					</Tooltip>
-					and
-					<Tooltip id="draw-three-tooltip" trigger="draw-three">
-						<span class="font-semibold text-white">Draw-three:</span>
-						deal three cards at a time, with only the top card immediately available to play.
-					</Tooltip>
-					play.
-				</p>
-			</div>
-			<div class="space-y-2">
-				<h3 class="text-lg font-semibold text-[var(--color-text)]">FreeCell</h3>
-				<p class="text-white/95">
-					<a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={freecellUrl} target="_blank" rel="noopener noreferrer">FreeCell</a>
-					is a strategy-focused variant where every card is dealt face up from the start. With four free cells for temporary storage and nearly every deal winnable, it rewards planning over luck.
-				</p>
-			</div>
-			<div>
+		<section class="space-y-4" aria-labelledby="computer-solitaire-variants-heading">
+			<div class="flex flex-wrap items-center justify-between gap-2">
+				<h2 id="computer-solitaire-variants-heading" class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Game Variants</h2>
 				<button
 					id="computer-solitaire-guide-trigger"
 					type="button"
 					class="inline-flex items-center rounded-md border border-white/20 px-3 py-1.5 text-sm font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 				>
-					computer solitaire guide
+					<BookText width={15} height={15} stroke-width={2} class="mr-2" />
+					<span>guide</span>
 				</button>
 			</div>
-		</section>
+			<ol class="overflow-hidden rounded-lg border border-white/10 bg-black/10 divide-y divide-white/10 shadow-lg">
+				{variants.map((variant, index) => (
+					<li class="relative grid grid-cols-[2rem_1fr] gap-x-3 px-4 py-3 transition-colors hover:bg-white/5 sm:grid-cols-[2rem_8.5rem_1fr] sm:items-baseline sm:gap-x-4">
+						<span aria-hidden="true" class="font-mono text-xs tabular-nums text-white/35">
+							{String(index + 1).padStart(2, '0')}
+						</span>
+						<h3>
+							<button
+								type="button"
+								data-computer-solitaire-variant-trigger={variant.id}
+								aria-label={`${variant.name} guide`}
+								class="font-mono font-semibold text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)] after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-[var(--color-brand)]/70"
+							>
+								{variant.name}
+							</button>
+						</h3>
+						<p class="col-start-2 mt-1 text-sm leading-relaxed text-white/75 sm:col-start-3 sm:mt-0">{variant.description}</p>
+					</li>
+					))}
+				</ol>
+			</section>
 
-		<Dialog id="computer-solitaire-guide-dialog" maxWidth="max-w-3xl" ariaLabel="Computer Solitaire guide dialog">
-			<div class="space-y-5 text-white/95">
-				<div class="space-y-2">
-					<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Computer Solitaire Guide</h2>
-				</div>
+			<Dialog id="computer-solitaire-guide-dialog" maxWidth="max-w-3xl" ariaLabel="Computer Solitaire guide dialog">
+				<div class="space-y-5 text-white/95">
+					<h2 class="pr-10 text-2xl font-mono font-semibold text-[var(--color-text)]"># Computer Solitaire Guide</h2>
 
-				<div class="flex justify-center sm:justify-start">
-					<ToggleGroup
-						name="computer-solitaire-guide-variant"
-						options={[
-							{ value: 'klondike', label: 'klondike' },
-							{ value: 'freecell', label: 'freecell' },
-						]}
+					<Dropdown
+						id="computer-solitaire-guide-variant"
+						options={variants.map((variant) => ({ value: variant.id, label: variant.name }))}
 						defaultValue="klondike"
-						ariaLabel="Computer Solitaire game variant"
+						ariaLabel="Game"
 					/>
-				</div>
 
-				<div class="rounded-xl border border-white/10 bg-white/5 p-4 sm:p-5 space-y-4">
-					<div class="flex justify-center sm:justify-start">
-						<ToggleGroup
-							name="computer-solitaire-guide-section"
-							options={[
-								{ value: 'rules', label: 'rules' },
-								{ value: 'scoring', label: 'scoring' },
-								{ value: 'terms', label: 'terms' },
-							]}
-							defaultValue="rules"
-							ariaLabel="Computer Solitaire guide section"
-						/>
+					<div class="space-y-4 rounded-xl border border-white/10 bg-white/5 p-4 sm:p-5">
+						<div class="flex justify-center sm:justify-start">
+							<ToggleGroup
+								name="computer-solitaire-guide-section"
+								options={[
+									{ value: 'rules', label: 'rules' },
+									{ value: 'scoring', label: 'scoring' },
+									{ value: 'terms', label: 'terms' },
+								]}
+								defaultValue="rules"
+								ariaLabel="Computer Solitaire guide section"
+							/>
+						</div>
+
+						{variants.map((variant) => (
+							<>
+								<section
+									class="space-y-4"
+									data-computer-solitaire-guide-panel="rules"
+									data-computer-solitaire-guide-variant={variant.id}
+									hidden={variant.id !== 'klondike'}
+								>
+									<div class="space-y-2">
+										<h3 class="text-lg font-semibold text-[var(--color-text)]">Objective</h3>
+										<p>{variant.objective}</p>
+									</div>
+									<div class="space-y-2">
+										<h3 class="text-lg font-semibold text-[var(--color-text)]">Core Rules</h3>
+										<ul class="list-disc space-y-1 pl-6">
+											{variant.rules.map((rule) => <li>{rule}</li>)}
+										</ul>
+									</div>
+								</section>
+
+								<section
+									class="space-y-4"
+									data-computer-solitaire-guide-panel="scoring"
+									data-computer-solitaire-guide-variant={variant.id}
+									hidden
+								>
+									<div class="overflow-x-auto">
+										<table class="w-full min-w-[26rem] border-collapse text-left text-sm">
+											<thead>
+												<tr class="border-b border-white/10">
+													<th scope="col" class="pb-2 pr-5 font-semibold text-[var(--color-text)]">Move</th>
+													<th scope="col" class="pb-2 text-right font-semibold text-[var(--color-text)]">Points</th>
+												</tr>
+											</thead>
+											<tbody>
+												{variant.scoring.map((row) => (
+													<tr class="border-b border-white/[0.06] last:border-0">
+														<td class="py-2 pr-5 align-top">
+															<span>{row.move}</span>
+															{row.note && <span class="mt-0.5 block text-xs text-white/55">{row.note}</span>}
+														</td>
+														<td class="py-2 text-right align-top font-mono tabular-nums">{row.points}</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+									<ul class="list-disc space-y-1 pl-6 text-sm text-white/70">
+										{variant.scoringNotes.map((note) => <li>{note}</li>)}
+									</ul>
+								</section>
+
+								<section
+									data-computer-solitaire-guide-panel="terms"
+									data-computer-solitaire-guide-variant={variant.id}
+									hidden
+								>
+									<dl class="space-y-3">
+										{variant.terms.map((term) => (
+											<div>
+												<dt class="font-semibold text-white">{term.term}</dt>
+												<dd class="mt-0.5 text-sm text-white/75">{term.definition}</dd>
+											</div>
+										))}
+									</dl>
+								</section>
+							</>
+						))}
 					</div>
-
-					<section class="space-y-4" data-computer-solitaire-guide-panel="rules" data-computer-solitaire-guide-variant="klondike">
-						<div class="space-y-2">
-							<h3 class="text-lg font-semibold text-[var(--color-text)]">Objective</h3>
-							<p>Move all 52 cards to the four foundations, building each suit from Ace to King.</p>
-						</div>
-
-						<div class="space-y-2">
-							<h3 class="text-lg font-semibold text-[var(--color-text)]">Core Rules</h3>
-							<ul class="list-disc pl-6 space-y-1">
-								<li>Use a standard 52-card deck and deal seven tableau piles, with only the top card face up in each pile.</li>
-								<li>Build tableau piles down in rank while alternating colors.</li>
-								<li>You may move a face-up card or a properly ordered sequence as a unit.</li>
-								<li>Empty tableau spaces may be filled only by a King (or a sequence starting with a King).</li>
-								<li>Build foundations by suit from Ace to King.</li>
-								<li>When the stock is empty, recycle waste to stock and continue (unlimited passes).</li>
-							</ul>
-						</div>
-
-						<div class="space-y-2">
-							<h3 class="text-lg font-semibold text-[var(--color-text)]">Draw Modes</h3>
-							<ul class="list-disc pl-6 space-y-1">
-								<li><span class="font-semibold text-white">1-card draw:</span> turn one card at a time from stock to waste; only the top waste card is playable.</li>
-								<li><span class="font-semibold text-white">3-card draw:</span> turn three cards at a time; only the top waste card is playable.</li>
-							</ul>
-						</div>
-					</section>
-
-					<section class="space-y-3" data-computer-solitaire-guide-panel="scoring" data-computer-solitaire-guide-variant="klondike" hidden>
-						<div class="space-y-2">
-							<h3 class="text-lg font-semibold text-[var(--color-text)]">Move Points</h3>
-							<ul class="list-disc pl-6 space-y-1">
-								<li><span class="font-semibold text-white">Waste to Tableau:</span> +5</li>
-								<li><span class="font-semibold text-white">Waste to Foundation:</span> +10</li>
-								<li><span class="font-semibold text-white">Tableau to Foundation:</span> +10</li>
-								<li><span class="font-semibold text-white">Turn over Tableau card:</span> +5</li>
-								<li><span class="font-semibold text-white">Foundation to Tableau:</span> -15</li>
-								<li><span class="font-semibold text-white">Recycle waste in 1-card draw:</span> -100</li>
-							</ul>
-						</div>
-						<div class="space-y-2">
-							<h3 class="text-lg font-semibold text-[var(--color-text)]">Timed Bonus</h3>
-							<ul class="list-disc pl-6 space-y-1">
-								<li>On win, a time bonus is added.</li>
-								<li>Time bonus starts at 600 in 1-card draw and 900 in 3-card draw.</li>
-								<li>The bonus drops by 1 point per second.</li>
-								<li>Score cannot go below 0.</li>
-							</ul>
-						</div>
-					</section>
-
-					<section class="space-y-2" data-computer-solitaire-guide-panel="terms" data-computer-solitaire-guide-variant="klondike" hidden>
-						<ul class="list-disc pl-6 space-y-1">
-							<li><span class="font-semibold text-white">Tableau:</span> the seven play piles where you build down in alternating colors.</li>
-							<li><span class="font-semibold text-white">Foundations:</span> four suit piles built up from Ace to King.</li>
-							<li><span class="font-semibold text-white">Stock:</span> the face-down draw pile.</li>
-							<li><span class="font-semibold text-white">Waste:</span> face-up cards drawn from stock; only the top card is playable.</li>
-							<li><span class="font-semibold text-white">Draw mode:</span> how many cards are drawn from stock each time (1-card or 3-card).</li>
-						</ul>
-					</section>
-
-					<section class="space-y-4" data-computer-solitaire-guide-panel="rules" data-computer-solitaire-guide-variant="freecell" hidden>
-						<div class="space-y-2">
-							<h3 class="text-lg font-semibold text-[var(--color-text)]">Objective</h3>
-							<p>Move all 52 cards to the four foundations, building each suit from Ace to King.</p>
-						</div>
-
-						<div class="space-y-2">
-							<h3 class="text-lg font-semibold text-[var(--color-text)]">Core Rules</h3>
-							<ul class="list-disc pl-6 space-y-1">
-								<li>Deal all 52 cards face up into eight cascades: the first four hold 7 cards, the last four hold 6.</li>
-								<li>Build cascades down in rank while alternating colors.</li>
-								<li>Move the exposed card at the bottom of a cascade, or a properly ordered run of cards ending with it.</li>
-								<li>Use the four free cells as temporary storage for one card each.</li>
-								<li>Build foundations by suit from Ace to King.</li>
-								<li>Any card may be moved to an empty cascade.</li>
-							</ul>
-						</div>
-
-						<div class="space-y-2">
-							<h3 class="text-lg font-semibold text-[var(--color-text)]">Supermoves</h3>
-							<ul class="list-disc pl-6 space-y-1">
-								<li>An ordered run of cards can be moved as a unit (a supermove).</li>
-								<li>How many cards you can move at once depends on your open free cells and empty cascades: the more space, the bigger the move.</li>
-							</ul>
-						</div>
-					</section>
-
-					<section class="space-y-3" data-computer-solitaire-guide-panel="scoring" data-computer-solitaire-guide-variant="freecell" hidden>
-						<div class="space-y-2">
-							<h3 class="text-lg font-semibold text-[var(--color-text)]">Timed Bonus</h3>
-							<ul class="list-disc pl-6 space-y-1">
-								<li>FreeCell scoring is all about speed: win to earn a time bonus.</li>
-								<li>The bonus starts at 900 and drops by 1 point per second.</li>
-								<li>Score cannot go below 0.</li>
-							</ul>
-						</div>
-					</section>
-
-					<section class="space-y-2" data-computer-solitaire-guide-panel="terms" data-computer-solitaire-guide-variant="freecell" hidden>
-						<ul class="list-disc pl-6 space-y-1">
-							<li><span class="font-semibold text-white">Cascade:</span> one of eight tableau columns where all cards are face up.</li>
-							<li><span class="font-semibold text-white">Free cell:</span> a temporary single-card holding slot (four total).</li>
-							<li><span class="font-semibold text-white">Foundations:</span> four suit piles built up from Ace to King.</li>
-							<li><span class="font-semibold text-white">Supermove:</span> a multi-card move enabled by available free cells and empty cascades.</li>
-						</ul>
-					</section>
 				</div>
-			</div>
-		</Dialog>
-	</section>
+			</Dialog>
+		</section>
 </Layout>
 
 <script>
 	import { openDialog } from '../lib/ui/dialog';
+
 	const computerSolitaireGuideTrigger = document.getElementById('computer-solitaire-guide-trigger') as HTMLButtonElement | null;
 	const computerSolitaireGuideDialog = document.getElementById('computer-solitaire-guide-dialog') as HTMLElement | null;
-	const computerSolitaireGuideToggleNames = ['computer-solitaire-guide-variant', 'computer-solitaire-guide-section'];
+	const computerSolitaireGuideVariantDropdown = document.getElementById('computer-solitaire-guide-variant');
 	const computerSolitaireGuidePanels = document.querySelectorAll<HTMLElement>('[data-computer-solitaire-guide-panel]');
 
 	let computerSolitaireGuideVariant = 'klondike';
 	let computerSolitaireGuideSection = 'rules';
 
 	function syncComputerSolitaireGuideToggles() {
-		for (const name of computerSolitaireGuideToggleNames) {
-			const checkedGuideInput = document.querySelector<HTMLInputElement>(
-				`[data-toggle-group="${name}"] input[type="radio"]:checked`
-			);
-			if (!checkedGuideInput) continue;
-			document.dispatchEvent(new CustomEvent('toggle-set-value', {
-				detail: { name, value: checkedGuideInput.value }
-			}));
-		}
+		const checkedGuideInput = document.querySelector<HTMLInputElement>(
+			'[data-toggle-group="computer-solitaire-guide-section"] input[type="radio"]:checked'
+		);
+		if (!checkedGuideInput) return;
+		document.dispatchEvent(new CustomEvent('toggle-set-value', {
+			detail: { name: 'computer-solitaire-guide-section', value: checkedGuideInput.value }
+		}));
 	}
 
-	computerSolitaireGuideTrigger?.addEventListener('click', () => {
+	function openComputerSolitaireGuide(variantId?: string) {
+		if (variantId) {
+			document.dispatchEvent(new CustomEvent('dropdown-set-value', {
+				detail: { id: 'computer-solitaire-guide-variant', value: variantId }
+			}));
+		}
 		openDialog('computer-solitaire-guide-dialog');
-		requestAnimationFrame(() => {
-			syncComputerSolitaireGuideToggles();
-		});
+		requestAnimationFrame(syncComputerSolitaireGuideToggles);
 		computerSolitaireGuideDialog?.querySelector<HTMLElement>('[data-dialog-container]')?.addEventListener('transitionend', () => {
 			syncComputerSolitaireGuideToggles();
 		}, { once: true });
+	}
+
+	computerSolitaireGuideTrigger?.addEventListener('click', () => {
+		openComputerSolitaireGuide();
+	});
+
+	document.querySelectorAll<HTMLButtonElement>('[data-computer-solitaire-variant-trigger]').forEach((trigger) => {
+		trigger.addEventListener('click', () => {
+			const variantId = trigger.dataset.computerSolitaireVariantTrigger;
+			if (variantId) openComputerSolitaireGuide(variantId);
+		});
 	});
 
 	function updateComputerSolitaireGuidePanels() {
@@ -319,15 +283,14 @@ const screenshots = [
 
 	updateComputerSolitaireGuidePanels();
 
-	document.querySelector<HTMLElement>('[data-toggle-group="computer-solitaire-guide-variant"]')
-		?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
-			computerSolitaireGuideVariant = e.detail.value;
-			updateComputerSolitaireGuidePanels();
-		}) as EventListener);
+	computerSolitaireGuideVariantDropdown?.addEventListener('dropdown-change', ((event: CustomEvent<{ value: string }>) => {
+		computerSolitaireGuideVariant = event.detail.value;
+		updateComputerSolitaireGuidePanels();
+	}) as EventListener);
 
 	document.querySelector<HTMLElement>('[data-toggle-group="computer-solitaire-guide-section"]')
-		?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
-			computerSolitaireGuideSection = e.detail.value;
+		?.addEventListener('toggle-change', ((event: CustomEvent<{ value: string }>) => {
+			computerSolitaireGuideSection = event.detail.value;
 			updateComputerSolitaireGuidePanels();
 		}) as EventListener);
 </script>
