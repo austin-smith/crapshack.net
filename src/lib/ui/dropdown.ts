@@ -92,7 +92,8 @@ export function initDropdowns(): void {
 		const dropdown = target.closest<HTMLElement>('[data-dropdown]');
 		if (!dropdown) return;
 
-		if (target.matches('[data-dropdown-trigger]')) {
+		const trigger = target.closest<HTMLButtonElement>('[data-dropdown-trigger]');
+		if (trigger) {
 			if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
 				event.preventDefault();
 				closeOtherDropdowns(dropdown);
