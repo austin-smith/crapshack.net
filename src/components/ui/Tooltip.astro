@@ -1,18 +1,22 @@
 ---
 interface Props {
+	/** Unique id that targets reference via data-tooltip="<id>". */
 	id: string;
-	trigger: string;
+	/** Positioning within the panel's offset parent, e.g. inset classes. */
 	class?: string;
 }
 
-const { id, trigger, class: className } = Astro.props;
+const { id, class: className } = Astro.props;
 ---
 
-<span class={`tooltip ${className ?? ''}`}>
-	<button type="button" class="tooltip-trigger" aria-describedby={id}>
-		{trigger}
-	</button>
-	<span id={id} class="tooltip-content" role="tooltip">
-		<slot />
-	</span>
-</span>
+<div id={id} class={`tooltip-panel ${className ?? ''}`} role="tooltip" data-tooltip-panel>
+	<span class="tooltip-caret" data-tooltip-caret aria-hidden="true"></span>
+	<p class="tooltip-title" data-tooltip-slot="title"></p>
+	<p class="tooltip-body" data-tooltip-slot="body"></p>
+</div>
+
+<script>
+	import { initTooltips } from '../../lib/ui/tooltip';
+
+	initTooltips();
+</script>

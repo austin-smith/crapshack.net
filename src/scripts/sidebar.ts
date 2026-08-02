@@ -8,6 +8,7 @@
  */
 
 import { initCollapsibles } from '../lib/ui/collapsible';
+import { hideTooltips } from '../lib/ui/tooltip';
 
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   const selector = [
@@ -278,6 +279,14 @@ function initSidebar(): void {
 
   // Initialize collapsible sections within sidebar
   initCollapsibles(sidebar);
+
+  // The sidebar can close without a mouseleave (Cmd+B, link click), so hide
+  // any open tooltips inside it when it does.
+  new MutationObserver(() => {
+    if (!document.documentElement.hasAttribute('data-sidebar-open')) {
+      hideTooltips(sidebar);
+    }
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-sidebar-open'] });
 }
 
 if (document.readyState === 'loading') {
