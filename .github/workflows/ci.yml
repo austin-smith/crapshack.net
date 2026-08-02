@@ -7,8 +7,8 @@ on:
       - main
 
 jobs:
-  lint:
-    name: Lint
+  validate:
+    name: Validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -27,3 +27,6 @@ jobs:
 
       - name: Lint
         run: pnpm lint
+
+      - name: Check
+        run: pnpm check

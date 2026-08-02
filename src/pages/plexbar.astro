@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { plexbar } from '../data/apps';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
-import { History, Library, MonitorPlay, Package, Users } from '@lucide/astro';
+import { Library, MonitorPlay, Package, RotateCcwClock, Users } from '@lucide/astro';
 
 const { repoUrl, appcastUrl, icon: iconUrl, description } = plexbar;
 const releasesUrl = `${repoUrl}/releases`;
@@ -40,7 +40,7 @@ const views = [
 	},
 	{
 		title: 'History',
-		icon: History,
+		icon: RotateCcwClock,
 		body: 'Recent plays and top titles',
 	},
 	{
