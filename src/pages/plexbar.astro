@@ -1,12 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { plexbar } from '../data/apps';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import { History, Library, MonitorPlay, Package, Users } from '@lucide/astro';
 
-const repoUrl = 'https://github.com/austin-smith/PlexBar';
-const releasesUrl = 'https://github.com/austin-smith/PlexBar/releases';
-const appcastUrl = 'https://austin-smith.github.io/PlexBar/appcast.xml';
-const iconUrl = '/images/plexbar/plexbar.png';
+const { repoUrl, appcastUrl, icon: iconUrl, description } = plexbar;
+const releasesUrl = `${repoUrl}/releases`;
 const screenshots = [
 	{
 		id: 'streams',
@@ -66,7 +65,7 @@ const features = [
 ---
 
 <Layout
-	title="crapshack (plexbar)"
+	title={`crapshack (${plexbar.name.toLowerCase()})`}
 	ogImage="/open-graph/plexbar.png"
 	noIndex={true}
 >
@@ -75,7 +74,7 @@ const features = [
 			<img src={iconUrl} alt="PlexBar icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
 			<div>
 				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">PlexBar</h1>
-				<p class="text-white/90">A lightweight macOS menu bar app for Plex server telemetry.</p>
+				<p class="text-white/90">{description}</p>
 			</div>
 		</header>
 
@@ -99,7 +98,6 @@ const features = [
 				<span>releases</span>
 			</a>
 			<a
-				id="plexbar-download-link"
 				href={releasesUrl}
 				target="_blank"
 				rel="noopener noreferrer"
@@ -145,15 +143,7 @@ const features = [
 </Layout>
 
 <script>
-	import { fetchLatestAppcastRelease } from '../lib/appcast';
+	import { initAppcastLinks } from '../lib/appcast';
 
-	const downloadLink = document.getElementById('plexbar-download-link') as HTMLAnchorElement | null;
-	const appcastUrl = downloadLink?.dataset.appcastUrl;
-
-	if (downloadLink && appcastUrl) {
-		fetchLatestAppcastRelease(appcastUrl)
-			.then((release) => {
-				downloadLink.href = release.downloadUrl;
-			});
-	}
+	initAppcastLinks();
 </script>

@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { webhooks } from '../data/apps';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import {
 	BookText,
@@ -15,11 +16,7 @@ import {
 	Webhook,
 } from '@lucide/astro';
 
-const appUrl = 'https://webhooks.lol';
-const docsUrl = 'https://docs.webhooks.lol';
-const npmUrl = 'https://www.npmjs.com/package/whlol';
-const repoUrl = 'https://github.com/austin-smith/webhooks.lol';
-const iconUrl = '/images/webhooks-lol/webhooks-lol.png';
+const { repoUrl, appUrl, docsUrl, npmUrl, icon: iconUrl, description } = webhooks;
 const receiveUrl = 'https://webhooks.lol/api/hook/<endpoint-id>';
 const curlExample = `curl -X POST "${receiveUrl}" \\
   -H "content-type: application/json" \\
@@ -74,7 +71,7 @@ const features = [
 ---
 
 <Layout
-	title="crapshack (webhooks.lol)"
+	title={`crapshack (${webhooks.name.toLowerCase()})`}
 	ogImage="/open-graph/webhooks-lol.png"
 	noIndex={true}
 >
@@ -83,7 +80,7 @@ const features = [
 			<img src={iconUrl} alt="webhooks.lol icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
 			<div>
 				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">webhooks.lol</h1>
-				<p class="text-white/90">A small webhook endpoint for receiving and inspecting HTTP requests.</p>
+				<p class="text-white/90">{description}</p>
 			</div>
 		</header>
 

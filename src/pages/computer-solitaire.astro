@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { computerSolitaire } from '../data/apps';
 import Dialog from '../components/ui/Dialog.astro';
 import Dropdown from '../components/ui/Dropdown.astro';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
@@ -7,14 +8,8 @@ import ToggleGroup from '../components/ui/ToggleGroup.astro';
 import { computerSolitaireVariants as variants } from '../lib/computer-solitaire';
 import { BookText, Package } from '@lucide/astro';
 
-const computerSolitaireRelease = {
-	releaseTag: 'v0.8.0',
-	dmgAssetName: 'ComputerSolitaire-v0.8.0-arm64.dmg',
-};
-const repoUrl = 'https://github.com/austin-smith/ComputerSolitaire';
-const releasesUrl = 'https://github.com/austin-smith/ComputerSolitaire/releases';
-const directDownloadUrl = `https://github.com/austin-smith/ComputerSolitaire/releases/download/${computerSolitaireRelease.releaseTag}/${computerSolitaireRelease.dmgAssetName}`;
-const iconUrl = '/images/computer-solitaire/computer-solitaire-icon.png';
+const { repoUrl, appcastUrl, icon: iconUrl, description } = computerSolitaire;
+const releasesUrl = `${repoUrl}/releases`;
 const screenshots = [
 	{
 		id: 'ios',
@@ -32,7 +27,7 @@ const screenshots = [
 ---
 
 <Layout
-	title="crapshack (computer solitaire)"
+	title={`crapshack (${computerSolitaire.name.toLowerCase()})`}
 	ogImage="/open-graph/computer-solitaire.png"
 	noIndex={true}
 >
@@ -41,7 +36,7 @@ const screenshots = [
 			<img src={iconUrl} alt="Computer Solitaire icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
 			<div>
 				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">Computer Solitaire</h1>
-				<p class="text-white/90">A fully native Solitaire app for iOS, iPadOS, and macOS.</p>
+				<p class="text-white/90">{description}</p>
 			</div>
 		</header>
 
@@ -65,10 +60,11 @@ const screenshots = [
 				<span>releases</span>
 			</a>
 			<a
-				href={directDownloadUrl}
+				href={releasesUrl}
 				target="_blank"
 				rel="noopener noreferrer"
 				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				data-appcast-url={appcastUrl}
 			>
 				<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
 				<span>macOS</span>
@@ -293,4 +289,10 @@ const screenshots = [
 			computerSolitaireGuideSection = event.detail.value;
 			updateComputerSolitaireGuidePanels();
 		}) as EventListener);
+</script>
+
+<script>
+	import { initAppcastLinks } from '../lib/appcast';
+
+	initAppcastLinks();
 </script>

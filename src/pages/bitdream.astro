@@ -1,18 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { bitdream } from '../data/apps';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import { Package } from '@lucide/astro';
 
-const bitdreamRelease = {
-	releaseTag: 'v1.2.0',
-	dmgAssetName: 'BitDream-v1.2.0-arm64.dmg',
-};
-const repoUrl = 'https://github.com/austin-smith/BitDream';
-const releasesUrl = 'https://github.com/austin-smith/BitDream/releases';
-const directDownloadUrl = `https://github.com/austin-smith/BitDream/releases/download/${bitdreamRelease.releaseTag}/${bitdreamRelease.dmgAssetName}`;
+const { repoUrl, directDownloadUrl, icon: iconUrl, description } = bitdream;
+const releasesUrl = `${repoUrl}/releases`;
 const rpcSpecUrl = 'https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md';
 const transmissionUrl = 'https://transmissionbt.com/';
-const iconUrl = '/images/bitdream/bitdream.png';
 const screenshots = [
 	{
 		id: 'light',
@@ -30,7 +25,7 @@ const screenshots = [
 ---
 
 <Layout
-	title="crapshack (bitdream)"
+	title={`crapshack (${bitdream.name.toLowerCase()})`}
 	ogImage="/open-graph/bitdream.png"
 	noIndex={true}
 >
@@ -39,7 +34,7 @@ const screenshots = [
 			<img src={iconUrl} alt="BitDream icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
 			<div>
 				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">BitDream</h1>
-				<p class="text-white/90">A native, feature-rich remote control client for Transmission web server.</p>
+				<p class="text-white/90">{description}</p>
 			</div>
 		</header>
 

@@ -8,6 +8,7 @@
  */
 
 import { initCollapsibles } from '../lib/ui/collapsible';
+import { hideTooltips } from '../lib/ui/tooltip';
 
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   const selector = [
@@ -215,8 +216,7 @@ class SidebarController {
     this.lastFocused = document.activeElement;
     this.sidebar.classList.remove('translate-x-full');
     this.sidebar.classList.add('translate-x-0');
-    this.overlay.classList.remove('hidden');
-    // Consolidate state on <html>
+    // Consolidate state on <html>; overlay visibility is CSS-driven off this attribute
     this.htmlEl.setAttribute('data-sidebar-open', 'true');
 
     // Lock scroll without layout shift: fix body and compensate for scrollbar width
@@ -240,8 +240,7 @@ class SidebarController {
     this.isOpen = false;
     this.sidebar.classList.add('translate-x-full');
     this.sidebar.classList.remove('translate-x-0');
-    this.overlay.classList.add('hidden');
-    // Release consolidated state
+    // Release consolidated state; overlay fades out via CSS
     this.htmlEl.removeAttribute('data-sidebar-open');
 
     // Restore scroll
@@ -280,6 +279,12 @@ function initSidebar(): void {
 
   // Initialize collapsible sections within sidebar
   initCollapsibles(sidebar);
+
+  // The sidebar can open or close under a shown tooltip without a mouseleave
+  // (Cmd+B, link click), so hide any visible tooltip on state change.
+  new MutationObserver(() => {
+    hideTooltips();
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-sidebar-open'] });
 }
 
 if (document.readyState === 'loading') {

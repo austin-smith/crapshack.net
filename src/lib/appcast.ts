@@ -30,7 +30,10 @@ export async function fetchLatestAppcastRelease(appcastUrl: string): Promise<App
 		throw new Error('Appcast XML could not be parsed');
 	}
 
-	const latestItem = doc.querySelector('item');
+	// prereleases carry a <sparkle:channel>; stable releases are untagged
+	const latestItem = Array.from(doc.querySelectorAll('item')).find(
+		(item) => !getSparkleText(item, 'channel'),
+	);
 	const enclosure = latestItem?.querySelector('enclosure');
 	const downloadUrl = enclosure?.getAttribute('url')?.trim();
 	const version = latestItem ? getSparkleText(latestItem, 'shortVersionString') : undefined;
@@ -46,4 +49,19 @@ export async function fetchLatestAppcastRelease(appcastUrl: string): Promise<App
 		hardwareRequirements: getSparkleText(latestItem, 'hardwareRequirements'),
 		publishedAt: getItemText(latestItem, 'pubDate'),
 	};
+}
+
+export function initAppcastLinks(): void {
+	const links = document.querySelectorAll<HTMLAnchorElement>('a[data-appcast-url]');
+	for (const link of links) {
+		const appcastUrl = link.dataset.appcastUrl;
+		if (!appcastUrl) continue;
+		fetchLatestAppcastRelease(appcastUrl)
+			.then((release) => {
+				link.href = release.downloadUrl;
+			})
+			.catch(() => {
+				// keep the fallback href
+			});
+	}
 }

@@ -332,92 +332,62 @@
 		display: none;
 	}
 
-	/* Tooltip component */
-	.tooltip {
-		position: relative;
-		display: inline-block;
-		vertical-align: baseline;
+	/* Anchored tooltip (components/ui/Tooltip.astro + lib/ui/tooltip.ts) */
+	.tooltip-panel {
+		position: absolute;
+		z-index: 10;
+		pointer-events: none;
+		padding: 0.5rem 0.75rem;
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		border-radius: 0.375rem;
+		background: color-mix(in srgb, var(--color-sidebar-bg), black 35%);
+		box-shadow:
+			0 10px 15px -3px rgb(0 0 0 / 0.1),
+			0 4px 6px -4px rgb(0 0 0 / 0.1);
+		opacity: 0;
+		transition: opacity 150ms ease-out;
 	}
 
-	.tooltip-trigger {
-		display: inline-block;
-		padding: 0;
-		border: 0;
-		background: transparent;
-		color: inherit;
-		font: inherit;
-		line-height: inherit;
-		text-decoration-line: underline;
-		text-decoration-style: dotted;
-		text-decoration-thickness: 1.5px;
-		text-decoration-color: color-mix(in srgb, var(--color-brand) 80%, white 20%);
-		text-underline-offset: 0.18em;
-		transition: color 150ms ease;
+	.tooltip-panel[data-open='true'] {
+		opacity: 1;
 	}
 
-	.tooltip-trigger:hover {
+	.tooltip-caret {
+		position: absolute;
+		width: 0.5rem;
+		height: 0.5rem;
+		background: color-mix(in srgb, var(--color-sidebar-bg), black 35%);
+		border: 0 solid rgba(255, 255, 255, 0.15);
+		transform: rotate(45deg);
+		transition: left 150ms ease-out;
+	}
+
+	.tooltip-panel[data-placement='below'] .tooltip-caret {
+		top: -4.5px;
+		border-width: 1px 0 0 1px;
+	}
+
+	.tooltip-panel[data-placement='above'] .tooltip-caret {
+		bottom: -4.5px;
+		border-width: 0 1px 1px 0;
+	}
+
+	.tooltip-title {
+		font-size: 11px;
+		font-weight: 500;
 		color: var(--color-brand);
 	}
 
-	.tooltip-trigger:focus-visible {
-		outline: none;
-		border-radius: 0.2rem;
-		box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand) 70%, transparent);
-	}
-
-	.tooltip-content {
-		display: block;
-		position: absolute;
-		left: 50%;
-		top: calc(100% + 0.55rem);
-		z-index: 150;
-		width: min(18rem, calc(100vw - 2rem));
-		transform: translateX(-50%) translateY(4px) scale(0.98);
-		transform-origin: top center;
-		opacity: 0;
-		pointer-events: none;
-		padding: 0.7rem 0.85rem;
-		border-radius: 0.55rem;
-		border: 1px solid rgba(255, 255, 255, 0.16);
-		background: rgba(8, 20, 38, 0.96);
-		box-shadow:
-			0 10px 20px rgba(2, 6, 23, 0.35),
-			0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-		color: rgba(255, 255, 255, 0.95);
-		font-size: 0.84rem;
-		line-height: 1.35;
-		backdrop-filter: blur(12px);
-		-webkit-backdrop-filter: blur(12px);
-		transition:
-			opacity 150ms ease,
-			transform 150ms ease;
-		transition-delay: 0ms;
-		visibility: hidden;
-	}
-
-	.tooltip-content::before {
-		content: "";
-		position: absolute;
-		left: 50%;
-		top: -5px;
-		width: 10px;
-		height: 10px;
-		background: rgba(2, 6, 23, 0.92);
-		border-top: 1px solid rgba(255, 255, 255, 0.16);
-		border-left: 1px solid rgba(255, 255, 255, 0.16);
-		transform: translateX(-50%) rotate(45deg);
-	}
-
-	.tooltip:hover .tooltip-content,
-	.tooltip:focus-within .tooltip-content {
-		opacity: 1;
-		visibility: visible;
-		transform: translateX(-50%) translateY(0) scale(1);
-		transition-delay: 90ms;
+	.tooltip-body {
+		margin-top: 0.125rem;
+		font-size: 11px;
+		line-height: 1.375;
+		color: rgba(255, 255, 255, 0.75);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.tooltip-content {
+		.tooltip-panel,
+		.tooltip-caret {
 			transition: none;
 		}
 	}
@@ -531,6 +501,28 @@
 	/* Collapsible expand animation */
 	.collapsible[open] .collapsible-content {
 		grid-template-rows: 1fr;
+	}
+
+	/* Sidebar overlay scrim: fades in with the panel, click-through when closed */
+	#sidebar-overlay {
+		opacity: 0;
+		pointer-events: none;
+		backdrop-filter: blur(0px);
+		-webkit-backdrop-filter: blur(0px);
+		transition: opacity 300ms ease-out, backdrop-filter 300ms ease-out, -webkit-backdrop-filter 300ms ease-out;
+	}
+
+	html[data-sidebar-open="true"] #sidebar-overlay {
+		opacity: 1;
+		pointer-events: auto;
+		backdrop-filter: blur(2px);
+		-webkit-backdrop-filter: blur(2px);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#sidebar-overlay {
+			transition: none;
+		}
 	}
 
 	/* Sidebar shadow only when expanded */
