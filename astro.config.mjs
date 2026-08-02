@@ -6,12 +6,19 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 const SITE_URL = process.env.SITE_URL || 'https://crapshack.net';
 
-// Railway builds have no .git directory, so git info comes from its env there
-const gitSha = (
-	process.env.RAILWAY_GIT_COMMIT_SHA ?? execSync('git rev-parse HEAD').toString().trim()
-).slice(0, 7);
-const gitBranch =
-	process.env.RAILWAY_GIT_BRANCH ?? execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+/** @param {string} command */
+function git(command) {
+	try {
+		return execSync(command).toString().trim();
+	} catch {
+		return undefined;
+	}
+}
+
+// Railway builds have no .git directory, so git info comes from its env there;
+// contexts with neither (e.g. a source archive) build with "unknown" rather than failing
+const gitSha = (process.env.RAILWAY_GIT_COMMIT_SHA ?? git('git rev-parse HEAD') ?? 'unknown').slice(0, 7);
+const gitBranch = process.env.RAILWAY_GIT_BRANCH ?? git('git rev-parse --abbrev-ref HEAD') ?? 'unknown';
 
 export default defineConfig({
 	site: SITE_URL,

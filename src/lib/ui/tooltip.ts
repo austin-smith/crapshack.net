@@ -14,6 +14,9 @@
  *   optional; a panel may instead carry static slotted content, which this
  *   module never touches.
  *
+ * Clicking a link target hides the panel (the page is navigating away);
+ * clicking any other target toggles it, covering touch and keyboard activation.
+ *
  * JS only positions and toggles state: it sets `top` and caret `left`, and
  * reflects state as `data-open` and `data-placement="below" | "above"` on the
  * panel. All visuals live in the .tooltip-* rules in global.css.
@@ -108,7 +111,17 @@ function initTooltip(panel: HTMLElement): void {
 			if (target.matches(':focus-visible')) show(target);
 		});
 		target.addEventListener('focusout', () => hide());
-		target.addEventListener('click', () => hide());
+		// Links hide on click because they navigate; non-navigating triggers
+		// (e.g. buttons) toggle instead so taps and keyboard activation work.
+		target.addEventListener('click', () => {
+			if (target.closest('a')) {
+				hide();
+			} else if (visible) {
+				hide();
+			} else {
+				show(target);
+			}
+		});
 	});
 	container.addEventListener('scroll', () => hide(), { passive: true });
 
