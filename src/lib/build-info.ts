@@ -12,4 +12,7 @@ export const isNonProdEnv = Boolean(appEnv) && appEnv !== 'production';
 
 export const gitSha = __GIT_SHA__;
 export const gitBranch = __GIT_BRANCH__;
+export const gitCommitMessage = __GIT_COMMIT_MESSAGE__;
+/** True when a local build had uncommitted changes; always false on deploys. */
+export const gitDirty = __GIT_DIRTY__;
 export const builtAtIso = __BUILD_TIME__;

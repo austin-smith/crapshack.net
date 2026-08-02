@@ -1,7 +1,9 @@
 ---
 import Tooltip from './ui/Tooltip.astro';
-import { appEnv, gitSha, gitBranch, builtAtIso } from '../lib/build-info';
+import { appEnv, gitSha, gitBranch, gitCommitMessage, gitDirty, builtAtIso } from '../lib/build-info';
 import { formatShortDateTime } from '../lib/datetime';
+
+const commitLabel = gitDirty ? `${gitSha} (dirty)` : gitSha;
 ---
 {/* Render only behind an isNonProdEnv gate: an unrendered component ships no markup or script. */}
 <div class="fixed left-3 top-3 z-[80] select-none">
@@ -18,7 +20,9 @@ import { formatShortDateTime } from '../lib/datetime';
 			<span class="uppercase tracking-wider text-white/40">branch</span>
 			<span class="text-white/80">{gitBranch}</span>
 			<span class="uppercase tracking-wider text-white/40">commit</span>
-			<span class="text-white/80">{gitSha}</span>
+			<span class="text-white/80">{commitLabel}</span>
+			<span class="uppercase tracking-wider text-white/40">message</span>
+			<span class="max-w-56 truncate text-white/80">{gitCommitMessage}</span>
 			<span class="uppercase tracking-wider text-white/40">built</span>
 			<time id="env-badge-built-at" datetime={builtAtIso} class="text-white/80">
 				{formatShortDateTime(builtAtIso, { utc: true })}
@@ -29,9 +33,18 @@ import { formatShortDateTime } from '../lib/datetime';
 
 <script>
 	import { builtAtIso } from '../lib/build-info';
-	import { formatShortDateTime } from '../lib/datetime';
+	import { formatShortDateTime, formatRelativeTime } from '../lib/datetime';
 
-	// The static fallback is UTC; swap in the viewer's local time.
+	// The static fallback is UTC; swap in the viewer's local time plus build age,
+	// recomputed whenever the tooltip is about to show so the age stays current.
 	const builtAt = document.getElementById('env-badge-built-at');
-	if (builtAt) builtAt.textContent = formatShortDateTime(builtAtIso);
+	const trigger = document.querySelector('[data-tooltip="env-badge-tooltip"]');
+	const refresh = (): void => {
+		if (builtAt) {
+			builtAt.textContent = `${formatShortDateTime(builtAtIso)} · ${formatRelativeTime(builtAtIso)}`;
+		}
+	};
+	refresh();
+	trigger?.addEventListener('mouseenter', refresh);
+	trigger?.addEventListener('focusin', refresh);
 </script>
