@@ -1,0 +1,183 @@
+---
+import { BookText, Container, ExternalLink, Package } from '@lucide/astro';
+import Layout from '../layouts/Layout.astro';
+
+const bitdreamRelease = {
+	releaseTag: 'v1.2.0',
+	dmgAssetName: 'BitDream-v1.2.0-arm64.dmg',
+};
+const computerSolitaireRelease = {
+	releaseTag: 'v0.6.0',
+	dmgAssetName: 'ComputerSolitaire-v0.6.0-arm64.dmg',
+};
+
+const apps = [
+	{
+		name: 'BitDream',
+		href: '/bitdream',
+		icon: '/images/bitdream/bitdream.png',
+		screenshot: '/images/bitdream/screen-grabs/screen-grab-light.png',
+		screenshotAlt: 'BitDream (light mode)',
+		description: 'A native, feature-rich remote control client for Transmission web server.',
+		links: [
+			{ label: 'github', href: 'https://github.com/austin-smith/BitDream', kind: 'github' },
+			{ label: 'releases', href: 'https://github.com/austin-smith/BitDream/releases' },
+			{
+				label: 'macOS',
+				href: `https://github.com/austin-smith/BitDream/releases/download/${bitdreamRelease.releaseTag}/${bitdreamRelease.dmgAssetName}`,
+				kind: 'apple',
+			},
+		],
+	},
+	{
+		name: 'Computer Solitaire',
+		href: '/computer-solitaire',
+		icon: '/images/computer-solitaire/computer-solitaire-icon.png',
+		screenshot: '/images/computer-solitaire/screen-grabs/screen-grab-macos.png',
+		screenshotAlt: 'Computer Solitaire on macOS',
+		description: 'A fully native Solitaire app for iOS, iPadOS, and macOS.',
+		links: [
+			{ label: 'github', href: 'https://github.com/austin-smith/ComputerSolitaire', kind: 'github' },
+			{ label: 'releases', href: 'https://github.com/austin-smith/ComputerSolitaire/releases' },
+			{
+				label: 'macOS',
+				href: `https://github.com/austin-smith/ComputerSolitaire/releases/download/${computerSolitaireRelease.releaseTag}/${computerSolitaireRelease.dmgAssetName}`,
+				kind: 'apple',
+			},
+		],
+	},
+	{
+		name: 'crapdash',
+		href: '/crapdash',
+		icon: '/images/crapdash/compy.png',
+		screenshot: '/images/crapdash/screen-grabs/screen-grab-light.png',
+		screenshotAlt: 'crapdash (light mode)',
+		description: 'Low-frills, customizable homepage to organize your links and services.',
+		links: [
+			{ label: 'github', href: 'https://github.com/austin-smith/crapdash', kind: 'github' },
+			{ label: 'releases', href: 'https://github.com/austin-smith/crapdash/releases' },
+			{ label: 'docker image', href: 'https://github.com/austin-smith/crapdash/pkgs/container/crapdash', kind: 'container' },
+		],
+	},
+	{
+		name: 'PlexBar',
+		href: '/plexbar',
+		icon: '/images/plexbar/plexbar.png',
+		screenshot: '/images/plexbar/screen-grabs/screen-grab-streams.png',
+		screenshotAlt: 'PlexBar active streams view',
+		description: 'A lightweight macOS menu bar app for Plex server telemetry.',
+		links: [
+			{ label: 'github', href: 'https://github.com/austin-smith/PlexBar', kind: 'github' },
+			{ label: 'releases', href: 'https://github.com/austin-smith/PlexBar/releases' },
+			{
+				label: 'macOS',
+				href: 'https://github.com/austin-smith/PlexBar/releases',
+				kind: 'apple',
+				appcastUrl: 'https://austin-smith.github.io/PlexBar/appcast.xml',
+			},
+		],
+	},
+	{
+		name: 'Stuckers',
+		href: '/stuckers-app',
+		icon: '/images/stuckers/stuckers-icon.png',
+		screenshot: '/images/stuckers/screen-grabs/screengrab-all.png',
+		screenshotAlt: 'stucker overview',
+		description: 'Hand-drawn animated sticker pack for iMessage. (i.e., stickers for phone.)',
+		links: [
+			{ label: 'github', href: 'https://github.com/austin-smith/Stuckers', kind: 'github' },
+			{ label: 'app store', href: 'https://apps.apple.com/us/app/stuckers/id1173389437', kind: 'apple' },
+		],
+	},
+	{
+		name: 'webhooks.lol',
+		href: '/webhooks-lol',
+		icon: '/images/webhooks-lol/webhooks-lol.png',
+		screenshot: '/images/webhooks-lol/screen-grabs/screen-grab-light.png',
+		screenshotAlt: 'webhooks.lol (light mode)',
+		description: 'A small webhook endpoint for receiving and inspecting HTTP requests.',
+		links: [
+			{ label: 'github', href: 'https://github.com/austin-smith/webhooks.lol', kind: 'github' },
+			{ label: 'web app', href: 'https://webhooks.lol', kind: 'external' },
+			{ label: 'docs', href: 'https://docs.webhooks.lol', kind: 'docs' },
+			{ label: 'npm', href: 'https://www.npmjs.com/package/whlol' },
+		],
+	},
+];
+---
+
+<Layout title="crapshack (apps)">
+	<section class="mx-auto mt-10 max-w-5xl space-y-8">
+		<header class="apps-header">
+			<h1 class="font-mono text-3xl font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">apps</h1>
+		</header>
+
+		<div class="grid gap-4 md:grid-cols-2">
+			{apps.map((app) => (
+				<article id={app.name.toLowerCase().replaceAll(' ', '-')} class="flex flex-col overflow-hidden rounded-lg border border-white/10 bg-white/[0.04] shadow-lg scroll-mt-8">
+					<a href={app.href} class="block border-b border-white/10 bg-black/20 p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+						<div class="grid aspect-[16/10] place-items-center overflow-hidden rounded-md bg-white/5">
+							<img src={app.screenshot} alt={app.screenshotAlt} class="max-h-full max-w-full object-contain drop-shadow-lg" loading="lazy" decoding="async" />
+						</div>
+					</a>
+					<div class="flex flex-1 flex-col gap-4 p-4">
+						<div class="flex items-center gap-3">
+							<img src={app.icon} alt="" aria-hidden="true" class="h-12 w-12 shrink-0 object-contain drop-shadow-md" loading="lazy" decoding="async" />
+							<h2 class="font-mono text-2xl font-semibold text-[var(--color-text)]">
+								<a href={app.href} class="hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70 rounded-sm">
+									{app.name}
+								</a>
+							</h2>
+						</div>
+						<p class="text-white/90">{app.description}</p>
+						<div class="mt-auto flex flex-wrap gap-2">
+							<a href={app.href} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-3 py-1.5 text-sm font-medium text-black hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+								<ExternalLink width={15} height={15} stroke-width={2} class="mr-2" />
+								<span>page</span>
+							</a>
+							{app.links.map((link) => (
+								<a
+									id={link.appcastUrl ? 'plexbar-download-link' : undefined}
+									href={link.href}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="inline-flex items-center rounded-md border border-white/20 px-3 py-1.5 text-sm font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+									data-appcast-url={link.appcastUrl}
+								>
+									{link.kind === 'github' ? (
+										<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-github"></span>
+									) : link.kind === 'apple' ? (
+										<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
+									) : link.kind === 'external' ? (
+										<ExternalLink width={15} height={15} stroke-width={2} class="mr-2" />
+									) : link.kind === 'docs' ? (
+										<BookText width={15} height={15} stroke-width={2} class="mr-2" />
+									) : link.kind === 'container' ? (
+										<Container width={15} height={15} stroke-width={2} class="mr-2" />
+									) : (
+										<Package width={15} height={15} stroke-width={2} class="mr-2" />
+									)}
+									<span>{link.label}</span>
+								</a>
+							))}
+						</div>
+					</div>
+				</article>
+			))}
+		</div>
+	</section>
+</Layout>
+
+<script>
+	import { fetchLatestAppcastRelease } from '../lib/appcast';
+
+	const plexbarDownloadLink = document.getElementById('plexbar-download-link') as HTMLAnchorElement | null;
+	const plexbarAppcastUrl = plexbarDownloadLink?.dataset.appcastUrl;
+
+	if (plexbarDownloadLink && plexbarAppcastUrl) {
+		fetchLatestAppcastRelease(plexbarAppcastUrl)
+			.then((release) => {
+				plexbarDownloadLink.href = release.downloadUrl;
+			});
+	}
+</script>
