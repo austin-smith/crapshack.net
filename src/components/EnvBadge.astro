@@ -1,0 +1,36 @@
+---
+import Tooltip from './ui/Tooltip.astro';
+import { appEnv, gitSha, gitBranch, builtAtIso } from '../lib/build-info';
+import { formatShortDateTime } from '../lib/datetime';
+---
+{/* Render only behind an isNonProdEnv gate: an unrendered component ships no markup or script. */}
+<div class="fixed left-3 top-3 z-[80] select-none">
+	<div
+		data-tooltip="env-badge-tooltip"
+		aria-describedby="env-badge-tooltip"
+		class="rounded-full border border-white/15 bg-[var(--color-sidebar-bg)] px-2.5 py-1 font-mono text-[10px] font-medium uppercase tracking-widest text-[var(--color-brand)] shadow-sm"
+	>
+		{appEnv}
+	</div>
+	<Tooltip id="env-badge-tooltip" class="left-0 w-max font-mono">
+		<div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 whitespace-nowrap text-[10px]">
+			<span class="uppercase tracking-wider text-white/40">branch</span>
+			<span class="text-white/80">{gitBranch}</span>
+			<span class="uppercase tracking-wider text-white/40">commit</span>
+			<span class="text-white/80">{gitSha}</span>
+			<span class="uppercase tracking-wider text-white/40">built</span>
+			<time id="env-badge-built-at" datetime={builtAtIso} class="text-white/80">
+				{formatShortDateTime(builtAtIso, { utc: true })}
+			</time>
+		</div>
+	</Tooltip>
+</div>
+
+<script>
+	import { builtAtIso } from '../lib/build-info';
+	import { formatShortDateTime } from '../lib/datetime';
+
+	// The static fallback is UTC; swap in the viewer's local time.
+	const builtAt = document.getElementById('env-badge-built-at');
+	if (builtAt) builtAt.textContent = formatShortDateTime(builtAtIso);
+</script>

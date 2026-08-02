@@ -10,7 +10,9 @@
  *   children: `[data-tooltip-caret]`, `[data-tooltip-slot="title"]`,
  *   `[data-tooltip-slot="body"]`.
  * - Targets: `[data-tooltip="<panel-id>"]` sharing the panel's offset parent,
- *   with content in `data-tooltip-title` / `data-tooltip-body`.
+ *   with content in `data-tooltip-title` / `data-tooltip-body`. Both are
+ *   optional; a panel may instead carry static slotted content, which this
+ *   module never touches.
  *
  * JS only positions and toggles state: it sets `top` and caret `left`, and
  * reflects state as `data-open` and `data-placement="below" | "above"` on the
