@@ -32,7 +32,6 @@ class SidebarController {
   private isOpen = false;
   private lastFocused: Element | null = null;
   private readonly prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  private lastInteraction: 'pointer' | 'keyboard' = 'pointer';
   private scrollY = 0;
 
   constructor(args: { sidebar: HTMLElement; overlay: HTMLElement; toggle: HTMLButtonElement }) {
@@ -49,14 +48,6 @@ class SidebarController {
       if (this.isOpen) this.close();
     });
     document.addEventListener('keydown', this.onKeyDown);
-
-    // Track last interaction type to decide initial focus target on open
-    window.addEventListener('pointerdown', () => {
-      this.lastInteraction = 'pointer';
-    }, { passive: true });
-    window.addEventListener('keydown', () => {
-      this.lastInteraction = 'keyboard';
-    });
 
     // Close after clicking any link within the sidebar (but not ctrl/cmd/middle-click for new tab)
     this.sidebar.addEventListener('click', (e) => {
