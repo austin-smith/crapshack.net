@@ -38,6 +38,16 @@ export const plexbar = {
 	appcastUrl: 'https://austin-smith.github.io/PlexBar/appcast.xml',
 };
 
+export const spotuify = {
+	name: 'spotuify',
+	sidebarLabel: 'spotuify',
+	href: '/spotuify',
+	icon: '/images/spotuify/spotuify.png',
+	description: 'Spotify in ur terminal. Interactive TUI and scriptable CLI.',
+	repoUrl: 'https://github.com/austin-smith/spotuify',
+	npmUrl: 'https://www.npmjs.com/package/spotuify',
+};
+
 export const stuckers = {
 	name: 'Stuckers',
 	sidebarLabel: 'stuckers',
@@ -60,4 +70,4 @@ export const webhooks = {
 	npmUrl: 'https://www.npmjs.com/package/whlol',
 };
 
-export const apps = [bitdream, computerSolitaire, crapdash, plexbar, stuckers, webhooks];
+export const apps = [bitdream, computerSolitaire, crapdash, plexbar, spotuify, stuckers, webhooks];

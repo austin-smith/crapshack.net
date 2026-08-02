@@ -1,0 +1,224 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { spotuify } from '../data/apps';
+import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
+import {
+	AudioLines,
+	Check,
+	Copy,
+	Image,
+	MicVocal,
+	MonitorSpeaker,
+	Package,
+	Search,
+	Terminal,
+} from '@lucide/astro';
+
+const { repoUrl, npmUrl, icon: iconUrl, description } = spotuify;
+const releasesUrl = `${repoUrl}/releases`;
+const installCommands = [
+	{ label: 'npm (macOS, Linux, Windows)', command: 'npm install -g spotuify' },
+	{ label: 'Homebrew (macOS)', command: 'brew install austin-smith/tap/spotuify' },
+];
+const screenshots = [
+	{
+		id: 'now-playing',
+		label: 'now playing',
+		src: '/images/spotuify/screen-grabs/screen-grab-now-playing.png',
+		alt: 'spotuify now playing view with album art filling the terminal',
+	},
+];
+
+const features = [
+	{
+		title: 'Terminal playback',
+		icon: AudioLines,
+		body: '320 kbps playback via a built-in Rust librespot engine.',
+	},
+	{
+		title: 'Album art',
+		icon: Image,
+		body: 'Full-window cover art, super-sampled to the terminal.',
+	},
+	{
+		title: 'Search',
+		icon: Search,
+		body: 'Track, artist, album, and playlist search with drill-down into every result.',
+	},
+	{
+		title: 'Lyrics',
+		icon: MicVocal,
+		body: 'Lyrics with a follow-along mode synced to playback.',
+	},
+	{
+		title: 'Spotify Connect',
+		icon: MonitorSpeaker,
+		body: "Shows up in the Spotify device list, and can control other devices.",
+	},
+	{
+		title: 'Scriptable CLI',
+		icon: Terminal,
+		body: 'Playback, library, and playlist control with JSON output and shell completions.',
+	},
+];
+
+---
+
+<Layout
+	title={`crapshack (${spotuify.name.toLowerCase()})`}
+	ogImage="/open-graph/spotuify.png"
+	noIndex={true}
+>
+	<section class="mx-auto mt-10 max-w-3xl space-y-8">
+		<header class="flex items-center gap-4">
+			<img src={iconUrl} alt="spotuify icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
+			<div>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">spotuify</h1>
+				<p class="text-white/90">{description}</p>
+			</div>
+		</header>
+
+		<div class="flex flex-wrap gap-2 sm:gap-3">
+			<a
+				href={repoUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-black hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
+				<span>github</span>
+			</a>
+			<a
+				href={releasesUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<Package width={16} height={16} stroke-width={2} class="mr-2" />
+				<span>releases</span>
+			</a>
+			<a
+				href={npmUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+			>
+				<Package width={16} height={16} stroke-width={2} class="mr-2" />
+				<span>npm</span>
+			</a>
+		</div>
+
+		<ScreenshotGallery
+			name="spotuify"
+			screenshots={screenshots}
+			dialogAriaLabel="spotuify screenshot dialog"
+			toggleAriaLabel="Screenshot view"
+		/>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
+			<div class="grid grid-cols-2 gap-3 lg:grid-cols-3">
+				{features.map((feature) => (
+					<article class="rounded-lg border border-white/10 bg-white/[0.04] p-4 shadow-lg">
+						<h3 class="flex items-center gap-2 font-mono font-semibold text-[var(--color-text)]">
+							<feature.icon width={18} height={18} stroke-width={2} class="text-[var(--color-brand)]" />
+							<span>{feature.title}</span>
+						</h3>
+						<p class="mt-2 text-sm text-white/80">{feature.body}</p>
+					</article>
+				))}
+			</div>
+		</section>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Install</h2>
+			<div class="space-y-3">
+				{installCommands.map(({ label, command }) => (
+					<div class="space-y-1">
+						<p class="font-mono text-sm text-white/80">{label}</p>
+						<div class="flex w-fit max-w-full items-center gap-3 rounded-lg bg-black/40 px-4 py-2.5">
+							<pre class="overflow-x-auto text-sm"><code class="text-white/90">{command}</code></pre>
+							<button
+								type="button"
+								data-copy-command={command}
+								class="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+								aria-label={`Copy ${command}`}
+							>
+								<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
+								<Check class="check-icon hidden" width={16} height={16} stroke-width={2} />
+							</button>
+						</div>
+					</div>
+				))}
+			</div>
+			<p class="text-white/95">
+				Direct downloads for macOS, Linux, and Windows are on
+				<a
+					href={releasesUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]"
+				>GitHub Releases</a>.
+			</p>
+		</section>
+
+		<section class="space-y-3">
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># First-time setup</h2>
+			<ul class="list-disc pl-6 space-y-1 text-white/95">
+				<li>
+					A <a
+						href="https://developer.spotify.com/dashboard"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]"
+					>Spotify Developer</a> app (<code class="inline-code">spotuify auth</code> walks through creating one)
+				</li>
+				<li>
+					A <a
+						href="https://www.spotify.com/premium/"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]"
+					>Spotify Premium</a> subscription (required for playback)
+				</li>
+			</ul>
+			<p class="text-white/95">Run the guided setup:</p>
+			<div class="flex w-fit max-w-full items-center gap-3 rounded-lg bg-black/40 px-4 py-2.5">
+				<pre class="overflow-x-auto text-sm"><code class="text-white/90">spotuify auth</code></pre>
+				<button
+					type="button"
+					data-copy-command="spotuify auth"
+					class="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+					aria-label="Copy spotuify auth"
+				>
+					<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
+					<Check class="check-icon hidden" width={16} height={16} stroke-width={2} />
+				</button>
+			</div>
+		</section>
+
+	</section>
+</Layout>
+
+<script>
+	import { copyTextToClipboard } from '../lib/clipboard';
+
+	document.querySelectorAll<HTMLButtonElement>('button[data-copy-command]').forEach((button) => {
+		const copyIcon = button.querySelector('.copy-icon');
+		const checkIcon = button.querySelector('.check-icon');
+
+		button.addEventListener('click', async () => {
+			const success = await copyTextToClipboard(button.dataset.copyCommand ?? '');
+
+			if (success && copyIcon && checkIcon) {
+				copyIcon.classList.add('hidden');
+				checkIcon.classList.remove('hidden');
+
+				setTimeout(() => {
+					copyIcon.classList.remove('hidden');
+					checkIcon.classList.add('hidden');
+				}, 2000);
+			}
+		});
+	});
+</script>
