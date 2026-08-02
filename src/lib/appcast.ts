@@ -50,3 +50,18 @@ export async function fetchLatestAppcastRelease(appcastUrl: string): Promise<App
 		publishedAt: getItemText(latestItem, 'pubDate'),
 	};
 }
+
+export function initAppcastLinks(): void {
+	const links = document.querySelectorAll<HTMLAnchorElement>('a[data-appcast-url]');
+	for (const link of links) {
+		const appcastUrl = link.dataset.appcastUrl;
+		if (!appcastUrl) continue;
+		fetchLatestAppcastRelease(appcastUrl)
+			.then((release) => {
+				link.href = release.downloadUrl;
+			})
+			.catch(() => {
+				// keep the fallback href
+			});
+	}
+}

@@ -1,9 +1,10 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { stuckers } from '../data/apps';
 import { Copy, CopyCheck } from '@lucide/astro';
 type Sticker = { name: string; src: string; alt: string };
 
-const appStoreUrl = 'https://apps.apple.com/us/app/stuckers/id1173389437';
+const { appStoreUrl } = stuckers;
 
 const stickers: Sticker[] = [
 	{ name: 'popcorn', src: '/images/stuckers/stickers/popcorn.gif', alt: 'popcorn' },

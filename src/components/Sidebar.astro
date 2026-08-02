@@ -2,43 +2,15 @@
 import WeatherToggle from './WeatherToggle.astro';
 import { Clapperboard, LayoutGrid, MessageSquarePlus } from '@lucide/astro';
 import packageJson from '../../package.json';
+import { apps } from '../data/apps';
 
 const version = packageJson.version;
-const repoUrl = typeof packageJson.repository === 'string' 
-  ? packageJson.repository 
+const repoUrl = typeof packageJson.repository === 'string'
+  ? packageJson.repository
   : packageJson.repository?.url || '';
-const appLinks = [
-	{
-		href: '/bitdream',
-		icon: '/images/bitdream/bitdream.png',
-		label: 'bitdream',
-	},
-	{
-		href: '/crapdash',
-		icon: '/images/crapdash/compy.png',
-		label: 'crapdash',
-	},
-	{
-		href: '/computer-solitaire',
-		icon: '/images/computer-solitaire/computer-solitaire-icon.png',
-		label: 'solitaire',
-	},
-	{
-		href: '/plexbar',
-		icon: '/images/plexbar/plexbar.png',
-		label: 'plexbar',
-	},
-	{
-		href: '/stuckers-app',
-		icon: '/images/stuckers/stuckers-icon.png',
-		label: 'stuckers',
-	},
-	{
-		href: '/webhooks-lol',
-		icon: '/images/webhooks-lol/webhooks-lol.png',
-		label: 'webhooks',
-	},
-].sort((a, b) => a.label.localeCompare(b.label));
+const appLinks = apps
+	.map((app) => ({ href: app.href, icon: app.icon, label: app.sidebarLabel }))
+	.sort((a, b) => a.label.localeCompare(b.label));
 ---
 <div id="sidebar-overlay" class="fixed inset-0 z-[90] bg-black/20"></div>
 

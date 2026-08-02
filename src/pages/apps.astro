@@ -2,105 +2,34 @@
 import { BookText, Container, ExternalLink, Package } from '@lucide/astro';
 import Layout from '../layouts/Layout.astro';
 
-const bitdreamRelease = {
-	releaseTag: 'v1.2.0',
-	dmgAssetName: 'BitDream-v1.2.0-arm64.dmg',
+import { apps } from '../data/apps';
+
+const cardScreenshots: Record<string, { src: string; alt: string }> = {
+	BitDream: { src: '/images/bitdream/screen-grabs/screen-grab-light.png', alt: 'BitDream (light mode)' },
+	'Computer Solitaire': { src: '/images/computer-solitaire/screen-grabs/screen-grab-macos.png', alt: 'Computer Solitaire on macOS' },
+	crapdash: { src: '/images/crapdash/screen-grabs/screen-grab-light.png', alt: 'crapdash (light mode)' },
+	PlexBar: { src: '/images/plexbar/screen-grabs/screen-grab-streams.png', alt: 'PlexBar active streams view' },
+	Stuckers: { src: '/images/stuckers/screen-grabs/screengrab-all.png', alt: 'stucker overview' },
+	'webhooks.lol': { src: '/images/webhooks-lol/screen-grabs/screen-grab-light.png', alt: 'webhooks.lol (light mode)' },
 };
 
-const apps = [
-	{
-		name: 'BitDream',
-		href: '/bitdream',
-		icon: '/images/bitdream/bitdream.png',
-		screenshot: '/images/bitdream/screen-grabs/screen-grab-light.png',
-		screenshotAlt: 'BitDream (light mode)',
-		description: 'A native, feature-rich remote control client for Transmission web server.',
-		links: [
-			{ label: 'github', href: 'https://github.com/austin-smith/BitDream', kind: 'github' },
-			{ label: 'releases', href: 'https://github.com/austin-smith/BitDream/releases' },
-			{
-				label: 'macOS',
-				href: `https://github.com/austin-smith/BitDream/releases/download/${bitdreamRelease.releaseTag}/${bitdreamRelease.dmgAssetName}`,
-				kind: 'apple',
-			},
-		],
-	},
-	{
-		name: 'Computer Solitaire',
-		href: '/computer-solitaire',
-		icon: '/images/computer-solitaire/computer-solitaire-icon.png',
-		screenshot: '/images/computer-solitaire/screen-grabs/screen-grab-macos.png',
-		screenshotAlt: 'Computer Solitaire on macOS',
-		description: 'A fully native Solitaire app for iOS, iPadOS, and macOS.',
-		links: [
-			{ label: 'github', href: 'https://github.com/austin-smith/ComputerSolitaire', kind: 'github' },
-			{ label: 'releases', href: 'https://github.com/austin-smith/ComputerSolitaire/releases' },
-			{
-				label: 'macOS',
-				href: 'https://github.com/austin-smith/ComputerSolitaire/releases',
-				kind: 'apple',
-				appcastUrl: 'https://austin-smith.github.io/ComputerSolitaire/appcast.xml',
-			},
-		],
-	},
-	{
-		name: 'crapdash',
-		href: '/crapdash',
-		icon: '/images/crapdash/compy.png',
-		screenshot: '/images/crapdash/screen-grabs/screen-grab-light.png',
-		screenshotAlt: 'crapdash (light mode)',
-		description: 'Low-frills, customizable homepage to organize your links and services.',
-		links: [
-			{ label: 'github', href: 'https://github.com/austin-smith/crapdash', kind: 'github' },
-			{ label: 'releases', href: 'https://github.com/austin-smith/crapdash/releases' },
-			{ label: 'docker image', href: 'https://github.com/austin-smith/crapdash/pkgs/container/crapdash', kind: 'container' },
-		],
-	},
-	{
-		name: 'PlexBar',
-		href: '/plexbar',
-		icon: '/images/plexbar/plexbar.png',
-		screenshot: '/images/plexbar/screen-grabs/screen-grab-streams.png',
-		screenshotAlt: 'PlexBar active streams view',
-		description: 'A lightweight macOS menu bar app for Plex server telemetry.',
-		links: [
-			{ label: 'github', href: 'https://github.com/austin-smith/PlexBar', kind: 'github' },
-			{ label: 'releases', href: 'https://github.com/austin-smith/PlexBar/releases' },
-			{
-				label: 'macOS',
-				href: 'https://github.com/austin-smith/PlexBar/releases',
-				kind: 'apple',
-				appcastUrl: 'https://austin-smith.github.io/PlexBar/appcast.xml',
-			},
-		],
-	},
-	{
-		name: 'Stuckers',
-		href: '/stuckers-app',
-		icon: '/images/stuckers/stuckers-icon.png',
-		screenshot: '/images/stuckers/screen-grabs/screengrab-all.png',
-		screenshotAlt: 'stucker overview',
-		description: 'Hand-drawn animated sticker pack for iMessage. (i.e., stickers for phone.)',
-		links: [
-			{ label: 'github', href: 'https://github.com/austin-smith/Stuckers', kind: 'github' },
-			{ label: 'app store', href: 'https://apps.apple.com/us/app/stuckers/id1173389437', kind: 'apple' },
-		],
-	},
-	{
-		name: 'webhooks.lol',
-		href: '/webhooks-lol',
-		icon: '/images/webhooks-lol/webhooks-lol.png',
-		screenshot: '/images/webhooks-lol/screen-grabs/screen-grab-light.png',
-		screenshotAlt: 'webhooks.lol (light mode)',
-		description: 'A small webhook endpoint for receiving and inspecting HTTP requests.',
-		links: [
-			{ label: 'github', href: 'https://github.com/austin-smith/webhooks.lol', kind: 'github' },
-			{ label: 'web app', href: 'https://webhooks.lol', kind: 'external' },
-			{ label: 'docs', href: 'https://docs.webhooks.lol', kind: 'docs' },
-			{ label: 'npm', href: 'https://www.npmjs.com/package/whlol' },
-		],
-	},
-];
+const appCards = apps.map((app) => ({
+	...app,
+	screenshot: cardScreenshots[app.name].src,
+	screenshotAlt: cardScreenshots[app.name].alt,
+	links: [
+		{ label: 'github', href: app.repoUrl, kind: 'github' },
+		{ label: 'releases', href: `${app.repoUrl}/releases` },
+		app.appcastUrl
+			? { label: 'macOS', href: `${app.repoUrl}/releases`, kind: 'apple', appcastUrl: app.appcastUrl }
+			: app.directDownloadUrl && { label: 'macOS', href: app.directDownloadUrl, kind: 'apple' },
+		app.dockerUrl && { label: 'docker image', href: app.dockerUrl, kind: 'container' },
+		app.appStoreUrl && { label: 'app store', href: app.appStoreUrl, kind: 'apple' },
+		app.appUrl && { label: 'web app', href: app.appUrl, kind: 'external' },
+		app.docsUrl && { label: 'docs', href: app.docsUrl, kind: 'docs' },
+		app.npmUrl && { label: 'npm', href: app.npmUrl },
+	].filter(Boolean),
+}));
 ---
 
 <Layout title="crapshack (apps)">
@@ -110,7 +39,7 @@ const apps = [
 		</header>
 
 		<div class="grid gap-4 md:grid-cols-2">
-			{apps.map((app) => (
+			{appCards.map((app) => (
 				<article id={app.name.toLowerCase().replaceAll(' ', '-')} class="flex flex-col overflow-hidden rounded-lg border border-white/10 bg-white/[0.04] shadow-lg scroll-mt-8">
 					<a href={app.href} class="block border-b border-white/10 bg-black/20 p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 						<div class="grid aspect-[16/10] place-items-center overflow-hidden rounded-md bg-white/5">
@@ -165,19 +94,7 @@ const apps = [
 </Layout>
 
 <script>
-	import { fetchLatestAppcastRelease } from '../lib/appcast';
+	import { initAppcastLinks } from '../lib/appcast';
 
-	const appcastLinks = document.querySelectorAll<HTMLAnchorElement>('a[data-appcast-url]');
-
-	for (const link of appcastLinks) {
-		const appcastUrl = link.dataset.appcastUrl;
-		if (!appcastUrl) continue;
-		fetchLatestAppcastRelease(appcastUrl)
-			.then((release) => {
-				link.href = release.downloadUrl;
-			})
-			.catch(() => {
-				// keep the releases-page fallback href
-			});
-	}
+	initAppcastLinks();
 </script>
