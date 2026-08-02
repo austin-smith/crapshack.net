@@ -11,8 +11,8 @@ const { id, class: className } = Astro.props;
 
 <div id={id} class={`tooltip-panel ${className ?? ''}`} role="tooltip" data-tooltip-panel>
 	<span class="tooltip-caret" data-tooltip-caret aria-hidden="true"></span>
-	<p class="tooltip-title" data-tooltip-slot="title"></p>
-	<p class="tooltip-body" data-tooltip-slot="body"></p>
+	<p class="tooltip-title" data-tooltip-slot="title" hidden></p>
+	<p class="tooltip-body" data-tooltip-slot="body" hidden></p>
 </div>
 
 <script>

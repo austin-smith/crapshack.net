@@ -52,14 +52,19 @@ function initTooltip(panel: HTMLElement): void {
 
 		const height = panel.offsetHeight;
 		const belowTop = target.offsetTop + target.offsetHeight + TARGET_GAP_PX;
+		const aboveTop = target.offsetTop - height - TARGET_GAP_PX;
+		// Prefer below; flip above only when below overflows the container and
+		// above actually fits. Containers that don't scroll simply overflow.
 		const fitsBelow = belowTop + height <= container.scrollTop + container.clientHeight;
+		const fitsAbove = aboveTop >= container.scrollTop;
+		const below = fitsBelow || !fitsAbove;
 
 		const glide = visible && !prefersReducedMotion.matches;
 		panel.style.transitionProperty = prefersReducedMotion.matches
 			? 'none'
 			: glide ? 'opacity, top' : 'opacity';
-		panel.style.top = `${fitsBelow ? belowTop : target.offsetTop - height - TARGET_GAP_PX}px`;
-		panel.dataset.placement = fitsBelow ? 'below' : 'above';
+		panel.style.top = `${below ? belowTop : aboveTop}px`;
+		panel.dataset.placement = below ? 'below' : 'above';
 		if (caret) {
 			caret.style.transitionProperty = glide ? 'left' : 'none';
 			caret.style.left = `${target.offsetLeft + target.offsetWidth / 2 - panel.offsetLeft - caret.offsetWidth / 2}px`;
@@ -95,8 +100,13 @@ function initTooltip(panel: HTMLElement): void {
 	targets.forEach((target) => {
 		target.addEventListener('mouseenter', () => scheduleShow(target));
 		target.addEventListener('mouseleave', () => scheduleHide());
-		target.addEventListener('focusin', () => show(target));
+		// Only keyboard-driven focus shows the tooltip; programmatic refocus
+		// (e.g. a closing dialog restoring focus) stays quiet.
+		target.addEventListener('focusin', () => {
+			if (target.matches(':focus-visible')) show(target);
+		});
 		target.addEventListener('focusout', () => hide());
+		target.addEventListener('click', () => hide());
 	});
 	container.addEventListener('scroll', () => hide(), { passive: true });
 

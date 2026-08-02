@@ -280,12 +280,10 @@ function initSidebar(): void {
   // Initialize collapsible sections within sidebar
   initCollapsibles(sidebar);
 
-  // The sidebar can close without a mouseleave (Cmd+B, link click), so hide
-  // any open tooltips inside it when it does.
+  // The sidebar can open or close under a shown tooltip without a mouseleave
+  // (Cmd+B, link click), so hide any visible tooltip on state change.
   new MutationObserver(() => {
-    if (!document.documentElement.hasAttribute('data-sidebar-open')) {
-      hideTooltips(sidebar);
-    }
+    hideTooltips();
   }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-sidebar-open'] });
 }
 
