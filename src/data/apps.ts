@@ -41,7 +41,7 @@ export const plexbar = {
 export const stuckers = {
 	name: 'Stuckers',
 	sidebarLabel: 'stuckers',
-	href: '/stuckers-app',
+	href: '/stuckers',
 	icon: '/images/stuckers/stuckers-icon.png',
 	description: 'Hand-drawn animated sticker pack for iMessage. (i.e., stickers for phone.)',
 	repoUrl: 'https://github.com/austin-smith/Stuckers',
