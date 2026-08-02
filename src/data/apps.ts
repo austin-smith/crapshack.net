@@ -1,3 +1,19 @@
+interface AppDefinition {
+	name: string;
+	sidebarLabel: string;
+	href: string;
+	icon: string;
+	description: string;
+	repoUrl: string;
+	directDownloadUrl?: string;
+	appcastUrl?: string;
+	dockerUrl?: string;
+	appStoreUrl?: string;
+	appUrl?: string;
+	docsUrl?: string;
+	npmUrl?: string;
+}
+
 export const bitdream = {
 	name: 'BitDream',
 	sidebarLabel: 'bitdream',
@@ -70,4 +86,4 @@ export const webhooks = {
 	npmUrl: 'https://www.npmjs.com/package/whlol',
 };
 
-export const apps = [bitdream, computerSolitaire, crapdash, plexbar, spotuify, stuckers, webhooks];
+export const apps: AppDefinition[] = [bitdream, computerSolitaire, crapdash, plexbar, spotuify, stuckers, webhooks];

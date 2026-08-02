@@ -5,6 +5,9 @@ interface Props {
 	/** Positioning within the panel's offset parent, e.g. inset classes. */
 	class?: string;
 }
+// Targets fill the title/body slots via data-tooltip-title / data-tooltip-body;
+// either may be omitted. Slotted children render as-is below them, for panels
+// whose content doesn't fit the title/body shape.
 
 const { id, class: className } = Astro.props;
 ---
@@ -13,6 +16,7 @@ const { id, class: className } = Astro.props;
 	<span class="tooltip-caret" data-tooltip-caret aria-hidden="true"></span>
 	<p class="tooltip-title" data-tooltip-slot="title" hidden></p>
 	<p class="tooltip-body" data-tooltip-slot="body" hidden></p>
+	<slot />
 </div>
 
 <script>
