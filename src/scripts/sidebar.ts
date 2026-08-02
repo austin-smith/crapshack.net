@@ -215,8 +215,7 @@ class SidebarController {
     this.lastFocused = document.activeElement;
     this.sidebar.classList.remove('translate-x-full');
     this.sidebar.classList.add('translate-x-0');
-    this.overlay.classList.remove('hidden');
-    // Consolidate state on <html>
+    // Consolidate state on <html>; overlay visibility is CSS-driven off this attribute
     this.htmlEl.setAttribute('data-sidebar-open', 'true');
 
     // Lock scroll without layout shift: fix body and compensate for scrollbar width
@@ -240,8 +239,7 @@ class SidebarController {
     this.isOpen = false;
     this.sidebar.classList.add('translate-x-full');
     this.sidebar.classList.remove('translate-x-0');
-    this.overlay.classList.add('hidden');
-    // Release consolidated state
+    // Release consolidated state; overlay fades out via CSS
     this.htmlEl.removeAttribute('data-sidebar-open');
 
     // Restore scroll

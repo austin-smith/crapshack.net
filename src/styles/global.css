@@ -533,6 +533,28 @@
 		grid-template-rows: 1fr;
 	}
 
+	/* Sidebar overlay scrim: fades in with the panel, click-through when closed */
+	#sidebar-overlay {
+		opacity: 0;
+		pointer-events: none;
+		backdrop-filter: blur(0px);
+		-webkit-backdrop-filter: blur(0px);
+		transition: opacity 300ms ease-out, backdrop-filter 300ms ease-out, -webkit-backdrop-filter 300ms ease-out;
+	}
+
+	html[data-sidebar-open="true"] #sidebar-overlay {
+		opacity: 1;
+		pointer-events: auto;
+		backdrop-filter: blur(2px);
+		-webkit-backdrop-filter: blur(2px);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#sidebar-overlay {
+			transition: none;
+		}
+	}
+
 	/* Sidebar shadow only when expanded */
 	html[data-sidebar-open="true"] #site-sidebar {
 		box-shadow:
