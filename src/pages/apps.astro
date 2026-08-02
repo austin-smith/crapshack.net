@@ -6,10 +6,6 @@ const bitdreamRelease = {
 	releaseTag: 'v1.2.0',
 	dmgAssetName: 'BitDream-v1.2.0-arm64.dmg',
 };
-const computerSolitaireRelease = {
-	releaseTag: 'v0.8.0',
-	dmgAssetName: 'ComputerSolitaire-v0.8.0-arm64.dmg',
-};
 
 const apps = [
 	{
@@ -41,8 +37,9 @@ const apps = [
 			{ label: 'releases', href: 'https://github.com/austin-smith/ComputerSolitaire/releases' },
 			{
 				label: 'macOS',
-				href: `https://github.com/austin-smith/ComputerSolitaire/releases/download/${computerSolitaireRelease.releaseTag}/${computerSolitaireRelease.dmgAssetName}`,
+				href: 'https://github.com/austin-smith/ComputerSolitaire/releases',
 				kind: 'apple',
+				appcastUrl: 'https://austin-smith.github.io/ComputerSolitaire/appcast.xml',
 			},
 		],
 	},
@@ -137,7 +134,6 @@ const apps = [
 							</a>
 							{app.links.map((link) => (
 								<a
-									id={link.appcastUrl ? 'plexbar-download-link' : undefined}
 									href={link.href}
 									target="_blank"
 									rel="noopener noreferrer"
@@ -171,13 +167,17 @@ const apps = [
 <script>
 	import { fetchLatestAppcastRelease } from '../lib/appcast';
 
-	const plexbarDownloadLink = document.getElementById('plexbar-download-link') as HTMLAnchorElement | null;
-	const plexbarAppcastUrl = plexbarDownloadLink?.dataset.appcastUrl;
+	const appcastLinks = document.querySelectorAll<HTMLAnchorElement>('a[data-appcast-url]');
 
-	if (plexbarDownloadLink && plexbarAppcastUrl) {
-		fetchLatestAppcastRelease(plexbarAppcastUrl)
+	for (const link of appcastLinks) {
+		const appcastUrl = link.dataset.appcastUrl;
+		if (!appcastUrl) continue;
+		fetchLatestAppcastRelease(appcastUrl)
 			.then((release) => {
-				plexbarDownloadLink.href = release.downloadUrl;
+				link.href = release.downloadUrl;
+			})
+			.catch(() => {
+				// keep the releases-page fallback href
 			});
 	}
 </script>
