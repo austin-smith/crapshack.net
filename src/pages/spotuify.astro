@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { spotuify } from '../data/apps';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
+import ToggleGroup from '../components/ui/ToggleGroup.astro';
 import {
 	AudioLines,
 	Check,
@@ -16,9 +17,32 @@ import {
 
 const { repoUrl, npmUrl, icon: iconUrl, description } = spotuify;
 const releasesUrl = `${repoUrl}/releases`;
-const installCommands = [
-	{ label: 'npm (macOS, Linux, Windows)', command: 'npm install -g spotuify' },
-	{ label: 'Homebrew (macOS)', command: 'brew install austin-smith/tap/spotuify' },
+const installMethods = [
+	// TODO: uncomment the standalone installer tabs once the install scripts are fully tested
+	// {
+	// 	value: 'macos-linux',
+	// 	tab: 'macOS/Linux',
+	// 	caption: 'Standalone installer for Apple Silicon macOS and Linux (x64/arm64).',
+	// 	command: 'curl -fsSL https://crapshack.net/spotuify/install.sh | sh',
+	// },
+	// {
+	// 	value: 'windows',
+	// 	tab: 'Windows',
+	// 	caption: 'Standalone installer for Windows (x64).',
+	// 	command: 'irm https://crapshack.net/spotuify/install.ps1 | iex',
+	// },
+	{
+		value: 'npm',
+		tab: 'npm',
+		caption: 'Global npm install for macOS, Linux, and Windows.',
+		command: 'npm install -g spotuify',
+	},
+	{
+		value: 'homebrew',
+		tab: 'Homebrew',
+		caption: 'Homebrew tap install for macOS.',
+		command: 'brew install austin-smith/tap/spotuify',
+	},
 ];
 const screenshots = [
 	{
@@ -132,21 +156,44 @@ const features = [
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Install</h2>
-			<div class="space-y-3">
-				{installCommands.map(({ label, command }) => (
-					<div class="space-y-1">
-						<p class="font-mono text-sm text-white/80">{label}</p>
-						<div class="flex w-fit max-w-full items-center gap-3 rounded-lg bg-black/40 px-4 py-2.5">
-							<pre class="overflow-x-auto text-sm"><code class="text-white/90">{command}</code></pre>
-							<button
-								type="button"
-								data-copy-command={command}
-								class="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-								aria-label={`Copy ${command}`}
-							>
-								<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
-								<Check class="check-icon hidden" width={16} height={16} stroke-width={2} />
-							</button>
+			<ToggleGroup
+				name="spotuify-install-method"
+				options={installMethods.map(({ value, tab }) => ({ value, label: tab }))}
+				ariaLabel="Install method"
+			/>
+			<div>
+				{installMethods.map(({ value, caption, command }, index) => (
+					<div data-install-pane={value} class:list={['space-y-3', { hidden: index !== 0 }]}>
+						<p class="text-white/95">{caption}</p>
+						<div class="space-y-1">
+							<p class="font-mono text-sm text-white/80">Install spotuify</p>
+							<div class="flex items-center justify-between gap-3 rounded-lg bg-black/40 px-4 py-2.5">
+								<pre class="overflow-x-auto text-sm"><code class="text-white/90">{command}</code></pre>
+								<button
+									type="button"
+									data-copy-command={command}
+									class="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+									aria-label={`Copy ${command}`}
+								>
+									<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
+									<Check class="check-icon hidden" width={16} height={16} stroke-width={2} />
+								</button>
+							</div>
+						</div>
+						<div class="space-y-1">
+							<p class="font-mono text-sm text-white/80">Update spotuify</p>
+							<div class="flex items-center justify-between gap-3 rounded-lg bg-black/40 px-4 py-2.5">
+								<pre class="overflow-x-auto text-sm"><code class="text-white/90">spotuify update</code></pre>
+								<button
+									type="button"
+									data-copy-command="spotuify update"
+									class="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+									aria-label="Copy spotuify update"
+								>
+									<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
+									<Check class="check-icon hidden" width={16} height={16} stroke-width={2} />
+								</button>
+							</div>
 						</div>
 					</div>
 				))}
@@ -163,7 +210,7 @@ const features = [
 		</section>
 
 		<section class="space-y-3">
-			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># First-time setup</h2>
+			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># First-time Setup</h2>
 			<ul class="list-disc pl-6 space-y-1 text-white/95">
 				<li>
 					A <a
@@ -182,18 +229,20 @@ const features = [
 					>Spotify Premium</a> subscription (required for playback)
 				</li>
 			</ul>
-			<p class="text-white/95">Run the guided setup:</p>
-			<div class="flex w-fit max-w-full items-center gap-3 rounded-lg bg-black/40 px-4 py-2.5">
-				<pre class="overflow-x-auto text-sm"><code class="text-white/90">spotuify auth</code></pre>
-				<button
-					type="button"
-					data-copy-command="spotuify auth"
-					class="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-					aria-label="Copy spotuify auth"
-				>
-					<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
-					<Check class="check-icon hidden" width={16} height={16} stroke-width={2} />
-				</button>
+			<div class="space-y-1">
+				<p class="font-mono text-sm text-white/80">Guided setup</p>
+				<div class="flex items-center justify-between gap-3 rounded-lg bg-black/40 px-4 py-2.5">
+					<pre class="overflow-x-auto text-sm"><code class="text-white/90">spotuify auth</code></pre>
+					<button
+						type="button"
+						data-copy-command="spotuify auth"
+						class="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+						aria-label="Copy spotuify auth"
+					>
+						<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
+						<Check class="check-icon hidden" width={16} height={16} stroke-width={2} />
+					</button>
+				</div>
 			</div>
 		</section>
 
@@ -202,6 +251,15 @@ const features = [
 
 <script>
 	import { copyTextToClipboard } from '../lib/clipboard';
+
+	const installPanes = document.querySelectorAll<HTMLElement>('[data-install-pane]');
+	const installToggle = document.querySelector('[data-toggle-group="spotuify-install-method"]');
+
+	installToggle?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
+		installPanes.forEach((pane) => {
+			pane.classList.toggle('hidden', pane.dataset.installPane !== e.detail.value);
+		});
+	}) as EventListener);
 
 	document.querySelectorAll<HTMLButtonElement>('button[data-copy-command]').forEach((button) => {
 		const copyIcon = button.querySelector('.copy-icon');
