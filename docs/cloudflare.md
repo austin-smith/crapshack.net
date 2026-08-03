@@ -1,0 +1,10 @@
+# Cloudflare routing
+
+## Redirect rules
+
+| Order | Rule name | Match | Action |
+| --- | --- | --- | --- |
+| 1 | `Redirect /ombi requests` | `starts_with(http.request.uri.path, "/ombi")` | `301` to `concat("https://ombi.crapshack.net", substring(http.request.uri.path, 5))` |
+| 2 | `Redirect from /privacy.html` | `http.request.uri.path eq "/privacy.html"` | `301` to `https://crapshack.net/privacy` |
+| 3 | `spotuify .sh installer` | `http.request.uri.path eq "/spotuify/install.sh"` | `302` to `https://github.com/austin-smith/spotuify/releases/latest/download/install.sh` |
+| 4 | `spotuify .ps1 installer` | `http.request.uri.path eq "/spotuify/install.ps1"` | `302` to `https://github.com/austin-smith/spotuify/releases/latest/download/install.ps1` |
