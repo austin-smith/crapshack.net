@@ -1,26 +1,51 @@
 ---
-import { Monitor, Moon, Sun } from '@lucide/astro';
+interface Props {
+	/** Id of a visible label that names this group. Falls back to an aria-label. */
+	labelledBy?: string;
+}
+
+const { labelledBy } = Astro.props as Props;
+
+// `preview` is the data-theme each swatch paints in; `system` shows both, split
+// on the diagonal. theme.ts swaps dark's to `black` when that variant is on.
 const options = [
-	{ value: 'system', label: 'system', Icon: Monitor },
-	{ value: 'light', label: 'light', Icon: Sun },
-	{ value: 'dark', label: 'dark', Icon: Moon },
+	{ value: 'system', label: 'system', preview: 'light', second: 'dark' },
+	{ value: 'light', label: 'light', preview: 'light' },
+	{ value: 'dark', label: 'dark', preview: 'dark' },
 ];
 ---
 
-<div class="px-0 pb-0">
-	<div role="radiogroup" aria-label="Color theme" aria-orientation="horizontal" class="flex rounded-md border border-line-subtle p-0.5">
-		{options.map(({ value, label, Icon }) => (
-			<button
-				data-theme-option={value}
-				role="radio"
-				aria-checked="false"
-				tabindex="-1"
-				type="button"
-				class="relative basis-0 flex-1 inline-flex flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1.5 text-[var(--color-text)] transition-colors hover:text-[var(--color-accent)] focus-visible:outline-none data-[checked]:text-[var(--color-accent)] before:content-[''] before:absolute before:rounded-md before:opacity-0 hover:before:opacity-100 focus-visible:before:opacity-100 data-[checked]:before:opacity-100 hover:before:bg-fill focus-visible:before:bg-fill data-[checked]:before:bg-fill hover:before:inset-0.5 focus-visible:before:inset-0.5 data-[checked]:before:inset-0.5 focus-visible:before:ring-2 focus-visible:before:ring-[var(--color-brand)]"
-			>
-				<Icon width={14} height={14} stroke-width={2} aria-hidden="true" />
-				<span class="text-[10px] leading-3 sm:text-xs">{label}</span>
-			</button>
-		))}
-	</div>
+<div
+	role="radiogroup"
+	aria-label={labelledBy ? undefined : 'Color theme'}
+	aria-labelledby={labelledBy}
+	aria-orientation="horizontal"
+	class="flex gap-3"
+>
+	{options.map(({ value, label, preview, second }) => (
+		<button
+			data-theme-option={value}
+			role="radio"
+			aria-checked="false"
+			tabindex="-1"
+			type="button"
+			class="group flex flex-col items-center gap-1.5 rounded-lg transition-colors focus-visible:outline-none"
+		>
+			<span class="relative block rounded-md ring-1 ring-line ring-offset-2 ring-offset-[var(--app-overlay-to)] transition-shadow group-hover:ring-line-strong group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-brand)] group-data-[checked]:ring-2 group-data-[checked]:ring-[var(--color-accent)]">
+				{/* Panel last so it paints over the marks, like the real fixed sidebar. */}
+				<span class="theme-preview" data-theme={preview} data-theme-preview={value}>
+					<span class="theme-preview-mark"></span>
+					<span class="theme-preview-mark"></span>
+					<span class="theme-preview-panel"></span>
+					{second && (
+						<span class="theme-preview-layer" data-theme={second}>
+							<span class="theme-preview-mark"></span>
+							<span class="theme-preview-panel"></span>
+						</span>
+					)}
+				</span>
+			</span>
+			<span class="text-xs text-dim transition-colors group-hover:text-subtle group-data-[checked]:text-[var(--color-text)]">{label}</span>
+		</button>
+	))}
 </div>

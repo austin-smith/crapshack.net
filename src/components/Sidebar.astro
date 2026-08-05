@@ -1,6 +1,5 @@
 ---
-import ThemeToggle from './ThemeToggle.astro';
-import WeatherToggle from './WeatherToggle.astro';
+import SettingsGear from './icons/animated/SettingsGear.astro';
 import Tooltip from './ui/Tooltip.astro';
 import { LayoutGrid } from '@lucide/astro';
 import packageJson from '../../package.json';
@@ -52,12 +51,21 @@ const appLinks = apps
 		</div>
 		<Tooltip id="sidebar-app-tooltip" class="left-4 right-4 sm:left-5 sm:right-5" />
 	</nav>
-	<div class="mt-auto px-4 sm:px-5 pb-3 sm:pb-4 space-y-3">
-		<ThemeToggle />
-		<WeatherToggle />
+	<div class="mt-auto px-4 sm:px-5 pb-3 sm:pb-4">
+		{/* No aria-describedby: the tooltip only repeats the aria-label. */}
+		<button
+			type="button"
+			data-settings-open
+			aria-label="knobs"
+			data-tooltip="sidebar-knobs-tooltip"
+			data-tooltip-title="knobs"
+			class="group flex size-8 items-center justify-center rounded-md text-dim transition-colors hover:bg-fill hover:text-[var(--color-brand)]"
+		>
+			<SettingsGear size={16} />
+		</button>
 		<div
 			id="sidebar-info"
-			class="hidden text-xs border-t border-line pt-3"
+			class="hidden text-xs border-t border-line mt-3 pt-3"
 		>
 			<a 
 				href={repoUrl}
@@ -74,4 +82,10 @@ const appLinks = apps
 			</a>
 		</div>
 	</div>
+	{/*
+		Its own panel, and a direct child of <aside>: tooltip.ts positions against
+		targets sharing the panel's offset parent, and the nav's is inside <nav>.
+		The inset hand-centres it on the button — retune if the label grows.
+	*/}
+	<Tooltip id="sidebar-knobs-tooltip" class="left-1 sm:left-2 w-max max-w-[calc(100%-1rem)]" />
 </aside>

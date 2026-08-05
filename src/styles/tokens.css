@@ -34,6 +34,7 @@
 	--app-dim-a: 0.6;
 	--app-faint-a: 0.4;
 
+	--app-well-rgb: 0 0 0;
 	--app-well-subtle-a: 0.1;
 	--app-well-a: 0.2;
 	--app-well-strong-a: 0.4;
@@ -75,6 +76,7 @@
 	--app-faint-a: 0.58;
 
 	/* Black over navy darkens less than black over the light blue. */
+	--app-well-rgb: 0 0 0;
 	--app-well-subtle-a: 0.18;
 	--app-well-a: 0.3;
 	--app-well-strong-a: 0.5;
@@ -85,6 +87,51 @@
 	--app-panel-shadow:
 		-18px 0 28px rgb(0 0 0 / 0.45),
 		-4px 0 12px rgb(0 0 0 / 0.3);
+}
+
+/*
+ * True black, for OLED. Never resolved from `system` — the OS only reports
+ * light/dark, so this is an explicit choice only.
+ *
+ * Wells invert here: you cannot recess below a #000 canvas, so --app-well-rgb
+ * flips to a light tint and the alphas drop below --app-raised-a, keeping the
+ * ladder ascending (well < raised < panel < overlay < tooltip).
+ */
+[data-theme='black'] {
+	color-scheme: dark;
+
+	--app-canvas: #000000;
+	--app-panel: #10171f;
+	--app-overlay: #1a2634;
+	--app-overlay-from: #1e2c3c;
+	--app-overlay-to: #10171f;
+	--app-tooltip: #26374d;
+	--app-brand: #fdd0e0;
+	--app-accent: #c8e7f5;
+	--app-on-brand: #000000;
+
+	/* 16.99:1 on black. Pure white would be 21:1, which halates badly. */
+	--app-fg-rgb: 224 232 242;
+	--app-fill-rgb: 168 200 232;
+	--app-raised-a: 0.09;
+	--app-scrim-a: 0.6;
+
+	--app-dim-a: 0.72;
+	/* 0.58 puts faint at 4.43:1 on the tooltip; 0.62 clears AA. */
+	--app-faint-a: 0.62;
+
+	--app-well-rgb: 168 200 232;
+	--app-well-subtle-a: 0.03;
+	--app-well-a: 0.05;
+	--app-well-strong-a: 0.07;
+	--app-track-a: 0.06;
+
+	--app-plate: rgb(226 236 245 / 0.82);
+
+	/* Shadows do nothing against #000; the panel separates by being lighter. */
+	--app-panel-shadow:
+		-18px 0 28px rgb(0 0 0 / 0.6),
+		-4px 0 12px rgb(0 0 0 / 0.4);
 }
 
 /* No-JS only; with JS, data-theme is always set. Mirrors the dark block. */
@@ -105,6 +152,7 @@
 		--app-scrim-a: 0.5;
 		--app-dim-a: 0.72;
 		--app-faint-a: 0.58;
+		--app-well-rgb: 0 0 0;
 		--app-well-subtle-a: 0.18;
 		--app-well-a: 0.3;
 		--app-well-strong-a: 0.5;
@@ -128,9 +176,9 @@
 
 	/* Translucent, so they composite correctly wherever they are nested. */
 	--app-raised: rgb(var(--app-fill-rgb) / var(--app-raised-a));
-	--app-sunken-subtle: rgb(0 0 0 / var(--app-well-subtle-a));
-	--app-sunken: rgb(0 0 0 / var(--app-well-a));
-	--app-sunken-strong: rgb(0 0 0 / var(--app-well-strong-a));
+	--app-sunken-subtle: rgb(var(--app-well-rgb) / var(--app-well-subtle-a));
+	--app-sunken: rgb(var(--app-well-rgb) / var(--app-well-a));
+	--app-sunken-strong: rgb(var(--app-well-rgb) / var(--app-well-strong-a));
 	--app-scrim: rgb(0 0 0 / var(--app-scrim-a));
 
 	--app-line-subtle: rgb(var(--app-fill-rgb) / 0.05);
@@ -180,9 +228,12 @@
 
 /* Theme switching ------------------------------------------------------------- */
 
-/* For the few cases a token cannot express (asset swaps, image treatments). */
+/*
+ * For the few cases a token cannot express (asset swaps, image treatments).
+ * Matches any non-light theme, so new dark-family themes need no edit here.
+ */
 @custom-variant dark {
-	&:where([data-theme='dark'], [data-theme='dark'] *) {
+	&:where(html[data-theme]:not([data-theme='light']), html[data-theme]:not([data-theme='light']) *) {
 		@slot;
 	}
 	@media (prefers-color-scheme: dark) {

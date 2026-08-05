@@ -24,6 +24,11 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   });
 }
 
+/** A dialog opened from the sidebar is the innermost modal, so it owns Escape and Tab. */
+function isDialogOpen(): boolean {
+  return document.querySelector('.dialog-root[data-open="true"]') !== null;
+}
+
 class SidebarController {
   private readonly htmlEl: HTMLElement;
   private readonly sidebar: HTMLElement;
@@ -102,7 +107,10 @@ class SidebarController {
     }
 
     if (!this.isOpen) return;
-    
+
+    // Otherwise the sidebar swallows Escape and its Tab trap steals focus back.
+    if (isDialogOpen()) return;
+
     // "i" key toggles info section (version/github)
     if (e.key.toLowerCase() === 'i' && !this.isEditableTarget(e.target as Element | null)) {
       e.preventDefault();
@@ -143,6 +151,7 @@ class SidebarController {
   private onInteractiveEnter = (e: Event) => {
     const target = e.target as Element | null;
     if (!target) return;
+
     const anchor = target.closest('a');
     if (!anchor || !this.sidebar.contains(anchor)) return;
     const span = anchor.querySelector('.squiggle-underline') as HTMLElement | null;

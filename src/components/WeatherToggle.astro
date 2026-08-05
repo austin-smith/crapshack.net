@@ -5,10 +5,17 @@ const options = [
 	{ value: 'rain', label: 'rain', Icon: CloudRain },
 	{ value: 'snow', label: 'snow', Icon: CloudSnow },
 ];
+
+interface Props {
+	/** Id of a visible label that names this group. Falls back to an aria-label. */
+	labelledBy?: string;
+}
+
+const { labelledBy } = Astro.props as Props;
 ---
 
 <div class="px-0 pb-0">
-	<div role="radiogroup" aria-label="Weather effect" aria-orientation="horizontal" class="flex rounded-md border border-line-subtle p-0.5">
+	<div role="radiogroup" aria-label={labelledBy ? undefined : "Weather effect"} aria-labelledby={labelledBy} aria-orientation="horizontal" class="flex rounded-md border border-line-subtle p-0.5">
 		{options.map(({ value, label, Icon }) => (
 			<button
 				data-effect-option={value}

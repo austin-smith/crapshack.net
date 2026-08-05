@@ -1,0 +1,26 @@
+---
+import { Settings } from '@lucide/astro';
+
+interface Props {
+	/** Square size in px. */
+	size?: number;
+	/** Additional class for the icon. */
+	class?: string;
+}
+
+const { size = 14, class: className } = Astro.props;
+---
+
+{/* Driven by an ancestor `group`, so the whole control is the trigger. */}
+<Settings
+	width={size}
+	height={size}
+	stroke-width={2}
+	aria-hidden="true"
+	class:list={[
+		'shrink-0 transition-transform duration-500 ease-out',
+		'group-hover:rotate-180 group-focus-visible:rotate-180',
+		'motion-reduce:transition-none motion-reduce:group-hover:rotate-0 motion-reduce:group-focus-visible:rotate-0',
+		className,
+	]}
+/>

@@ -1,44 +1,51 @@
-// Theme controller for the sidebar toggle.
-//
-// The theme is already resolved and applied by the blocking script in Layout.astro
-// before first paint; this module only owns *changes* — the toggle UI, cross-tab
-// sync, and reacting to the OS preference while "system" is selected.
+// Layout.astro's blocking script resolves and applies the theme before first
+// paint. This module owns only *changes*: the toggle UI, cross-tab sync, and the
+// OS preference flipping while "system" is selected.
 
 import {
 	isThemePreference,
+	resolveTheme,
 	THEME_STORAGE_KEY,
-	type ResolvedTheme,
+	TRUE_BLACK_STORAGE_KEY,
 	type ThemePreference,
 } from '../lib/theme';
 
 class ThemeController {
-	private current: ThemePreference = 'system';
+	private preference: ThemePreference = 'system';
+	private trueBlack = false;
 	private readonly systemDark = window.matchMedia('(prefers-color-scheme: dark)');
 
 	constructor() {
-		this.current = this.readPreference();
+		this.preference = this.readPreference();
+		this.trueBlack = this.readTrueBlack();
 		this.applyStateToDom();
-		this.attachToggleHandlers();
+		this.attachHandlers();
 
 		// Track the OS preference so "system" stays live without a reload.
 		this.systemDark.addEventListener('change', () => {
-			if (this.current === 'system') this.applyTheme();
+			if (this.preference === 'system') this.applyTheme();
 		});
 
 		// Keep other open tabs in sync.
 		window.addEventListener('storage', (e) => {
-			if (e.key !== THEME_STORAGE_KEY) return;
-			const next = isThemePreference(e.newValue) ? e.newValue : 'system';
-			if (next === this.current) return;
-			this.current = next;
+			if (e.key === THEME_STORAGE_KEY) {
+				const next = isThemePreference(e.newValue) ? e.newValue : 'system';
+				if (next === this.preference) return;
+				this.preference = next;
+			} else if (e.key === TRUE_BLACK_STORAGE_KEY) {
+				const next = e.newValue === '1';
+				if (next === this.trueBlack) return;
+				this.trueBlack = next;
+			} else {
+				return;
+			}
 			this.applyTheme();
 			this.applyStateToDom();
 		});
 	}
 
 	private readPreference(): ThemePreference {
-		// Prefer the value the blocking script already resolved, so a storage read
-		// that threw there doesn't get retried (and throw again) here.
+		// Prefer what the blocking script resolved, so a throwing storage read isn't retried.
 		const applied = document.documentElement.dataset.themePreference;
 		if (isThemePreference(applied)) return applied;
 		try {
@@ -50,41 +57,42 @@ class ThemeController {
 		return 'system';
 	}
 
-	private writePreference(value: ThemePreference) {
+	private readTrueBlack(): boolean {
+		const applied = document.documentElement.dataset.trueBlack;
+		if (applied === '1' || applied === '0') return applied === '1';
 		try {
-			localStorage.setItem(THEME_STORAGE_KEY, value);
+			return localStorage.getItem(TRUE_BLACK_STORAGE_KEY) === '1';
 		} catch {
-			// Preference simply won't persist across loads; the session still works.
+			return false;
 		}
 	}
 
-	private resolve(): ResolvedTheme {
-		if (this.current === 'system') return this.systemDark.matches ? 'dark' : 'light';
-		return this.current;
+	private write(key: string, value: string) {
+		try {
+			localStorage.setItem(key, value);
+		} catch {
+			// Won't persist across loads; the session still works.
+		}
 	}
 
 	private applyTheme() {
 		const root = document.documentElement;
-		const resolved = this.resolve();
+		const resolved = resolveTheme(this.preference, this.systemDark.matches, this.trueBlack);
+		root.dataset.themePreference = this.preference;
+		root.dataset.trueBlack = this.trueBlack ? '1' : '0';
 		this.applyThemeColor(resolved);
-		if (root.dataset.theme === resolved) {
-			root.dataset.themePreference = this.current;
-			return;
-		}
+		if (root.dataset.theme === resolved) return;
 
-		// Repainting every surface at once looks better as a hard cut than as a
-		// smear of independently-timed transitions. Suppress them for one frame.
+		// A hard cut beats a smear of independently-timed transitions.
 		root.setAttribute('data-theme-switching', '');
 		root.dataset.theme = resolved;
-		root.dataset.themePreference = this.current;
 
-		// Force a style flush so the suppressed state is actually applied before
-		// it is removed, otherwise both mutations collapse into one frame.
+		// Flush, or both mutations collapse into one frame and nothing is suppressed.
 		window.getComputedStyle(root).getPropertyValue('opacity');
 		root.removeAttribute('data-theme-switching');
 	}
 
-	private applyThemeColor(resolved: ResolvedTheme) {
+	private applyThemeColor(resolved: string) {
 		const metas = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"][data-theme-color]');
 		for (const meta of metas) {
 			meta.media = meta.dataset.themeColor === resolved ? 'all' : 'not all';
@@ -92,35 +100,58 @@ class ThemeController {
 	}
 
 	private applyStateToDom() {
-		const options = Array.from(document.querySelectorAll('[data-theme-option]'));
-		for (const option of options) {
+		for (const option of document.querySelectorAll('[data-theme-option]')) {
 			const name = option.getAttribute('data-theme-option');
 			if (!name) continue;
-			const checked = name === this.current;
+			const checked = name === this.preference;
 			option.setAttribute('aria-checked', String(checked));
 			if (checked) option.setAttribute('data-checked', '');
 			else option.removeAttribute('data-checked');
 			option.setAttribute('tabindex', checked ? '0' : '-1');
 		}
+		document.querySelector('[data-true-black-toggle]')?.setAttribute('aria-checked', String(this.trueBlack));
+
+		// Keep the swatches honest about what picking them gives.
+		const darkPreview = this.trueBlack ? 'black' : 'dark';
+		document.querySelector('[data-theme-preview="dark"]')?.setAttribute('data-theme', darkPreview);
+		document
+			.querySelector('[data-theme-preview="system"] .theme-preview-layer')
+			?.setAttribute('data-theme', darkPreview);
 	}
 
-	private select(value: ThemePreference) {
-		if (value === this.current) return;
-		this.current = value;
-		this.writePreference(value);
+	private selectPreference(value: ThemePreference) {
+		if (value === this.preference) return;
+		this.preference = value;
+		this.write(THEME_STORAGE_KEY, value);
 		this.applyTheme();
 		this.applyStateToDom();
 	}
 
-	private attachToggleHandlers() {
+	private setTrueBlack(value: boolean) {
+		if (value === this.trueBlack) return;
+		this.trueBlack = value;
+		this.write(TRUE_BLACK_STORAGE_KEY, value ? '1' : '0');
+		this.applyTheme();
+		this.applyStateToDom();
+	}
+
+	private attachHandlers() {
 		document.addEventListener('click', (e) => {
 			const target = e.target as HTMLElement | null;
+
+			const swtch = target?.closest('[data-true-black-toggle]');
+			if (swtch instanceof HTMLElement) {
+				e.preventDefault();
+				this.setTrueBlack(swtch.getAttribute('aria-checked') !== 'true');
+				return;
+			}
+
 			const option = target?.closest('[data-theme-option]');
 			if (!(option instanceof HTMLElement)) return;
 			const value = option.getAttribute('data-theme-option');
 			if (!isThemePreference(value)) return;
 			e.preventDefault();
-			this.select(value);
+			this.selectPreference(value);
 		});
 
 		// Roving-tabindex keyboard support, matching the weather radiogroup.
@@ -149,13 +180,13 @@ class ThemeController {
 				const value = destination.getAttribute('data-theme-option');
 				if (!isThemePreference(value)) return;
 				e.preventDefault();
-				this.select(value);
+				this.selectPreference(value);
 				destination.focus();
 			} else if (e.key === ' ' || e.key === 'Enter') {
 				const value = radio.getAttribute('data-theme-option');
 				if (!isThemePreference(value)) return;
 				e.preventDefault();
-				this.select(value);
+				this.selectPreference(value);
 			}
 		});
 	}
