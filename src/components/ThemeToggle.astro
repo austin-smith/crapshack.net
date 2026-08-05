@@ -1,0 +1,26 @@
+---
+import { Monitor, Moon, Sun } from '@lucide/astro';
+const options = [
+	{ value: 'system', label: 'system', Icon: Monitor },
+	{ value: 'light', label: 'light', Icon: Sun },
+	{ value: 'dark', label: 'dark', Icon: Moon },
+];
+---
+
+<div class="px-0 pb-0">
+	<div role="radiogroup" aria-label="Color theme" aria-orientation="horizontal" class="flex rounded-md border border-line-subtle p-0.5">
+		{options.map(({ value, label, Icon }) => (
+			<button
+				data-theme-option={value}
+				role="radio"
+				aria-checked="false"
+				tabindex="-1"
+				type="button"
+				class="relative basis-0 flex-1 inline-flex flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1.5 text-[var(--color-text)] transition-colors hover:text-[var(--color-accent)] focus-visible:outline-none data-[checked]:text-[var(--color-accent)] before:content-[''] before:absolute before:rounded-md before:opacity-0 hover:before:opacity-100 focus-visible:before:opacity-100 data-[checked]:before:opacity-100 hover:before:bg-fill focus-visible:before:bg-fill data-[checked]:before:bg-fill hover:before:inset-0.5 focus-visible:before:inset-0.5 data-[checked]:before:inset-0.5 focus-visible:before:ring-2 focus-visible:before:ring-[var(--color-brand)]"
+			>
+				<Icon width={14} height={14} stroke-width={2} aria-hidden="true" />
+				<span class="text-[10px] leading-3 sm:text-xs">{label}</span>
+			</button>
+		))}
+	</div>
+</div>

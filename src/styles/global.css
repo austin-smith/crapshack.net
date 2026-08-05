@@ -49,7 +49,7 @@
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 		font-size: 0.85em;
 		padding: 0.2em 0.4em;
-		background: rgba(255, 255, 255, 0.13);
+		background: rgb(var(--app-fill-rgb) / 0.13);
 		border-radius: 6px;
 		white-space: nowrap;
 	}
@@ -60,7 +60,7 @@
 		display: inline-flex;
 		padding: 0.25rem;
 		gap: 0.25rem;
-		background: rgba(0, 0, 0, 0.3);
+		background: rgb(0 0 0 / var(--app-track-a));
 		border-radius: 0.5rem;
 	}
 
@@ -71,7 +71,7 @@
 		height: calc(100% - 0.5rem);
 		width: 0;
 		opacity: 0;
-		background: rgba(255, 255, 255, 0.15);
+		background: rgb(var(--app-fill-rgb) / 0.15);
 		border-radius: 0.375rem;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 		transition:
@@ -99,17 +99,17 @@
 		border-radius: 0.375rem;
 		font-size: 0.875rem;
 		font-weight: 500;
-		color: rgba(255, 255, 255, 0.6);
+		color: var(--app-dim);
 		background: transparent;
 		transition: color 150ms ease;
 	}
 
 	.toggle-option:hover .toggle-label {
-		color: rgba(255, 255, 255, 0.9);
+		color: var(--app-muted);
 	}
 
 	.toggle-option:has(input:checked) .toggle-label {
-		color: white;
+		color: var(--app-text);
 	}
 
 	.toggle-option:has(input:focus-visible) .toggle-label {
@@ -137,16 +137,16 @@
 		gap: 0.75rem;
 		padding: 0 0.75rem;
 		border-radius: 0.375rem;
-		background: rgba(0, 0, 0, 0.2);
-		color: rgba(255, 255, 255, 0.9);
+		background: var(--app-sunken);
+		color: var(--app-muted);
 		font-size: 0.875rem;
 		font-weight: 500;
 		transition: background 150ms ease, color 150ms ease;
 	}
 
 	.dropdown-trigger:hover {
-		background: rgba(0, 0, 0, 0.3);
-		color: white;
+		background: rgb(0 0 0 / var(--app-track-a));
+		color: var(--app-text);
 	}
 
 	.dropdown-trigger:focus-visible {
@@ -156,7 +156,7 @@
 
 	.dropdown-chevron {
 		flex-shrink: 0;
-		color: rgba(255, 255, 255, 0.45);
+		color: rgb(var(--app-fg-rgb) / 0.45);
 		transition: transform 150ms ease;
 	}
 
@@ -171,9 +171,9 @@
 		width: 100%;
 		margin-top: 0.375rem;
 		padding: 0.25rem;
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		border: 1px solid var(--app-line);
 		border-radius: 0.375rem;
-		background: rgba(16, 24, 39, 0.95);
+		background: color-mix(in srgb, var(--app-overlay) 95%, transparent);
 		box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
@@ -193,7 +193,7 @@
 		padding: 0 0.75rem;
 		border-radius: 0.25rem;
 		background: transparent;
-		color: rgba(255, 255, 255, 0.65);
+		color: rgb(var(--app-fg-rgb) / 0.65);
 		font-size: 0.875rem;
 		text-align: left;
 		transition: background 150ms ease, color 150ms ease;
@@ -202,13 +202,13 @@
 	.dropdown-option:hover,
 	.dropdown-option:focus-visible {
 		outline: none;
-		background: rgba(255, 255, 255, 0.06);
-		color: white;
+		background: rgb(var(--app-fill-rgb) / 0.06);
+		color: var(--app-text);
 	}
 
 	.dropdown-option[aria-selected="true"] {
-		background: rgba(255, 255, 255, 0.1);
-		color: white;
+		background: var(--app-fill);
+		color: var(--app-text);
 		font-weight: 500;
 	}
 
@@ -250,14 +250,14 @@
 		width: 100%;
 		background: linear-gradient(
 			145deg,
-			rgba(30, 41, 59, 0.95) 0%,
-			rgba(15, 23, 42, 0.98) 100%
+			color-mix(in srgb, var(--app-overlay-from) 95%, transparent) 0%,
+			color-mix(in srgb, var(--app-overlay-to) 98%, transparent) 100%
 		);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		border: 1px solid var(--app-line);
 		border-radius: 1rem;
 		box-shadow:
 			0 25px 50px -12px rgba(0, 0, 0, 0.5),
-			0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+			0 0 0 1px rgb(var(--app-fill-rgb) / 0.05) inset;
 		outline: none;
 		opacity: 0;
 		transform: scale(0.95) translateY(10px);
@@ -282,10 +282,10 @@
 		width: 2.25rem;
 		height: 2.25rem;
 		padding: 0;
-		background: rgba(255, 255, 255, 0.1);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: var(--app-fill);
+		border: 1px solid var(--app-line);
 		border-radius: 0.5rem;
-		color: rgba(255, 255, 255, 0.7);
+		color: rgb(var(--app-fg-rgb) / 0.7);
 		cursor: pointer;
 		transition:
 			background 150ms ease,
@@ -294,8 +294,8 @@
 	}
 
 	.dialog-close:hover {
-		background: rgba(255, 255, 255, 0.15);
-		color: white;
+		background: rgb(var(--app-fill-rgb) / 0.15);
+		color: var(--app-text);
 		transform: scale(1.05);
 	}
 
@@ -348,9 +348,9 @@
 		z-index: 10;
 		pointer-events: none;
 		padding: 0.5rem 0.75rem;
-		border: 1px solid rgba(255, 255, 255, 0.15);
+		border: 1px solid rgb(var(--app-fill-rgb) / 0.15);
 		border-radius: 0.375rem;
-		background: color-mix(in srgb, var(--color-sidebar-bg), black 35%);
+		background: var(--app-tooltip);
 		box-shadow:
 			0 10px 15px -3px rgb(0 0 0 / 0.1),
 			0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -366,8 +366,8 @@
 		position: absolute;
 		width: 0.5rem;
 		height: 0.5rem;
-		background: color-mix(in srgb, var(--color-sidebar-bg), black 35%);
-		border: 0 solid rgba(255, 255, 255, 0.15);
+		background: var(--app-tooltip);
+		border: 0 solid rgb(var(--app-fill-rgb) / 0.15);
 		transform: rotate(45deg);
 		transition: left 150ms ease-out;
 	}
@@ -392,7 +392,7 @@
 		margin-top: 0.125rem;
 		font-size: 11px;
 		line-height: 1.375;
-		color: rgba(255, 255, 255, 0.75);
+		color: rgb(var(--app-fg-rgb) / 0.75);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
@@ -535,19 +535,10 @@
 		}
 	}
 
-	/* Sidebar shadow only when expanded */
+	/* Sidebar shadow only when expanded. Dark canvases swallow soft shadows, so the
+	   dark theme casts a deeper one — see --app-panel-shadow in tokens.css. */
 	html[data-sidebar-open="true"] #site-sidebar {
-		box-shadow:
-			-16px 0 24px rgba(0, 0, 0, 0.12),
-			-4px 0 12px rgba(0, 0, 0, 0.08);
-	}
-
-	@media (prefers-color-scheme: dark) {
-		html[data-sidebar-open="true"] #site-sidebar {
-			box-shadow:
-				-14px 0 20px rgba(0, 0, 0, 0.10),
-				-3px 0 10px rgba(0, 0, 0, 0.06);
-		}
+		box-shadow: var(--app-panel-shadow);
 	}
 
 	/* Remove all focus outlines and rings inside the sidebar */

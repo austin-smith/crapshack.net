@@ -37,13 +37,13 @@ const screenshots = [
 		<header class="flex items-center gap-4">
 			<img src={iconUrl} alt="Stuckers icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
 			<div>
-				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">Stuckers</h1>
-				<p class="text-white/90">{description}</p>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">Stuckers</h1>
+				<p class="text-muted">{description}</p>
 			</div>
 		</header>
 
 		<div class="flex flex-wrap gap-2 sm:gap-3">
-			<a href={repoUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+			<a href={repoUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-on-brand hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
 				<span>github</span>
 			</a>
@@ -52,7 +52,7 @@ const screenshots = [
 				target="_blank"
 				rel="noopener noreferrer"
 				aria-label="Download Stuckers on the App Store"
-				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex items-center rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
 				<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
 				<span>app store</span>
@@ -81,7 +81,7 @@ const screenshots = [
 					{ name: 'wink', src: '/images/stuckers/stickers/wink.gif', alt: 'wink' },
 					{ name: 'robot', src: '/images/stuckers/stickers/robot.gif', alt: 'robot' },
 				].map(({ name, src, alt }) => (
-					<figure class="group relative rounded-xl bg-white/70 p-2 overflow-hidden shadow-md aspect-square grid place-items-center" data-sticker-tile data-copy-url={src} data-name={name}>
+					<figure class="group relative rounded-xl bg-plate p-2 overflow-hidden shadow-md aspect-square grid place-items-center" data-sticker-tile data-copy-url={src} data-name={name}>
 						<img
 							src={src}
 							alt={alt}

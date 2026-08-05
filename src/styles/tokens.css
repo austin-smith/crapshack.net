@@ -1,17 +1,201 @@
-@theme {
-	/* semantic brand tokens */
-	--color-bg: #67a3d9;
-	--color-brand: #fdd0e0;
-	--color-sidebar-bg: #0671b7;
-	--color-text: #ffffff;
-	--color-accent: #c8e7f5;
+/*
+ * Design tokens. Two layers:
+ *   --app-*    raw values, swapped per theme
+ *   --color-*  Tailwind's namespace, so utilities like `text-muted` get generated
+ *
+ * `@theme inline` is required: without it a utility resolves --app-* where the theme
+ * variable was declared rather than where it is used, and switching breaks silently.
+ *
+ * <html data-theme> is set by the blocking script in Layout.astro before first paint.
+ */
+
+/* Theme primitives ----------------------------------------------------------- */
+
+:root,
+[data-theme='light'] {
+	color-scheme: light;
+
+	/* The pre-dark-mode palette, unchanged. Several tiers fail AA against the canvas
+	   (white on #67a3d9 is 2.69:1) — accepted baseline, not an oversight. */
+	--app-canvas: #67a3d9;
+	--app-panel: #0671b7;
+	--app-overlay: #101827;
+	--app-overlay-from: #1e293b;
+	--app-overlay-to: #0f172a;
+	--app-tooltip: color-mix(in srgb, var(--app-panel), black 35%);
+	--app-brand: #fdd0e0;
+	--app-accent: #c8e7f5;
+	--app-on-brand: #000000;
+
+	--app-fg-rgb: 255 255 255;
+	--app-fill-rgb: 255 255 255;
+	--app-raised-a: 0.04;
+	--app-scrim-a: 0.2;
+	--app-dim-a: 0.6;
+	--app-faint-a: 0.4;
+
+	--app-well-subtle-a: 0.1;
+	--app-well-a: 0.2;
+	--app-well-strong-a: 0.4;
+	--app-track-a: 0.3;
+
+	/* Plate behind transparent sticker art — content, so it stays light in both themes. */
+	--app-plate: rgb(255 255 255 / 0.7);
+
+	--app-panel-shadow:
+		-16px 0 24px rgb(0 0 0 / 0.12),
+		-4px 0 12px rgb(0 0 0 / 0.08);
 }
 
-/* @media (prefers-color-scheme: dark) {
-	@theme {
-		--color-bg: #0f2437;
-		--color-brand: #fdd0e0;
-		--color-sidebar-bg: #3a8fd8;
-		--color-text: #e6eef7;
+[data-theme='dark'] {
+	color-scheme: dark;
+
+	/* Elevation, darkest first: well < canvas < raised < panel < overlay < tooltip */
+	--app-canvas: #0b1a2b;
+	--app-panel: #142a42;
+	--app-overlay: #1a3450;
+	--app-overlay-from: #1e3a58;
+	--app-overlay-to: #142a42;
+	/* Not --app-overlay: the tooltip is the only overlay drawn on the sidebar, and at
+	   the overlay value it sat 1.15:1 against it. */
+	--app-tooltip: #2a527e;
+	--app-brand: #fdd0e0;
+	--app-accent: #c8e7f5;
+	--app-on-brand: #000000;
+
+	/* Off-white rather than #fff, to avoid halation on near-black. */
+	--app-fg-rgb: 230 238 247;
+	--app-fill-rgb: 168 200 232;
+	--app-raised-a: 0.07;
+	--app-scrim-a: 0.5;
+
+	/* Higher than light on purpose: 0.6/0.4 read as 4.97:1 and 3.06:1 here, and these
+	   tiers carry small metadata text. */
+	--app-dim-a: 0.72;
+	--app-faint-a: 0.58;
+
+	/* Black over navy darkens less than black over the light blue. */
+	--app-well-subtle-a: 0.18;
+	--app-well-a: 0.3;
+	--app-well-strong-a: 0.5;
+	--app-track-a: 0.45;
+
+	--app-plate: rgb(226 236 245 / 0.82);
+
+	--app-panel-shadow:
+		-18px 0 28px rgb(0 0 0 / 0.45),
+		-4px 0 12px rgb(0 0 0 / 0.3);
+}
+
+/* No-JS only; with JS, data-theme is always set. Mirrors the dark block. */
+@media (prefers-color-scheme: dark) {
+	html:not([data-theme]) {
+		color-scheme: dark;
+
+		--app-canvas: #0b1a2b;
+		--app-panel: #142a42;
+		--app-overlay: #1a3450;
+		--app-overlay-from: #1e3a58;
+		--app-overlay-to: #142a42;
+		--app-tooltip: #2a527e;
+
+		--app-fg-rgb: 230 238 247;
+		--app-fill-rgb: 168 200 232;
+		--app-raised-a: 0.07;
+		--app-scrim-a: 0.5;
+		--app-dim-a: 0.72;
+		--app-faint-a: 0.58;
+		--app-well-subtle-a: 0.18;
+		--app-well-a: 0.3;
+		--app-well-strong-a: 0.5;
+		--app-track-a: 0.45;
+		--app-plate: rgb(226 236 245 / 0.82);
+		--app-panel-shadow:
+			-18px 0 28px rgb(0 0 0 / 0.45),
+			-4px 0 12px rgb(0 0 0 / 0.3);
 	}
-} */
+}
+
+/* Derived — theme-agnostic ---------------------------------------------------- */
+
+:root {
+	--app-text: rgb(var(--app-fg-rgb));
+	--app-strong: rgb(var(--app-fg-rgb) / 0.95);
+	--app-muted: rgb(var(--app-fg-rgb) / 0.9);
+	--app-subtle: rgb(var(--app-fg-rgb) / 0.8);
+	--app-dim: rgb(var(--app-fg-rgb) / var(--app-dim-a));
+	--app-faint: rgb(var(--app-fg-rgb) / var(--app-faint-a));
+
+	/* Translucent, so they composite correctly wherever they are nested. */
+	--app-raised: rgb(var(--app-fill-rgb) / var(--app-raised-a));
+	--app-sunken-subtle: rgb(0 0 0 / var(--app-well-subtle-a));
+	--app-sunken: rgb(0 0 0 / var(--app-well-a));
+	--app-sunken-strong: rgb(0 0 0 / var(--app-well-strong-a));
+	--app-scrim: rgb(0 0 0 / var(--app-scrim-a));
+
+	--app-line-subtle: rgb(var(--app-fill-rgb) / 0.05);
+	--app-line: rgb(var(--app-fill-rgb) / 0.1);
+	--app-line-strong: rgb(var(--app-fill-rgb) / 0.2);
+
+	--app-fill-subtle: rgb(var(--app-fill-rgb) / 0.05);
+	--app-fill: rgb(var(--app-fill-rgb) / 0.1);
+	--app-fill-strong: rgb(var(--app-fill-rgb) / 0.2);
+}
+
+/* Tailwind mapping ------------------------------------------------------------ */
+
+@theme inline {
+	--color-bg: var(--app-canvas);
+	--color-sidebar-bg: var(--app-panel);
+	--color-text: var(--app-text);
+	--color-brand: var(--app-brand);
+	--color-accent: var(--app-accent);
+
+	--color-strong: var(--app-strong);
+	--color-muted: var(--app-muted);
+	--color-subtle: var(--app-subtle);
+	--color-dim: var(--app-dim);
+	--color-faint: var(--app-faint);
+
+	--color-raised: var(--app-raised);
+	--color-sunken-subtle: var(--app-sunken-subtle);
+	--color-sunken: var(--app-sunken);
+	--color-sunken-strong: var(--app-sunken-strong);
+	--color-scrim: var(--app-scrim);
+	--color-plate: var(--app-plate);
+
+	/* Dropdown, dialog and tooltip are absent on purpose: global.css styles them as
+	   component classes off --app-*, so a utility name here would have no consumer. */
+
+	--color-line: var(--app-line);
+	--color-line-strong: var(--app-line-strong);
+	--color-line-subtle: var(--app-line-subtle);
+
+	--color-fill: var(--app-fill);
+	--color-fill-strong: var(--app-fill-strong);
+	--color-fill-subtle: var(--app-fill-subtle);
+
+	--color-on-brand: var(--app-on-brand);
+}
+
+/* Theme switching ------------------------------------------------------------- */
+
+/* For the few cases a token cannot express (asset swaps, image treatments). */
+@custom-variant dark {
+	&:where([data-theme='dark'], [data-theme='dark'] *) {
+		@slot;
+	}
+	@media (prefers-color-scheme: dark) {
+		&:where(html:not([data-theme]), html:not([data-theme]) *) {
+			@slot;
+		}
+	}
+}
+
+/* A swap repaints every surface at once; transitioning that smears. Suppressed for
+   one frame by scripts/theme.ts. */
+html[data-theme-switching] *,
+html[data-theme-switching] *::before,
+html[data-theme-switching] *::after {
+	transition: none !important;
+}

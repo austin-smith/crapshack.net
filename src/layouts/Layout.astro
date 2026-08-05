@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar.astro';
 import Seo from '../components/Seo.astro';
 import EnvBadge from '../components/EnvBadge.astro';
 import { isNonProdEnv } from '../lib/build-info';
+import { THEME_STORAGE_KEY } from '../lib/theme';
 import { PanelRight, PanelRightClose } from '@lucide/astro';
 interface Props {
   title?: string;
@@ -18,6 +19,38 @@ const { title, ogImage, noIndex } = Astro.props as Props;
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
+		<meta name="color-scheme" content="light dark" />
+		<meta name="theme-color" content="#67a3d9" media="(prefers-color-scheme: light)" data-theme-color="light" />
+		<meta name="theme-color" content="#0b1a2b" media="(prefers-color-scheme: dark)" data-theme-color="dark" />
+		{/*
+			Resolves the theme before first paint. Must stay inline and synchronous —
+			anything deferred or bundled runs after the browser has already painted the
+			light palette, which is exactly the flash this prevents. Keep it dependency-free;
+			src/scripts/theme.ts owns everything after this point.
+		*/}
+		<script is:inline define:vars={{ themeStorageKey: THEME_STORAGE_KEY }}>
+			(() => {
+				let preference = 'system';
+				try {
+					const stored = localStorage.getItem(themeStorageKey);
+					if (stored === 'system' || stored === 'light' || stored === 'dark') preference = stored;
+				} catch {
+					// Storage unavailable (private mode, blocked cookies) — fall back to system.
+				}
+				const resolved =
+					preference === 'system'
+						? window.matchMedia('(prefers-color-scheme: dark)').matches
+							? 'dark'
+							: 'light'
+						: preference;
+				const root = document.documentElement;
+				root.dataset.theme = resolved;
+				root.dataset.themePreference = preference;
+				for (const meta of document.querySelectorAll('meta[name="theme-color"][data-theme-color]')) {
+					meta.setAttribute('media', meta.getAttribute('data-theme-color') === resolved ? 'all' : 'not all');
+				}
+			})();
+		</script>
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<Seo title={title} ogImage={ogImage} noIndex={noIndex} />
@@ -28,7 +61,7 @@ const { title, ogImage, noIndex } = Astro.props as Props;
 			<div class="header-inner">
 				<button
 					id="sidebar-toggle"
-					class="group fixed right-3 top-3 z-[110] p-1.5 rounded-md text-white hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] aria-[expanded=false]:bg-[var(--color-sidebar-bg)] transition-colors"
+					class="group fixed right-3 top-3 z-[110] p-1.5 rounded-md text-[var(--color-text)] hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] aria-[expanded=false]:bg-[var(--color-sidebar-bg)] transition-colors"
 					aria-label="Open menu"
 					aria-controls="site-sidebar"
 					aria-expanded="false"
@@ -54,6 +87,7 @@ const { title, ogImage, noIndex } = Astro.props as Props;
 		{isNonProdEnv && <EnvBadge />}
 		<script src="../scripts/sidebar.ts"></script>
 		<script src="../scripts/weather.ts"></script>
+		<script src="../scripts/theme.ts"></script>
 		<div class="weather-container" id="weather-container" aria-hidden="true"></div>
 	</body>
 </html>
