@@ -1,25 +1,28 @@
 ---
 import Layout from '../layouts/Layout.astro';
-const notFoundImg = '/images/404.png';
+import Physics404 from '../components/Physics404.astro';
 ---
 
 <Layout
 	title="crapshack (404)"
 	noIndex
+	fullBleed
 >
-	<div class="flex flex-col items-center justify-center gap-4 text-center min-h-[calc(100dvh-64px)] p-4">
-		<img src={notFoundImg} alt="404 Not Found" width="420" class="mx-auto max-w-full h-auto drop-shadow-lg" />
-		<p data-typed-text class="mb-10 text-white font-mono text-[clamp(18px,2.5vw,20px)] drop-shadow-lg"><noscript>this must not be the place</noscript></p>
-		<a href="/" class="group inline-block font-mono text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]">
-			<span class="squiggle-underline"><span aria-hidden="true" class="mr-2">←</span>go home</span>
-		</a>
-	</div>
+	<Physics404 />
 
 	<script>
+		import { initPhysics404 } from '../lib/physics-404.ts';
 		import { typedText } from '../lib/ui/typed-text.ts';
+
+		const root = document.querySelector<HTMLElement>('[data-physics-404]');
 		const el = document.querySelector<HTMLElement>('[data-typed-text]');
+		if (root) void initPhysics404(root);
 		if (el) {
-			typedText(el, 'this must not be the place');
+			void typedText(el, 'this must not be the place', {
+				appendEllipsis: false,
+				preTypeDelayMs: 700,
+				keepCursorMs: 1800,
+			});
 		}
 	</script>
 </Layout>
