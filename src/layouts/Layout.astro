@@ -5,7 +5,12 @@ import SettingsDialog from '../components/SettingsDialog.astro';
 import Seo from '../components/Seo.astro';
 import EnvBadge from '../components/EnvBadge.astro';
 import { isNonProdEnv } from '../lib/build-info';
-import { THEME_PREFERENCES, THEME_STORAGE_KEY, TRUE_BLACK_STORAGE_KEY } from '../lib/theme';
+import {
+  DEFAULT_THEME_PREFERENCE,
+  THEME_PREFERENCES,
+  THEME_STORAGE_KEY,
+  TRUE_BLACK_STORAGE_KEY,
+} from '../lib/theme';
 import { PanelRight, PanelRightClose } from '@lucide/astro';
 interface Props {
   title?: string;
@@ -37,17 +42,18 @@ const { title, ogImage, noIndex } = Astro.props as Props;
 				themeStorageKey: THEME_STORAGE_KEY,
 				trueBlackStorageKey: TRUE_BLACK_STORAGE_KEY,
 				themePreferences: THEME_PREFERENCES,
+				defaultPreference: DEFAULT_THEME_PREFERENCE,
 			}}
 		>
 			(() => {
-				let preference = 'system';
+				let preference = defaultPreference;
 				let trueBlack = false;
 				try {
 					const stored = localStorage.getItem(themeStorageKey);
 					if (themePreferences.includes(stored)) preference = stored;
 					trueBlack = localStorage.getItem(trueBlackStorageKey) === '1';
 				} catch {
-					// Storage unavailable (private mode, blocked cookies) — fall back to system.
+					// Storage unavailable (private mode, blocked cookies) — fall back to the default.
 				}
 				const base =
 					preference === 'system'

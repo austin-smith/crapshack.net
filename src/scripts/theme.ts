@@ -3,6 +3,7 @@
 // OS preference flipping while "system" is selected.
 
 import {
+	DEFAULT_THEME_PREFERENCE,
 	isThemePreference,
 	resolveTheme,
 	THEME_STORAGE_KEY,
@@ -11,7 +12,7 @@ import {
 } from '../lib/theme';
 
 class ThemeController {
-	private preference: ThemePreference = 'system';
+	private preference: ThemePreference = DEFAULT_THEME_PREFERENCE;
 	private trueBlack = false;
 	private readonly systemDark = window.matchMedia('(prefers-color-scheme: dark)');
 
@@ -29,7 +30,7 @@ class ThemeController {
 		// Keep other open tabs in sync.
 		window.addEventListener('storage', (e) => {
 			if (e.key === THEME_STORAGE_KEY) {
-				const next = isThemePreference(e.newValue) ? e.newValue : 'system';
+				const next = isThemePreference(e.newValue) ? e.newValue : DEFAULT_THEME_PREFERENCE;
 				if (next === this.preference) return;
 				this.preference = next;
 			} else if (e.key === TRUE_BLACK_STORAGE_KEY) {
@@ -52,9 +53,9 @@ class ThemeController {
 			const stored = localStorage.getItem(THEME_STORAGE_KEY);
 			if (isThemePreference(stored)) return stored;
 		} catch {
-			// Storage unavailable (private mode, blocked cookies) — fall back to system.
+			// Storage unavailable (private mode, blocked cookies) — fall back to the default.
 		}
-		return 'system';
+		return DEFAULT_THEME_PREFERENCE;
 	}
 
 	private readTrueBlack(): boolean {

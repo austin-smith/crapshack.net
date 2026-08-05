@@ -9,6 +9,8 @@ export const TRUE_BLACK_STORAGE_KEY = 'crapshack:true-black';
 /** Layout.astro's blocking script gets this via define:vars, so it cannot drift. */
 export const THEME_PREFERENCES: readonly ThemePreference[] = ['system', 'light', 'dark'];
 
+export const DEFAULT_THEME_PREFERENCE: ThemePreference = 'light';
+
 export function isThemePreference(value: string | null | undefined): value is ThemePreference {
 	return THEME_PREFERENCES.includes(value as ThemePreference);
 }
