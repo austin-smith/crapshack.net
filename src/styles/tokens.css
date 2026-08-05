@@ -4,7 +4,8 @@
  *   --color-*  Tailwind's namespace, so utilities like `text-muted` get generated
  *
  * `@theme inline` is required: without it a utility resolves --app-* where the theme
- * variable was declared rather than where it is used, and switching breaks silently.
+ * variable was declared rather than where it is used, so a nested [data-theme] scope
+ * (the preview swatches) would inherit the page's palette instead of its own.
  *
  * <html data-theme> is set by the blocking script in Layout.astro before first paint.
  */
