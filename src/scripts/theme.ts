@@ -2,6 +2,7 @@
 // paint. This module owns only *changes*: the toggle UI, cross-tab sync, and the
 // OS preference flipping while "system" is selected.
 
+import { registerShortcut } from '../lib/ui/shortcuts';
 import {
 	DEFAULT_THEME_PREFERENCE,
 	isThemePreference,
@@ -110,6 +111,12 @@ class ThemeController {
 			else option.removeAttribute('data-checked');
 			option.setAttribute('tabindex', checked ? '0' : '-1');
 		}
+		// Focus follows selection while it is inside the group, or the old option keeps
+		// its focus ring next to the new one's selected ring and both look chosen.
+		if (document.activeElement instanceof HTMLElement && document.activeElement.matches('[data-theme-option]')) {
+			document.querySelector<HTMLElement>('[data-theme-option][data-checked]')?.focus();
+		}
+
 		document.querySelector('[data-true-black-toggle]')?.setAttribute('aria-checked', String(this.trueBlack));
 
 		// Keep the swatches honest about what picking them gives.
@@ -137,6 +144,16 @@ class ThemeController {
 	}
 
 	private attachHandlers() {
+		// Keyed off what is rendered, not the stored preference, so it still flips
+		// visibly when the preference is `system`.
+		registerShortcut({
+			key: 'd',
+			run: () => {
+				const dark = resolveTheme(this.preference, this.systemDark.matches, this.trueBlack) !== 'light';
+				this.selectPreference(dark ? 'light' : 'dark');
+			},
+		});
+
 		document.addEventListener('click', (e) => {
 			const target = e.target as HTMLElement | null;
 
