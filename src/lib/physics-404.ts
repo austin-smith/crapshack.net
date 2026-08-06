@@ -617,7 +617,7 @@ class Physics404Scene {
 				mass,
 				invMass: 1 / mass,
 				invInertia: 1 / (inertia || 1),
-				releaseAt: index * 0.58 + Math.random() * 0.04,
+				releaseAt: index * 0.75 + Math.random() * 0.04,
 				touching: false,
 				idleFor: 0,
 				sleeping: false,
