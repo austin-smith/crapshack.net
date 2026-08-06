@@ -11,7 +11,6 @@ const glyphs = [
 	data-physics-404
 	data-image-sources={JSON.stringify(glyphs.map(({ source }) => source))}
 >
-	<div class="physics-404__atmosphere" aria-hidden="true"></div>
 	<canvas class="physics-404__canvas" data-physics-canvas aria-hidden="true"></canvas>
 	<div class="physics-404__fallback" aria-hidden="true">
 		{glyphs.map((glyph) => (
@@ -47,54 +46,10 @@ const glyphs = [
 
 <style>
 	.physics-404 {
-		--sky-top: #78b4e5;
-		--sky-middle: var(--color-bg);
-		--sky-bottom: #4d8fc9;
 		position: relative;
-		isolation: isolate;
 		height: 100dvh;
 		min-height: 34rem;
 		overflow: hidden;
-		background:
-			radial-gradient(circle at 74% 14%, rgba(220, 241, 255, 0.3), transparent 31rem),
-			radial-gradient(circle at 18% 82%, rgba(253, 208, 224, 0.11), transparent 32rem),
-			linear-gradient(165deg, var(--sky-top) 0%, var(--sky-middle) 44%, var(--sky-bottom) 100%);
-	}
-
-	.physics-404::before {
-		position: absolute;
-		inset: 0;
-		z-index: 1;
-		background-image:
-			radial-gradient(circle, rgba(255, 255, 255, 0.12) 0.7px, transparent 0.8px),
-			radial-gradient(circle, rgba(13, 62, 103, 0.08) 0.6px, transparent 0.8px);
-		background-position: 0 0, 5px 7px;
-		background-size: 9px 9px, 11px 11px;
-		content: '';
-		mix-blend-mode: soft-light;
-		opacity: 0.48;
-		pointer-events: none;
-	}
-
-	.physics-404::after {
-		position: absolute;
-		inset: auto 0 0;
-		z-index: 1;
-		height: 34%;
-		background: linear-gradient(to bottom, transparent, rgba(9, 48, 84, 0.13));
-		content: '';
-		pointer-events: none;
-	}
-
-	.physics-404__atmosphere {
-		position: absolute;
-		inset: -20%;
-		z-index: 1;
-		background:
-			radial-gradient(ellipse at 50% 92%, rgba(255, 255, 255, 0.15), transparent 35%),
-			radial-gradient(ellipse at 48% 100%, rgba(31, 93, 145, 0.2), transparent 46%);
-		filter: blur(22px);
-		pointer-events: none;
 	}
 
 	.physics-404__canvas,
