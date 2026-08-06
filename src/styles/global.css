@@ -212,8 +212,37 @@
 		font-weight: 500;
 	}
 
-	/* Dialog component */
+	/* Dialog component.
+	   The dialog is a dark panel over a 75% black backdrop in every theme, so it
+	   opts out of theming: everything inside renders with the light values. The
+	   derived tokens are repeated because they are substituted at :root, so
+	   overriding the rgb pair alone would not reach them. */
 	.dialog-root {
+		--app-fg-rgb: 255 255 255;
+		--app-fill-rgb: 255 255 255;
+		--app-overlay: #101827;
+		--app-track-a: 0.3;
+
+		--app-text: rgb(var(--app-fg-rgb));
+		--app-strong: rgb(var(--app-fg-rgb) / 0.95);
+		--app-muted: rgb(var(--app-fg-rgb) / 0.9);
+		--app-subtle: rgb(var(--app-fg-rgb) / 0.8);
+		--app-dim: rgb(var(--app-fg-rgb) / 0.6);
+		--app-faint: rgb(var(--app-fg-rgb) / 0.4);
+
+		--app-raised: rgb(var(--app-fill-rgb) / 0.04);
+		--app-sunken-subtle: rgb(0 0 0 / 0.1);
+		--app-sunken: rgb(0 0 0 / 0.2);
+		--app-sunken-strong: rgb(0 0 0 / 0.4);
+
+		--app-line-subtle: rgb(var(--app-fill-rgb) / 0.05);
+		--app-line: rgb(var(--app-fill-rgb) / 0.1);
+		--app-line-strong: rgb(var(--app-fill-rgb) / 0.2);
+
+		--app-fill-subtle: rgb(var(--app-fill-rgb) / 0.05);
+		--app-fill: rgb(var(--app-fill-rgb) / 0.1);
+		--app-fill-strong: rgb(var(--app-fill-rgb) / 0.2);
+
 		position: fixed;
 		inset: 0;
 		z-index: 200;
@@ -544,10 +573,11 @@
 	/* Theme preview swatches (components/ThemeToggle.astro). Each carries its own
 	   data-theme, which tokens.css scopes the palette to. Primitive --app-* only:
 	   derived tokens are declared on :root and would resolve to the page's theme. */
-	.theme-preview {
+	.theme-preview,
+	.weather-preview {
 		position: relative;
 		display: block;
-		height: 3rem;
+		width: 100%;
 		aspect-ratio: 16 / 11;
 		border-radius: 0.375rem;
 		overflow: hidden;
@@ -589,6 +619,24 @@
 		top: 54%;
 		width: 20%;
 		background: rgb(var(--app-fg-rgb) / 0.45);
+	}
+
+	/* The effects assume a viewport-sized container: they park particles tens of px
+	   above it and fall 100vh. Rescaled to the tile; container-type gives cqh
+	   something to measure. */
+	.weather-preview {
+		container-type: size;
+		--weather-fall: 130cqh;
+	}
+
+	.weather-preview .raindrop {
+		top: -20%;
+		width: 1.5px;
+	}
+
+	.weather-preview .snowflake {
+		top: -10%;
+		box-shadow: none;
 	}
 
 	/* Nothing to act on in light, but still settable — a "system" user can pre-opt-in. */

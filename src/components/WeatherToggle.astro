@@ -1,33 +1,51 @@
 ---
-import { Cloud, CloudRain, CloudSnow } from '@lucide/astro';
-const options = [
-	{ value: 'off', label: 'clear', Icon: Cloud },
-	{ value: 'rain', label: 'rain', Icon: CloudRain },
-	{ value: 'snow', label: 'snow', Icon: CloudSnow },
-];
-
 interface Props {
 	/** Id of a visible label that names this group. Falls back to an aria-label. */
 	labelledBy?: string;
 }
 
 const { labelledBy } = Astro.props as Props;
+
+const options = [
+	{ value: 'off', label: 'clear' },
+	{ value: 'rain', label: 'rain' },
+	{ value: 'snow', label: 'snow' },
+];
 ---
 
-<div class="px-0 pb-0">
-	<div role="radiogroup" aria-label={labelledBy ? undefined : "Weather effect"} aria-labelledby={labelledBy} aria-orientation="horizontal" class="flex rounded-md border border-line-subtle p-0.5">
-		{options.map(({ value, label, Icon }) => (
-			<button
-				data-effect-option={value}
-				role="radio"
-				aria-checked="false"
-				tabindex="-1"
-				type="button"
-				class="relative basis-0 flex-1 inline-flex flex-col items-center justify-center gap-0.5 rounded-md px-2 py-1.5 text-[var(--color-text)] transition-colors hover:text-[var(--color-accent)] focus-visible:outline-none data-[checked]:text-[var(--color-accent)] before:content-[''] before:absolute before:rounded-md before:opacity-0 hover:before:opacity-100 data-[checked]:before:opacity-100 hover:before:bg-fill data-[checked]:before:bg-fill hover:before:inset-0.5 data-[checked]:before:inset-0.5"
-			>
-				<Icon width={14} height={14} stroke-width={2} aria-hidden="true" />
-				<span class="text-[10px] leading-3 sm:text-xs">{label}</span>
-			</button>
-		))}
-	</div>
+<div
+	role="radiogroup"
+	aria-label={labelledBy ? undefined : 'Weather effect'}
+	aria-labelledby={labelledBy}
+	aria-orientation="horizontal"
+	class="flex gap-3"
+>
+	{options.map(({ value, label }) => (
+		<button
+			data-effect-option={value}
+			role="radio"
+			aria-checked="false"
+			tabindex="-1"
+			type="button"
+			class="group flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-lg transition-colors focus-visible:outline-none"
+		>
+			<span class="relative block w-full rounded-md ring-1 ring-line ring-offset-2 ring-offset-[var(--app-overlay-to)] transition-[box-shadow,transform] duration-150 ease-out group-hover:scale-[1.06] group-hover:ring-line-strong motion-reduce:transition-none motion-reduce:group-hover:scale-100 group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-brand)] group-data-[checked]:ring-2 group-data-[checked]:ring-[var(--color-accent)]">
+				<span class="weather-preview" data-weather-preview={value}></span>
+			</span>
+			<span class="text-xs text-dim transition-colors group-hover:text-subtle group-data-[checked]:text-[var(--color-text)]">{label}</span>
+		</button>
+	))}
 </div>
+
+<script>
+	import { initRainyDay } from '../lib/weather/rain';
+	import { initSnowyDay } from '../lib/weather/snow';
+
+	// The real effects, in miniature — same code the page runs, just fewer and
+	// smaller particles. The tile sets --weather-fall so they fall its height
+	// rather than the viewport's.
+	const rain = document.querySelector<HTMLElement>('[data-weather-preview="rain"]');
+	const snow = document.querySelector<HTMLElement>('[data-weather-preview="snow"]');
+	if (rain) initRainyDay(rain, { count: 20, scale: 0.34, speed: 0.5 });
+	if (snow) initSnowyDay(snow, { count: 12, scale: 0.4, speed: 0.3 });
+</script>

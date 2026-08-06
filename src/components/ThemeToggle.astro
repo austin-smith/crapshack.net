@@ -29,9 +29,9 @@ const options = [
 			aria-checked="false"
 			tabindex="-1"
 			type="button"
-			class="group flex flex-col items-center gap-1.5 rounded-lg transition-colors focus-visible:outline-none"
+			class="group flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-lg transition-colors focus-visible:outline-none"
 		>
-			<span class="relative block rounded-md ring-1 ring-line ring-offset-2 ring-offset-[var(--app-overlay-to)] transition-shadow group-hover:ring-line-strong group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-brand)] group-data-[checked]:ring-2 group-data-[checked]:ring-[var(--color-accent)]">
+			<span class="relative block w-full rounded-md ring-1 ring-line ring-offset-2 ring-offset-[var(--app-overlay-to)] transition-[box-shadow,transform] duration-150 ease-out group-hover:scale-[1.06] group-hover:ring-line-strong motion-reduce:transition-none motion-reduce:group-hover:scale-100 group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-brand)] group-data-[checked]:ring-2 group-data-[checked]:ring-[var(--color-accent)]">
 				{/* Panel last so it paints over the marks, like the real fixed sidebar. */}
 				<span class="theme-preview" data-theme={preview} data-theme-preview={value}>
 					<span class="theme-preview-mark"></span>

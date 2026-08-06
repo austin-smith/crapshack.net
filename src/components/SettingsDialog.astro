@@ -7,11 +7,11 @@ const dialogId = 'settings-dialog';
 ---
 
 {/* ariaLabel tracks the visible heading; WCAG 2.5.3 won't let them diverge. */}
-<Dialog id={dialogId} maxWidth="max-w-sm" ariaLabel="knobs">
+<Dialog id={dialogId} maxWidth="max-w-xs" ariaLabel="knobs">
 	<div class="font-mono">
 		<h2 class="text-lg font-semibold text-[var(--color-text)]">knobs</h2>
 
-		<div class="mt-5 space-y-5">
+		<div class="mt-4 space-y-4">
 			<div class="space-y-1.5">
 				<p id="settings-theme-label" class="text-sm text-subtle">theme</p>
 				<ThemeToggle labelledBy="settings-theme-label" />
@@ -31,13 +31,13 @@ const dialogId = 'settings-dialog';
 					{/* aria-checked lives on the button, so the thumb reads it via `group-`. */}
 					<span
 						aria-hidden="true"
-						class="pointer-events-none ml-0.5 size-5 rounded-full bg-[var(--color-text)] shadow transition-transform group-aria-checked:translate-x-5 motion-reduce:transition-none"
+						class="pointer-events-none ml-0.5 size-5 rounded-full bg-[var(--app-overlay-to)] shadow transition-transform group-aria-checked:translate-x-5 motion-reduce:transition-none"
 						data-true-black-thumb
 					></span>
 				</button>
 			</div>
 
-			<div class="space-y-1.5 border-t border-line pt-5">
+			<div class="space-y-1.5 border-t border-line pt-4">
 				<p id="settings-weather-label" class="text-sm text-subtle">weather</p>
 				<WeatherToggle labelledBy="settings-weather-label" />
 			</div>
@@ -46,7 +46,7 @@ const dialogId = 'settings-dialog';
 </Dialog>
 
 <script>
-	import { openDialog } from '../lib/ui/dialog';
+	import { closeDialog, openDialog } from '../lib/ui/dialog';
 
 	// The drawer stays open behind this dialog, so two aria-modals would overlap.
 	// The sidebar drops its own while this one is up; sidebar.ts yields Escape and Tab.
@@ -60,6 +60,17 @@ const dialogId = 'settings-dialog';
 		// Deferred so the dialog's own document-level outside-click handler doesn't
 		// treat this click as an outside one. Not rAF: must not wait on compositing.
 		setTimeout(() => openDialog('settings-dialog'), 0);
+	});
+
+	// "," toggles it from anywhere. Bare key, so it is skipped while typing and
+	// whenever a modifier is held, leaving Cmd+, to the browser.
+	document.addEventListener('keydown', (e) => {
+		if (e.key !== ',' || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+		const el = e.target;
+		if (el instanceof Element && el.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+		e.preventDefault();
+		if (dialog?.dataset.open === 'true') closeDialog('settings-dialog');
+		else openDialog('settings-dialog');
 	});
 
 	if (sidebar && dialog) {

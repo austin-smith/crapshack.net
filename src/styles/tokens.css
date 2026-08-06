@@ -21,8 +21,6 @@
 	--app-canvas: #67a3d9;
 	--app-panel: #0671b7;
 	--app-overlay: #101827;
-	--app-overlay-from: #1e293b;
-	--app-overlay-to: #0f172a;
 	--app-tooltip: color-mix(in srgb, var(--app-panel), black 35%);
 	--app-brand: #fdd0e0;
 	--app-accent: #c8e7f5;
@@ -56,8 +54,6 @@
 	--app-canvas: #0b1a2b;
 	--app-panel: #142a42;
 	--app-overlay: #1a3450;
-	--app-overlay-from: #1e3a58;
-	--app-overlay-to: #142a42;
 	/* Not --app-overlay: the tooltip is the only overlay drawn on the sidebar, and at
 	   the overlay value it sat 1.15:1 against it. */
 	--app-tooltip: #2a527e;
@@ -104,8 +100,6 @@
 	--app-canvas: #000000;
 	--app-panel: #10171f;
 	--app-overlay: #1a2634;
-	--app-overlay-from: #1e2c3c;
-	--app-overlay-to: #10171f;
 	--app-tooltip: #26374d;
 	--app-brand: #fdd0e0;
 	--app-accent: #c8e7f5;
@@ -143,8 +137,6 @@
 		--app-canvas: #0b1a2b;
 		--app-panel: #142a42;
 		--app-overlay: #1a3450;
-		--app-overlay-from: #1e3a58;
-		--app-overlay-to: #142a42;
 		--app-tooltip: #2a527e;
 
 		--app-fg-rgb: 230 238 247;
@@ -168,6 +160,11 @@
 /* Derived — theme-agnostic ---------------------------------------------------- */
 
 :root {
+	/* The dialog floats over a 75% black backdrop, so what is behind it is the same
+	   in every theme. Theming it made light's dialog darker than dark's. */
+	--app-overlay-from: #1e293b;
+	--app-overlay-to: #0f172a;
+
 	--app-text: rgb(var(--app-fg-rgb));
 	--app-strong: rgb(var(--app-fg-rgb) / 0.95);
 	--app-muted: rgb(var(--app-fg-rgb) / 0.9);
