@@ -49,6 +49,11 @@ function getFocusableElements(dialog: HTMLElement): HTMLElement[] {
 	return Array.from(dialog.querySelectorAll<HTMLElement>(selector));
 }
 
+/** Reads the DOM, not the stack: what is on screen is the thing callers care about. */
+export function isAnyDialogOpen(): boolean {
+	return document.querySelector('.dialog-root[data-open="true"]') !== null;
+}
+
 /**
  * Open a dialog by ID
  */

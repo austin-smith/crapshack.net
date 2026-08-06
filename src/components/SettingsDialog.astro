@@ -46,7 +46,8 @@ const dialogId = 'settings-dialog';
 </Dialog>
 
 <script>
-	import { closeDialog, openDialog } from '../lib/ui/dialog';
+	import { closeDialog, isAnyDialogOpen, openDialog } from '../lib/ui/dialog';
+	import { registerShortcut } from '../lib/ui/shortcuts';
 
 	// The drawer stays open behind this dialog, so two aria-modals would overlap.
 	// The sidebar drops its own while this one is up; sidebar.ts yields Escape and Tab.
@@ -62,15 +63,14 @@ const dialogId = 'settings-dialog';
 		setTimeout(() => openDialog('settings-dialog'), 0);
 	});
 
-	// "," toggles it from anywhere. Bare key, so it is skipped while typing and
-	// whenever a modifier is held, leaving Cmd+, to the browser.
-	document.addEventListener('keydown', (e) => {
-		if (e.key !== ',' || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-		const el = e.target;
-		if (el instanceof Element && el.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
-		e.preventDefault();
-		if (dialog?.dataset.open === 'true') closeDialog('settings-dialog');
-		else openDialog('settings-dialog');
+	registerShortcut({
+		key: ',',
+		run: () => {
+			if (dialog?.dataset.open === 'true') return closeDialog('settings-dialog');
+			// Some other dialog is up; do not stack a second one on it.
+			if (isAnyDialogOpen()) return;
+			openDialog('settings-dialog');
+		},
 	});
 
 	if (sidebar && dialog) {
