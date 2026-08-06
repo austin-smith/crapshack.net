@@ -49,7 +49,7 @@
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 		font-size: 0.85em;
 		padding: 0.2em 0.4em;
-		background: rgba(255, 255, 255, 0.13);
+		background: rgb(var(--app-fill-rgb) / 0.13);
 		border-radius: 6px;
 		white-space: nowrap;
 	}
@@ -60,7 +60,7 @@
 		display: inline-flex;
 		padding: 0.25rem;
 		gap: 0.25rem;
-		background: rgba(0, 0, 0, 0.3);
+		background: rgb(0 0 0 / var(--app-track-a));
 		border-radius: 0.5rem;
 	}
 
@@ -71,7 +71,7 @@
 		height: calc(100% - 0.5rem);
 		width: 0;
 		opacity: 0;
-		background: rgba(255, 255, 255, 0.15);
+		background: rgb(var(--app-fill-rgb) / 0.15);
 		border-radius: 0.375rem;
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 		transition:
@@ -99,17 +99,17 @@
 		border-radius: 0.375rem;
 		font-size: 0.875rem;
 		font-weight: 500;
-		color: rgba(255, 255, 255, 0.6);
+		color: var(--app-dim);
 		background: transparent;
 		transition: color 150ms ease;
 	}
 
 	.toggle-option:hover .toggle-label {
-		color: rgba(255, 255, 255, 0.9);
+		color: var(--app-muted);
 	}
 
 	.toggle-option:has(input:checked) .toggle-label {
-		color: white;
+		color: var(--app-text);
 	}
 
 	.toggle-option:has(input:focus-visible) .toggle-label {
@@ -137,16 +137,16 @@
 		gap: 0.75rem;
 		padding: 0 0.75rem;
 		border-radius: 0.375rem;
-		background: rgba(0, 0, 0, 0.2);
-		color: rgba(255, 255, 255, 0.9);
+		background: var(--app-sunken);
+		color: var(--app-muted);
 		font-size: 0.875rem;
 		font-weight: 500;
 		transition: background 150ms ease, color 150ms ease;
 	}
 
 	.dropdown-trigger:hover {
-		background: rgba(0, 0, 0, 0.3);
-		color: white;
+		background: rgb(0 0 0 / var(--app-track-a));
+		color: var(--app-text);
 	}
 
 	.dropdown-trigger:focus-visible {
@@ -156,7 +156,7 @@
 
 	.dropdown-chevron {
 		flex-shrink: 0;
-		color: rgba(255, 255, 255, 0.45);
+		color: rgb(var(--app-fg-rgb) / 0.45);
 		transition: transform 150ms ease;
 	}
 
@@ -171,9 +171,9 @@
 		width: 100%;
 		margin-top: 0.375rem;
 		padding: 0.25rem;
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		border: 1px solid var(--app-line);
 		border-radius: 0.375rem;
-		background: rgba(16, 24, 39, 0.95);
+		background: color-mix(in srgb, var(--app-overlay) 95%, transparent);
 		box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
@@ -193,7 +193,7 @@
 		padding: 0 0.75rem;
 		border-radius: 0.25rem;
 		background: transparent;
-		color: rgba(255, 255, 255, 0.65);
+		color: rgb(var(--app-fg-rgb) / 0.65);
 		font-size: 0.875rem;
 		text-align: left;
 		transition: background 150ms ease, color 150ms ease;
@@ -202,18 +202,47 @@
 	.dropdown-option:hover,
 	.dropdown-option:focus-visible {
 		outline: none;
-		background: rgba(255, 255, 255, 0.06);
-		color: white;
+		background: rgb(var(--app-fill-rgb) / 0.06);
+		color: var(--app-text);
 	}
 
 	.dropdown-option[aria-selected="true"] {
-		background: rgba(255, 255, 255, 0.1);
-		color: white;
+		background: var(--app-fill);
+		color: var(--app-text);
 		font-weight: 500;
 	}
 
-	/* Dialog component */
+	/* Dialog component.
+	   The dialog is a dark panel over a 75% black backdrop in every theme, so it
+	   opts out of theming: everything inside renders with the light values. The
+	   derived tokens are repeated because they are substituted at :root, so
+	   overriding the rgb pair alone would not reach them. */
 	.dialog-root {
+		--app-fg-rgb: 255 255 255;
+		--app-fill-rgb: 255 255 255;
+		--app-overlay: #101827;
+		--app-track-a: 0.3;
+
+		--app-text: rgb(var(--app-fg-rgb));
+		--app-strong: rgb(var(--app-fg-rgb) / 0.95);
+		--app-muted: rgb(var(--app-fg-rgb) / 0.9);
+		--app-subtle: rgb(var(--app-fg-rgb) / 0.8);
+		--app-dim: rgb(var(--app-fg-rgb) / 0.6);
+		--app-faint: rgb(var(--app-fg-rgb) / 0.4);
+
+		--app-raised: rgb(var(--app-fill-rgb) / 0.04);
+		--app-sunken-subtle: rgb(0 0 0 / 0.1);
+		--app-sunken: rgb(0 0 0 / 0.2);
+		--app-sunken-strong: rgb(0 0 0 / 0.4);
+
+		--app-line-subtle: rgb(var(--app-fill-rgb) / 0.05);
+		--app-line: rgb(var(--app-fill-rgb) / 0.1);
+		--app-line-strong: rgb(var(--app-fill-rgb) / 0.2);
+
+		--app-fill-subtle: rgb(var(--app-fill-rgb) / 0.05);
+		--app-fill: rgb(var(--app-fill-rgb) / 0.1);
+		--app-fill-strong: rgb(var(--app-fill-rgb) / 0.2);
+
 		position: fixed;
 		inset: 0;
 		z-index: 200;
@@ -250,14 +279,14 @@
 		width: 100%;
 		background: linear-gradient(
 			145deg,
-			rgba(30, 41, 59, 0.95) 0%,
-			rgba(15, 23, 42, 0.98) 100%
+			color-mix(in srgb, var(--app-overlay-from) 95%, transparent) 0%,
+			color-mix(in srgb, var(--app-overlay-to) 98%, transparent) 100%
 		);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		border: 1px solid var(--app-line);
 		border-radius: 1rem;
 		box-shadow:
 			0 25px 50px -12px rgba(0, 0, 0, 0.5),
-			0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+			0 0 0 1px rgb(var(--app-fill-rgb) / 0.05) inset;
 		outline: none;
 		opacity: 0;
 		transform: scale(0.95) translateY(10px);
@@ -282,10 +311,10 @@
 		width: 2.25rem;
 		height: 2.25rem;
 		padding: 0;
-		background: rgba(255, 255, 255, 0.1);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: var(--app-fill);
+		border: 1px solid var(--app-line);
 		border-radius: 0.5rem;
-		color: rgba(255, 255, 255, 0.7);
+		color: rgb(var(--app-fg-rgb) / 0.7);
 		cursor: pointer;
 		transition:
 			background 150ms ease,
@@ -294,8 +323,8 @@
 	}
 
 	.dialog-close:hover {
-		background: rgba(255, 255, 255, 0.15);
-		color: white;
+		background: rgb(var(--app-fill-rgb) / 0.15);
+		color: var(--app-text);
 		transform: scale(1.05);
 	}
 
@@ -348,9 +377,9 @@
 		z-index: 10;
 		pointer-events: none;
 		padding: 0.5rem 0.75rem;
-		border: 1px solid rgba(255, 255, 255, 0.15);
+		border: 1px solid rgb(var(--app-fill-rgb) / 0.15);
 		border-radius: 0.375rem;
-		background: color-mix(in srgb, var(--color-sidebar-bg), black 35%);
+		background: var(--app-tooltip);
 		box-shadow:
 			0 10px 15px -3px rgb(0 0 0 / 0.1),
 			0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -366,8 +395,8 @@
 		position: absolute;
 		width: 0.5rem;
 		height: 0.5rem;
-		background: color-mix(in srgb, var(--color-sidebar-bg), black 35%);
-		border: 0 solid rgba(255, 255, 255, 0.15);
+		background: var(--app-tooltip);
+		border: 0 solid rgb(var(--app-fill-rgb) / 0.15);
 		transform: rotate(45deg);
 		transition: left 150ms ease-out;
 	}
@@ -392,7 +421,7 @@
 		margin-top: 0.125rem;
 		font-size: 11px;
 		line-height: 1.375;
-		color: rgba(255, 255, 255, 0.75);
+		color: rgb(var(--app-fg-rgb) / 0.75);
 	}
 
 	@media (prefers-reduced-motion: reduce) {
@@ -535,19 +564,84 @@
 		}
 	}
 
-	/* Sidebar shadow only when expanded */
+	/* Sidebar shadow only when expanded. Dark canvases swallow soft shadows, so the
+	   dark theme casts a deeper one — see --app-panel-shadow in tokens.css. */
 	html[data-sidebar-open="true"] #site-sidebar {
-		box-shadow:
-			-16px 0 24px rgba(0, 0, 0, 0.12),
-			-4px 0 12px rgba(0, 0, 0, 0.08);
+		box-shadow: var(--app-panel-shadow);
 	}
 
-	@media (prefers-color-scheme: dark) {
-		html[data-sidebar-open="true"] #site-sidebar {
-			box-shadow:
-				-14px 0 20px rgba(0, 0, 0, 0.10),
-				-3px 0 10px rgba(0, 0, 0, 0.06);
-		}
+	/* Theme preview swatches (components/ThemeToggle.astro). Each carries its own
+	   data-theme, which tokens.css scopes the palette to. Primitive --app-* only:
+	   derived tokens are declared on :root and would resolve to the page's theme. */
+	.theme-preview,
+	.weather-preview {
+		position: relative;
+		display: block;
+		width: 100%;
+		aspect-ratio: 16 / 11;
+		border-radius: 0.375rem;
+		overflow: hidden;
+		background: var(--app-canvas);
+		box-shadow: inset 0 0 0 1px rgb(var(--app-fill-rgb) / 0.18);
+	}
+
+	/* The "system" swatch shows both palettes, split on the diagonal. */
+	.theme-preview-layer {
+		position: absolute;
+		inset: 0;
+		background: var(--app-canvas);
+		/* Keyed on the class, not [data-theme='dark'] — that flips to 'black'. */
+		clip-path: polygon(100% 0, 100% 100%, 0 100%);
+	}
+
+	.theme-preview-panel {
+		position: absolute;
+		inset-block: 0;
+		right: 0;
+		width: 34%;
+		background: var(--app-panel);
+	}
+
+	.theme-preview-mark {
+		position: absolute;
+		left: 12%;
+		height: 0.3125rem;
+		border-radius: 999px;
+	}
+
+	.theme-preview-mark:nth-of-type(1) {
+		top: 34%;
+		width: 30%;
+		background: var(--app-brand);
+	}
+
+	.theme-preview-mark:nth-of-type(2) {
+		top: 54%;
+		width: 20%;
+		background: rgb(var(--app-fg-rgb) / 0.45);
+	}
+
+	/* The effects assume a viewport-sized container: they park particles tens of px
+	   above it and fall 100vh. Rescaled to the tile; container-type gives cqh
+	   something to measure. */
+	.weather-preview {
+		container-type: size;
+		--weather-fall: 130cqh;
+	}
+
+	.weather-preview .raindrop {
+		top: -20%;
+		width: 1.5px;
+	}
+
+	.weather-preview .snowflake {
+		top: -10%;
+		box-shadow: none;
+	}
+
+	/* Nothing to act on in light, but still settable — a "system" user can pre-opt-in. */
+	html[data-theme="light"] [data-true-black-row] {
+		opacity: 0.55;
 	}
 
 	/* Remove all focus outlines and rings inside the sidebar */

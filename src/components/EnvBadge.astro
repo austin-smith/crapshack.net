@@ -11,20 +11,20 @@ const commitLabel = gitDirty ? `${gitSha} (dirty)` : gitSha;
 		type="button"
 		data-tooltip="env-badge-tooltip"
 		aria-describedby="env-badge-tooltip"
-		class="rounded-full border border-white/15 bg-[var(--color-sidebar-bg)] px-2.5 py-1 font-mono text-[10px] font-medium uppercase tracking-widest text-[var(--color-brand)] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
+		class="rounded-full border border-line-strong bg-[var(--color-sidebar-bg)] px-2.5 py-1 font-mono text-[10px] font-medium uppercase tracking-widest text-[var(--color-brand)] shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]"
 	>
 		{appEnv}
 	</button>
 	<Tooltip id="env-badge-tooltip" class="left-0 w-max font-mono">
 		<div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 whitespace-nowrap text-[10px]">
-			<span class="uppercase tracking-wider text-white/40">branch</span>
-			<span class="text-white/80">{gitBranch}</span>
-			<span class="uppercase tracking-wider text-white/40">commit</span>
-			<span class="text-white/80">{commitLabel}</span>
-			<span class="uppercase tracking-wider text-white/40">message</span>
-			<span class="max-w-56 truncate text-white/80">{gitCommitMessage}</span>
-			<span class="uppercase tracking-wider text-white/40">built</span>
-			<time id="env-badge-built-at" datetime={builtAtIso} class="text-white/80">
+			<span class="uppercase tracking-wider text-faint">branch</span>
+			<span class="text-subtle">{gitBranch}</span>
+			<span class="uppercase tracking-wider text-faint">commit</span>
+			<span class="text-subtle">{commitLabel}</span>
+			<span class="uppercase tracking-wider text-faint">message</span>
+			<span class="max-w-56 truncate text-subtle">{gitCommitMessage}</span>
+			<span class="uppercase tracking-wider text-faint">built</span>
+			<time id="env-badge-built-at" datetime={builtAtIso} class="text-subtle">
 				{formatShortDateTime(builtAtIso, { utc: true })}
 			</time>
 		</div>

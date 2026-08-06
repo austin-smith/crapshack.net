@@ -27,7 +27,7 @@
 
 	@keyframes fall {
 		to {
-			transform: translateY(100vh);
+			transform: translateY(var(--weather-fall, 100vh));
 		}
 	}
 
@@ -46,7 +46,7 @@
 
 	@keyframes snowfall {
 		to {
-			transform: translateY(100vh);
+			transform: translateY(var(--weather-fall, 100vh));
 		}
 	}
 

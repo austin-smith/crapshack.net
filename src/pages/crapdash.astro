@@ -32,21 +32,21 @@ const screenshots = [
 		<header class="flex items-center gap-4">
 			<img src={iconUrl} alt="crapdash icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
 			<div>
-				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">crapdash</h1>
-				<p class="text-white/90">{description}</p>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">crapdash</h1>
+				<p class="text-muted">{description}</p>
 			</div>
 		</header>
 
 		<div class="flex flex-wrap gap-2 sm:gap-3">
-			<a href={repoUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+			<a href={repoUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-on-brand hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
 				<span>github</span>
 			</a>
-			<a href={releasesUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+			<a href={releasesUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<Package width={16} height={16} stroke-width={2} class="mr-2" />
 				<span>releases</span>
 			</a>
-			<a href={dockerUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
+			<a href={dockerUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
 				<Container width={16} height={16} stroke-width={2} class="mr-2" />
 				<span class="sm:hidden">docker</span>
 				<span class="hidden sm:inline">docker image</span>
@@ -62,7 +62,7 @@ const screenshots = [
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
-			<ul class="list-disc pl-6 space-y-1 text-white/95">
+			<ul class="list-disc pl-6 space-y-1 text-strong">
 				<li><strong>Services</strong> - Save links with names, descriptions, and custom icons</li>
 				<li><strong>Categories</strong> - Group services into categories with drag-and-drop organization</li>
 				<li><strong>Admin panel</strong> - Manage services and categories through a simple UI</li>
@@ -73,7 +73,7 @@ const screenshots = [
 
 	<section class="space-y-3">
 		<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Quick Start</h2>
-		<p class="text-white/95">Deploy with Docker:</p>
+		<p class="text-strong">Deploy with Docker:</p>
 		<div class="flex justify-start mb-3">
 			<ToggleGroup
 				name="docker-method"
@@ -86,7 +86,7 @@ const screenshots = [
 			/>
 		</div>
 		<div class="relative group">
-			<pre class="bg-black/40 rounded-lg p-4 pr-12 overflow-x-auto text-sm"><code id="docker-command" class="text-white/90">docker run -d \
+			<pre class="bg-sunken-strong rounded-lg p-4 pr-12 overflow-x-auto text-sm"><code id="docker-command" class="text-muted">docker run -d \
   --name crapdash \
   -p 2727:2727 \
   --mount type=bind,source=/path/to/data,target=/app/data \
@@ -95,14 +95,14 @@ const screenshots = [
 			<button
 				id="copy-btn"
 				type="button"
-				class="absolute top-3 right-3 p-1.5 rounded-md bg-white/10 text-white/60 hover:text-white hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="absolute top-3 right-3 p-1.5 rounded-md bg-fill text-dim hover:text-[var(--color-text)] hover:bg-fill-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 				aria-label="Copy to clipboard"
 			>
 				<Copy id="copy-icon" width={16} height={16} stroke-width={2} />
 				<Check id="check-icon" class="hidden" width={16} height={16} stroke-width={2} />
 			</button>
 		</div>
-		<p class="text-white/95 pt-2">
+		<p class="text-strong pt-2">
 			Or download a <a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={releasesUrl} target="_blank" rel="noopener noreferrer">prebuilt bundle</a> for standalone Node.js deployment.
 		</p>
 	</section>

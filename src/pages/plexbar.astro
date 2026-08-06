@@ -73,8 +73,8 @@ const features = [
 		<header class="flex items-center gap-4">
 			<img src={iconUrl} alt="PlexBar icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
 			<div>
-				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">PlexBar</h1>
-				<p class="text-white/90">{description}</p>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">PlexBar</h1>
+				<p class="text-muted">{description}</p>
 			</div>
 		</header>
 
@@ -83,7 +83,7 @@ const features = [
 				href={repoUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-on-brand hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
 				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
 				<span>github</span>
@@ -92,7 +92,7 @@ const features = [
 				href={releasesUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex items-center rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
 				<Package width={16} height={16} stroke-width={2} class="mr-2" />
 				<span>releases</span>
@@ -101,7 +101,7 @@ const features = [
 				href={releasesUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex items-center rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 				data-appcast-url={appcastUrl}
 			>
 				<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
@@ -120,12 +120,12 @@ const features = [
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Views</h2>
 			<div class="grid grid-cols-2 gap-3">
 				{views.map((view) => (
-					<article class="rounded-lg border border-white/10 bg-white/[0.04] p-4 shadow-lg">
+					<article class="rounded-lg border border-line bg-raised p-4 shadow-lg">
 						<h3 class="flex items-center gap-2 font-mono font-semibold text-[var(--color-text)]">
 							<view.icon width={18} height={18} stroke-width={2} class="text-[var(--color-brand)]" />
 							<span>{view.title}</span>
 						</h3>
-						<p class="mt-2 text-sm text-white/80">{view.body}</p>
+						<p class="mt-2 text-sm text-subtle">{view.body}</p>
 					</article>
 				))}
 			</div>
@@ -133,7 +133,7 @@ const features = [
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
-			<ul class="list-disc pl-6 space-y-1 text-white/95">
+			<ul class="list-disc pl-6 space-y-1 text-strong">
 				{features.map((feature) => (
 					<li>{feature}</li>
 				))}

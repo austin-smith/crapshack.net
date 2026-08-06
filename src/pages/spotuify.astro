@@ -103,8 +103,8 @@ const features = [
 		<header class="flex items-center gap-4">
 			<img src={iconUrl} alt="spotuify icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
 			<div>
-				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">spotuify</h1>
-				<p class="text-white/90">{description}</p>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">spotuify</h1>
+				<p class="text-muted">{description}</p>
 			</div>
 		</header>
 
@@ -113,7 +113,7 @@ const features = [
 				href={repoUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-black hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-on-brand hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
 				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
 				<span>github</span>
@@ -122,7 +122,7 @@ const features = [
 				href={releasesUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex items-center rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
 				<Package width={16} height={16} stroke-width={2} class="mr-2" />
 				<span>releases</span>
@@ -131,7 +131,7 @@ const features = [
 				href={npmUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex items-center rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex items-center rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
 				<Package width={16} height={16} stroke-width={2} class="mr-2" />
 				<span>npm</span>
@@ -149,12 +149,12 @@ const features = [
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
 			<div class="grid grid-cols-2 gap-3 lg:grid-cols-3">
 				{features.map((feature) => (
-					<article class="rounded-lg border border-white/10 bg-white/[0.04] p-4 shadow-lg">
+					<article class="rounded-lg border border-line bg-raised p-4 shadow-lg">
 						<h3 class="flex items-center gap-2 font-mono font-semibold text-[var(--color-text)]">
 							<feature.icon width={18} height={18} stroke-width={2} class="text-[var(--color-brand)]" />
 							<span>{feature.title}</span>
 						</h3>
-						<p class="mt-2 text-sm text-white/80">{feature.body}</p>
+						<p class="mt-2 text-sm text-subtle">{feature.body}</p>
 					</article>
 				))}
 			</div>
@@ -170,15 +170,15 @@ const features = [
 			<div>
 				{installMethods.map(({ value, caption, command }, index) => (
 					<div data-install-pane={value} class:list={['space-y-3', { hidden: index !== 0 }]}>
-						<p class="text-white/95">{caption}</p>
+						<p class="text-strong">{caption}</p>
 						<div class="space-y-1">
-							<p class="font-mono text-sm text-white/80">Install spotuify</p>
-							<div class="flex items-center justify-between gap-3 rounded-lg bg-black/40 px-4 py-2.5">
-								<pre class="overflow-x-auto text-sm"><code class="text-white/90">{command}</code></pre>
+							<p class="font-mono text-sm text-subtle">Install spotuify</p>
+							<div class="flex items-center justify-between gap-3 rounded-lg bg-sunken-strong px-4 py-2.5">
+								<pre class="overflow-x-auto text-sm"><code class="text-muted">{command}</code></pre>
 								<button
 									type="button"
 									data-copy-command={command}
-									class="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+									class="shrink-0 rounded-md bg-fill p-1.5 text-dim transition-colors hover:bg-fill-strong hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 									aria-label={`Copy ${command}`}
 								>
 									<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
@@ -187,13 +187,13 @@ const features = [
 							</div>
 						</div>
 						<div class="space-y-1">
-							<p class="font-mono text-sm text-white/80">Update spotuify</p>
-							<div class="flex items-center justify-between gap-3 rounded-lg bg-black/40 px-4 py-2.5">
-								<pre class="overflow-x-auto text-sm"><code class="text-white/90">spotuify update</code></pre>
+							<p class="font-mono text-sm text-subtle">Update spotuify</p>
+							<div class="flex items-center justify-between gap-3 rounded-lg bg-sunken-strong px-4 py-2.5">
+								<pre class="overflow-x-auto text-sm"><code class="text-muted">spotuify update</code></pre>
 								<button
 									type="button"
 									data-copy-command="spotuify update"
-									class="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+									class="shrink-0 rounded-md bg-fill p-1.5 text-dim transition-colors hover:bg-fill-strong hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 									aria-label="Copy spotuify update"
 								>
 									<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
@@ -204,7 +204,7 @@ const features = [
 					</div>
 				))}
 			</div>
-			<p class="text-white/95">
+			<p class="text-strong">
 				Direct downloads for macOS, Linux, and Windows are on{" "}
 				<a
 					href={releasesUrl}
@@ -217,8 +217,8 @@ const features = [
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># First-time Setup</h2>
-			<p class="text-white/95">Requirements</p>
-			<ul class="list-disc pl-6 space-y-1 text-white/95">
+			<p class="text-strong">Requirements</p>
+			<ul class="list-disc pl-6 space-y-1 text-strong">
 				<li>
 					A <a
 						href="https://developer.spotify.com/dashboard"
@@ -237,13 +237,13 @@ const features = [
 				</li>
 			</ul>
 			<div class="space-y-1">
-				<p class="font-mono text-sm text-white/80">Follow the guided setup</p>
-				<div class="flex items-center justify-between gap-3 rounded-lg bg-black/40 px-4 py-2.5">
-					<pre class="overflow-x-auto text-sm"><code class="text-white/90">spotuify auth</code></pre>
+				<p class="font-mono text-sm text-subtle">Follow the guided setup</p>
+				<div class="flex items-center justify-between gap-3 rounded-lg bg-sunken-strong px-4 py-2.5">
+					<pre class="overflow-x-auto text-sm"><code class="text-muted">spotuify auth</code></pre>
 					<button
 						type="button"
 						data-copy-command="spotuify auth"
-						class="shrink-0 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+						class="shrink-0 rounded-md bg-fill p-1.5 text-dim transition-colors hover:bg-fill-strong hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 						aria-label="Copy spotuify auth"
 					>
 						<Copy class="copy-icon" width={16} height={16} stroke-width={2} />

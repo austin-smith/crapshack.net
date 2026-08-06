@@ -6,23 +6,25 @@ interface Props {
 
 const { labelledBy } = Astro.props as Props;
 
+// `preview` is the data-theme each swatch paints in; `system` shows both, split
+// on the diagonal. theme.ts swaps dark's to `black` when that variant is on.
 const options = [
-	{ value: 'off', label: 'clear' },
-	{ value: 'rain', label: 'rain' },
-	{ value: 'snow', label: 'snow' },
+	{ value: 'system', label: 'system', preview: 'light', second: 'dark' },
+	{ value: 'light', label: 'light', preview: 'light' },
+	{ value: 'dark', label: 'dark', preview: 'dark' },
 ];
 ---
 
 <div
 	role="radiogroup"
-	aria-label={labelledBy ? undefined : 'Weather effect'}
+	aria-label={labelledBy ? undefined : 'Color theme'}
 	aria-labelledby={labelledBy}
 	aria-orientation="horizontal"
 	class="flex gap-3"
 >
-	{options.map(({ value, label }) => (
+	{options.map(({ value, label, preview, second }) => (
 		<button
-			data-effect-option={value}
+			data-theme-option={value}
 			role="radio"
 			aria-checked="false"
 			tabindex="-1"
@@ -30,22 +32,20 @@ const options = [
 			class="group flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-lg transition-colors focus-visible:outline-none"
 		>
 			<span class="relative block w-full rounded-md ring-1 ring-line ring-offset-2 ring-offset-[var(--app-overlay-to)] transition-[box-shadow,transform] duration-150 ease-out group-hover:scale-[1.06] group-hover:ring-line-strong motion-reduce:transition-none motion-reduce:group-hover:scale-100 group-focus-visible:ring-2 group-focus-visible:ring-[var(--color-brand)] group-data-[checked]:ring-2 group-data-[checked]:ring-[var(--color-accent)]">
-				<span class="weather-preview" data-weather-preview={value}></span>
+				{/* Panel last so it paints over the marks, like the real fixed sidebar. */}
+				<span class="theme-preview" data-theme={preview} data-theme-preview={value}>
+					<span class="theme-preview-mark"></span>
+					<span class="theme-preview-mark"></span>
+					<span class="theme-preview-panel"></span>
+					{second && (
+						<span class="theme-preview-layer" data-theme={second}>
+							<span class="theme-preview-mark"></span>
+							<span class="theme-preview-panel"></span>
+						</span>
+					)}
+				</span>
 			</span>
 			<span class="text-xs text-dim transition-colors group-hover:text-subtle group-data-[checked]:text-[var(--color-text)]">{label}</span>
 		</button>
 	))}
 </div>
-
-<script>
-	import { initRainyDay } from '../lib/weather/rain';
-	import { initSnowyDay } from '../lib/weather/snow';
-
-	// The real effects, in miniature — same code the page runs, just fewer and
-	// smaller particles. The tile sets --weather-fall so they fall its height
-	// rather than the viewport's.
-	const rain = document.querySelector<HTMLElement>('[data-weather-preview="rain"]');
-	const snow = document.querySelector<HTMLElement>('[data-weather-preview="snow"]');
-	if (rain) initRainyDay(rain, { count: 20, scale: 0.34, speed: 0.5 });
-	if (snow) initSnowyDay(snow, { count: 12, scale: 0.4, speed: 0.3 });
-</script>
