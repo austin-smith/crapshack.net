@@ -877,7 +877,11 @@ class Physics404Scene {
 export async function initPhysics404(root: HTMLElement): Promise<() => void> {
 	const canvas = root.querySelector<HTMLCanvasElement>('[data-physics-canvas]');
 	const serializedSources = root.dataset.imageSources;
-	if (!canvas || !serializedSources || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return () => undefined;
+	if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return () => undefined;
+	if (!canvas || !serializedSources) {
+		root.dataset.physicsFailed = 'true';
+		return () => undefined;
+	}
 
 	try {
 		const sources = JSON.parse(serializedSources) as unknown;
@@ -888,6 +892,7 @@ export async function initPhysics404(root: HTMLElement): Promise<() => void> {
 		const scene = new Physics404Scene(root, canvas, images.map(analyzeGlyph));
 		return () => scene.destroy();
 	} catch (error) {
+		root.dataset.physicsFailed = 'true';
 		console.error('Could not start the interactive 404 scene.', error);
 		return () => undefined;
 	}
