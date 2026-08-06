@@ -1,0 +1,161 @@
+---
+const glyphs = [
+	{ source: '/images/404/four-left.png', width: 150, height: 196 },
+	{ source: '/images/404/zero.png', width: 149, height: 198 },
+	{ source: '/images/404/four-right.png', width: 151, height: 192 },
+];
+---
+
+<section
+	class="physics-404"
+	data-physics-404
+	data-image-sources={JSON.stringify(glyphs.map(({ source }) => source))}
+>
+	<canvas class="physics-404__canvas" data-physics-canvas aria-hidden="true"></canvas>
+	<div class="physics-404__fallback" aria-hidden="true">
+		{glyphs.map((glyph) => (
+			<img
+				src={glyph.source}
+				alt=""
+				width={glyph.width}
+				height={glyph.height}
+				loading="eager"
+				decoding="async"
+			/>
+		))}
+	</div>
+
+	<div class="physics-404__copy">
+		<h1 class="sr-only">404: Page not found</h1>
+		<p
+			class="physics-404__message"
+			data-typed-text
+			aria-label="this must not be the place"
+		><noscript>this must not be the place</noscript></p>
+		<a href="/" class="physics-404__home group">
+			<span class="squiggle-underline"><span aria-hidden="true">←</span> go home</span>
+		</a>
+	</div>
+
+</section>
+
+<style>
+	.physics-404 {
+		position: relative;
+		height: 100dvh;
+		overflow: hidden;
+	}
+
+	.physics-404__canvas,
+	.physics-404__fallback {
+		position: absolute;
+		inset: 0;
+		z-index: 3;
+	}
+
+	.physics-404__canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+		cursor: grab;
+		opacity: 0;
+		touch-action: none;
+		transition: opacity 320ms ease-out;
+		user-select: none;
+	}
+
+	.physics-404__canvas:active {
+		cursor: grabbing;
+	}
+
+	.physics-404[data-physics-ready='true'] .physics-404__canvas {
+		opacity: 1;
+	}
+
+	.physics-404__fallback {
+		inset: 50% auto auto 50%;
+		display: none;
+		align-items: center;
+		gap: min(0.61vw, 0.7dvh);
+		grid-template-columns: 600fr 596fr 604fr;
+		width: min(92.6vw, 106.2dvh);
+		filter: drop-shadow(0 16px 12px rgba(14, 54, 88, 0.2));
+		pointer-events: none;
+		transform: translate(-50%, -50%);
+	}
+
+	.physics-404__fallback img {
+		width: 100%;
+		height: auto;
+	}
+
+	.physics-404[data-physics-failed='true'] .physics-404__fallback {
+		display: grid;
+	}
+
+	.physics-404__copy {
+		position: absolute;
+		top: clamp(5rem, 12vh, 7.5rem);
+		left: clamp(1.5rem, 6vw, 5rem);
+		z-index: 10;
+		max-width: min(34rem, calc(100vw - 5rem));
+		color: white;
+		pointer-events: none;
+		text-align: left;
+		text-shadow: 0 2px 10px rgba(16, 62, 100, 0.2);
+	}
+
+	.physics-404__message {
+		min-height: 1.45em;
+		margin: 0 0 1.4rem;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		font-size: clamp(1.05rem, 2.3vw, 1.45rem);
+		font-weight: 600;
+		letter-spacing: -0.035em;
+		line-height: 1.35;
+	}
+
+	.physics-404__home {
+		display: inline-block;
+		color: white;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		font-size: 0.95rem;
+		font-weight: 650;
+		pointer-events: auto;
+		text-decoration: none;
+		transition: color 150ms ease;
+	}
+
+	.physics-404__home:hover {
+		color: var(--color-brand);
+	}
+
+	.physics-404__home:focus-visible {
+		border-radius: 0.2rem;
+		outline: 2px solid white;
+		outline-offset: 6px;
+	}
+
+	@media (max-width: 640px) {
+		.physics-404__copy {
+			top: 4.7rem;
+			left: 1.35rem;
+			max-width: calc(100vw - 3.5rem);
+		}
+
+		.physics-404__message {
+			margin-bottom: 1.1rem;
+			font-size: 1rem;
+		}
+	}
+
+	@media (scripting: none), (prefers-reduced-motion: reduce) {
+		.physics-404__canvas {
+			display: none;
+		}
+
+		.physics-404__fallback {
+			display: grid;
+		}
+	}
+</style>

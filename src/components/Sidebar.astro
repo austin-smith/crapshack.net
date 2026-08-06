@@ -71,14 +71,14 @@ const appLinks = apps
 				href={repoUrl}
 				target="_blank" 
 				rel="noopener noreferrer"
-				class="group flex w-full items-center justify-between gap-3 text-dim hover:text-[var(--color-brand)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70 rounded-sm"
+				class="group grid w-full grid-cols-[2rem_minmax(0,1fr)_auto] items-center text-dim hover:text-[var(--color-brand)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70 rounded-sm"
 				aria-label="View source on GitHub"
 			>
-				<span class="inline-flex min-w-0 items-center gap-2">
-					<span aria-hidden="true" class="h-4 w-4 shrink-0 icon-github"></span>
-					<span class="truncate">crapshack.net</span>
+				<span aria-hidden="true" class="flex size-8 items-center justify-center">
+					<span class="size-4 icon-github"></span>
 				</span>
-				<span class="shrink-0 text-faint transition-colors group-hover:text-[var(--color-brand)]">v{version}</span>
+				<span class="truncate">crapshack.net</span>
+				<span class="ml-2 shrink-0 text-faint transition-colors group-hover:text-[var(--color-brand)]">v{version}</span>
 			</a>
 		</div>
 	</div>

@@ -16,9 +16,10 @@ interface Props {
   title?: string;
   ogImage?: string;
   noIndex?: boolean;
+  fullBleed?: boolean;
 }
 
-const { title, ogImage, noIndex } = Astro.props as Props;
+const { title, ogImage, noIndex, fullBleed = false } = Astro.props as Props;
 ---
 <!doctype html>
 <html lang="en">
@@ -77,7 +78,7 @@ const { title, ogImage, noIndex } = Astro.props as Props;
 		<Seo title={title} ogImage={ogImage} noIndex={noIndex} />
 		<slot name="head" />
 	</head>
-	<body>
+	<body class:list={{ 'layout-full-bleed': fullBleed }}>
 		<header>
 			<div class="header-inner">
 				<button
@@ -101,7 +102,7 @@ const { title, ogImage, noIndex } = Astro.props as Props;
 				</button>
 			</div>
 		</header>
-		<main>
+		<main class:list={{ 'site-main--full-bleed': fullBleed }}>
 			<slot />
 		</main>
 		<Sidebar />
