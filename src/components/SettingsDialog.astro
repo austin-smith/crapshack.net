@@ -1,0 +1,81 @@
+---
+import Dialog from './ui/Dialog.astro';
+import ThemeToggle from './ThemeToggle.astro';
+import WeatherToggle from './WeatherToggle.astro';
+
+const dialogId = 'settings-dialog';
+---
+
+{/* ariaLabel tracks the visible heading; WCAG 2.5.3 won't let them diverge. */}
+<Dialog id={dialogId} maxWidth="max-w-xs" ariaLabel="knobs">
+	<div class="font-mono">
+		<h2 class="text-lg font-semibold text-[var(--color-text)]">knobs</h2>
+
+		<div class="mt-4 space-y-4">
+			<div class="space-y-1.5">
+				<p id="settings-theme-label" class="text-sm text-subtle">theme</p>
+				<ThemeToggle labelledBy="settings-theme-label" />
+			</div>
+
+			{/* Applies on top of any resolved dark, so it stays settable under `system`. */}
+			<div class="flex items-center justify-between gap-4" data-true-black-row>
+				<label for="true-black-toggle" class="text-sm text-subtle">you want it darker</label>
+				<button
+					id="true-black-toggle"
+					type="button"
+					role="switch"
+					aria-checked="false"
+					data-true-black-toggle
+					class="group relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-fill-strong transition-colors aria-checked:bg-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-overlay-to)]"
+				>
+					{/* aria-checked lives on the button, so the thumb reads it via `group-`. */}
+					<span
+						aria-hidden="true"
+						class="pointer-events-none ml-0.5 size-5 rounded-full bg-[var(--app-overlay-to)] shadow transition-transform group-aria-checked:translate-x-5 motion-reduce:transition-none"
+						data-true-black-thumb
+					></span>
+				</button>
+			</div>
+
+			<div class="space-y-1.5 border-t border-line pt-4">
+				<p id="settings-weather-label" class="text-sm text-subtle">weather</p>
+				<WeatherToggle labelledBy="settings-weather-label" />
+			</div>
+		</div>
+	</div>
+</Dialog>
+
+<script>
+	import { closeDialog, isAnyDialogOpen, openDialog } from '../lib/ui/dialog';
+	import { registerShortcut } from '../lib/ui/shortcuts';
+
+	// The drawer stays open behind this dialog, so two aria-modals would overlap.
+	// The sidebar drops its own while this one is up; sidebar.ts yields Escape and Tab.
+	const sidebar = document.getElementById('site-sidebar');
+	const dialog = document.getElementById('settings-dialog');
+
+	document.addEventListener('click', (e) => {
+		const trigger = (e.target as HTMLElement | null)?.closest('[data-settings-open]');
+		if (!trigger) return;
+		e.preventDefault();
+		// Deferred so the dialog's own document-level outside-click handler doesn't
+		// treat this click as an outside one. Not rAF: must not wait on compositing.
+		setTimeout(() => openDialog('settings-dialog'), 0);
+	});
+
+	registerShortcut({
+		key: ',',
+		run: () => {
+			if (dialog?.dataset.open === 'true') return closeDialog('settings-dialog');
+			// Some other dialog is up; do not stack a second one on it.
+			if (isAnyDialogOpen()) return;
+			openDialog('settings-dialog');
+		},
+	});
+
+	if (sidebar && dialog) {
+		new MutationObserver(() => {
+			sidebar.setAttribute('aria-modal', dialog.dataset.open === 'true' ? 'false' : 'true');
+		}).observe(dialog, { attributes: true, attributeFilter: ['data-open'] });
+	}
+</script>

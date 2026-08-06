@@ -8,6 +8,8 @@
  */
 
 import { initCollapsibles } from '../lib/ui/collapsible';
+import { isAnyDialogOpen } from '../lib/ui/dialog';
+import { registerShortcut } from '../lib/ui/shortcuts';
 import { hideTooltips } from '../lib/ui/tooltip';
 
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
@@ -49,6 +51,26 @@ class SidebarController {
     });
     document.addEventListener('keydown', this.onKeyDown);
 
+    registerShortcut({
+      key: 'b',
+      mod: true,
+      run: () => {
+        // The dialog returns focus to the gear on close, which would be offscreen.
+        if (isAnyDialogOpen()) return;
+        if (this.isOpen) this.close();
+        else this.open();
+      },
+    });
+    registerShortcut({
+      key: 'i',
+      run: () => {
+        if (!this.isOpen || isAnyDialogOpen()) return;
+        const infoEl = document.getElementById('sidebar-info');
+        infoEl?.classList.toggle('hidden');
+        infoEl?.classList.toggle('flex');
+      },
+    });
+
     // Close after clicking any link within the sidebar (but not ctrl/cmd/middle-click for new tab)
     this.sidebar.addEventListener('click', (e) => {
       const target = e.target as HTMLElement | null;
@@ -68,52 +90,12 @@ class SidebarController {
     this.sidebar.addEventListener('focusin', this.onInteractiveEnter);
   }
 
-  private isEditableTarget(target: Element | null): boolean {
-    if (!target) return false;
-    if (target instanceof HTMLInputElement) return true;
-    if (target instanceof HTMLTextAreaElement) return true;
-    if (target instanceof HTMLSelectElement) return true;
-    const editableAncestor = (target as Element).closest('[contenteditable]');
-    if (editableAncestor instanceof HTMLElement) {
-      const attr = editableAncestor.getAttribute('contenteditable');
-      if (attr === null) return true;
-      return attr.toLowerCase() !== 'false';
-    }
-    return false;
-  }
-
   private onKeyDown = (e: KeyboardEvent) => {
-    // Cmd/Ctrl + B toggles sidebar when not typing in an editable element
-    const isToggleChord =
-      (e.metaKey || e.ctrlKey) &&
-      !e.altKey &&
-      !e.shiftKey &&
-      ((typeof e.code === 'string' && e.code.toLowerCase() === 'keyb') ||
-        (typeof e.key === 'string' && e.key.toLowerCase() === 'b'));
-
-    if (isToggleChord && !this.isEditableTarget(e.target as Element | null)) {
-      e.preventDefault();
-      if (this.isOpen) {
-        this.close();
-      } else {
-        this.open();
-      }
-      return;
-    }
-
     if (!this.isOpen) return;
-    
-    // "i" key toggles info section (version/github)
-    if (e.key.toLowerCase() === 'i' && !this.isEditableTarget(e.target as Element | null)) {
-      e.preventDefault();
-      const infoEl = document.getElementById('sidebar-info');
-      if (infoEl) {
-        infoEl.classList.toggle('hidden');
-        infoEl.classList.toggle('flex');
-      }
-      return;
-    }
-    
+
+    // Otherwise the sidebar swallows Escape and its Tab trap steals focus back.
+    if (isAnyDialogOpen()) return;
+
     if (e.key === 'Escape') {
       e.preventDefault();
       this.close();
@@ -143,6 +125,7 @@ class SidebarController {
   private onInteractiveEnter = (e: Event) => {
     const target = e.target as Element | null;
     if (!target) return;
+
     const anchor = target.closest('a');
     if (!anchor || !this.sidebar.contains(anchor)) return;
     const span = anchor.querySelector('.squiggle-underline') as HTMLElement | null;

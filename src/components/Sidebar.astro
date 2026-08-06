@@ -1,5 +1,5 @@
 ---
-import WeatherToggle from './WeatherToggle.astro';
+import SettingsGear from './icons/animated/SettingsGear.astro';
 import Tooltip from './ui/Tooltip.astro';
 import { LayoutGrid } from '@lucide/astro';
 import packageJson from '../../package.json';
@@ -19,7 +19,7 @@ const appLinks = apps
 	}))
 	.sort((a, b) => a.label.localeCompare(b.label));
 ---
-<div id="sidebar-overlay" class="fixed inset-0 z-[90] bg-black/20"></div>
+<div id="sidebar-overlay" class="fixed inset-0 z-[90] bg-scrim"></div>
 
 <aside
 	id="site-sidebar"
@@ -27,22 +27,22 @@ const appLinks = apps
 	aria-modal="true"
 	aria-labelledby="site-sidebar-title"
 	tabindex="-1"
-	class="fixed inset-y-0 right-0 z-[100] h-full w-56 sm:w-64 bg-[var(--color-sidebar-bg)] text-[var(--color-text)] border-l border-white/10 transform translate-x-full transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none overflow-hidden font-mono flex flex-col"
+	class="fixed inset-y-0 right-0 z-[100] h-full w-56 sm:w-64 bg-[var(--color-sidebar-bg)] text-[var(--color-text)] border-l border-line transform translate-x-full transition-transform duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none overflow-hidden font-mono flex flex-col"
 >
 	<h2 id="site-sidebar-title" class="sr-only">Site navigation</h2>
 	<nav class="relative flex flex-col gap-0.5 px-4 pt-3 pb-4 sm:px-5 sm:pt-4 sm:pb-6 grow overflow-y-auto">
 		<a href="/" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">home</span></a>
 		<a href="https://ombi.crapshack.net" target="_blank" rel="noopener noreferrer" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">plex requests</span></a>
 		<a href="https://plex.crapshack.net" target="_blank" rel="noopener noreferrer" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">plex</span></a>
-		<p class="mt-4 px-4 pb-1.5 text-xs font-medium uppercase tracking-wider text-white/40">apps</p>
+		<p class="mt-4 px-4 pb-1.5 text-xs font-medium uppercase tracking-wider text-faint">apps</p>
 		<div class="grid grid-cols-3 gap-1">
 			{appLinks.map((app) => (
-				<a href={app.href} data-tooltip="sidebar-app-tooltip" data-tooltip-title={app.name} data-tooltip-body={app.description} aria-describedby="sidebar-app-tooltip" class="group flex flex-col items-center gap-1.5 rounded-lg px-0.5 pt-2.5 pb-2 text-[var(--color-text)] transition-colors hover:bg-white/10 hover:text-[var(--color-brand)]">
+				<a href={app.href} data-tooltip="sidebar-app-tooltip" data-tooltip-title={app.name} data-tooltip-body={app.description} aria-describedby="sidebar-app-tooltip" class="group flex flex-col items-center gap-1.5 rounded-lg px-0.5 pt-2.5 pb-2 text-[var(--color-text)] transition-colors hover:bg-fill hover:text-[var(--color-brand)]">
 					<img src={app.icon} alt="" aria-hidden="true" class="size-8 object-contain transition-transform duration-150 ease-out group-hover:scale-110 motion-reduce:transition-none" loading="lazy" />
 					<span class="w-full truncate text-center text-[10px] leading-tight">{app.label}</span>
 				</a>
 			))}
-			<a href="/apps" data-tooltip="sidebar-app-tooltip" data-tooltip-title="all apps" data-tooltip-body="Browse the full app list." aria-describedby="sidebar-app-tooltip" class="group flex flex-col items-center gap-1.5 rounded-lg px-0.5 pt-2.5 pb-2 text-[var(--color-text)] transition-colors hover:bg-white/10 hover:text-[var(--color-brand)]">
+			<a href="/apps" data-tooltip="sidebar-app-tooltip" data-tooltip-title="all apps" data-tooltip-body="Browse the full app list." aria-describedby="sidebar-app-tooltip" class="group flex flex-col items-center gap-1.5 rounded-lg px-0.5 pt-2.5 pb-2 text-[var(--color-text)] transition-colors hover:bg-fill hover:text-[var(--color-brand)]">
 				<span class="flex size-8 shrink-0 items-center justify-center transition-transform duration-150 ease-out group-hover:scale-110 motion-reduce:transition-none">
 					<LayoutGrid class="size-6" stroke-width={2} aria-hidden="true" />
 				</span>
@@ -51,25 +51,41 @@ const appLinks = apps
 		</div>
 		<Tooltip id="sidebar-app-tooltip" class="left-4 right-4 sm:left-5 sm:right-5" />
 	</nav>
-	<div class="mt-auto px-4 sm:px-5 pb-3 sm:pb-4 space-y-3">
-		<WeatherToggle />
-		<div 
+	<div class="mt-auto px-4 sm:px-5 pb-3 sm:pb-4">
+		{/* No aria-describedby: the tooltip only repeats the aria-label. */}
+		<button
+			type="button"
+			data-settings-open
+			aria-label="knobs"
+			data-tooltip="sidebar-knobs-tooltip"
+			data-tooltip-body="knobs"
+			class="group flex size-8 items-center justify-center rounded-md text-dim transition-colors hover:bg-fill hover:text-[var(--color-brand)]"
+		>
+			<SettingsGear size={16} />
+		</button>
+		<div
 			id="sidebar-info"
-			class="hidden text-xs border-t border-white/10 pt-3"
+			class="hidden text-xs border-t border-line mt-3 pt-3"
 		>
 			<a 
 				href={repoUrl}
 				target="_blank" 
 				rel="noopener noreferrer"
-				class="group flex w-full items-center justify-between gap-3 text-white/60 hover:text-[var(--color-brand)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70 rounded-sm"
+				class="group flex w-full items-center justify-between gap-3 text-dim hover:text-[var(--color-brand)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70 rounded-sm"
 				aria-label="View source on GitHub"
 			>
 				<span class="inline-flex min-w-0 items-center gap-2">
 					<span aria-hidden="true" class="h-4 w-4 shrink-0 icon-github"></span>
 					<span class="truncate">crapshack.net</span>
 				</span>
-				<span class="shrink-0 text-white/40 transition-colors group-hover:text-[var(--color-brand)]">v{version}</span>
+				<span class="shrink-0 text-faint transition-colors group-hover:text-[var(--color-brand)]">v{version}</span>
 			</a>
 		</div>
 	</div>
+	{/*
+		Its own panel, and a direct child of <aside>: tooltip.ts positions against
+		targets sharing the panel's offset parent, and the nav's is inside <nav>.
+		The inset hand-centres it on the button — retune if the label grows.
+	*/}
+	<Tooltip id="sidebar-knobs-tooltip" class="left-1 sm:left-2 w-max max-w-[calc(100%-1rem)]" />
 </aside>

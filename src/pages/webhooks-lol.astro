@@ -79,8 +79,8 @@ const features = [
 		<header class="flex items-center gap-4">
 			<img src={iconUrl} alt="webhooks.lol icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
 			<div>
-				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-white bg-clip-text text-transparent">webhooks.lol</h1>
-				<p class="text-white/90">{description}</p>
+				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">webhooks.lol</h1>
+				<p class="text-muted">{description}</p>
 			</div>
 		</header>
 
@@ -89,7 +89,7 @@ const features = [
 				href={repoUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-black hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-on-brand hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
 				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
 				<span>github</span>
@@ -98,7 +98,7 @@ const features = [
 				href={appUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
 				<ExternalLink width={16} height={16} stroke-width={2} class="mr-2" />
 				<span>web app</span>
@@ -107,7 +107,7 @@ const features = [
 				href={docsUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
 				<BookText width={16} height={16} stroke-width={2} class="mr-2" />
 				<span>docs</span>
@@ -116,7 +116,7 @@ const features = [
 				href={npmUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md border border-white/20 px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 			>
 				<Package width={16} height={16} stroke-width={2} class="mr-2" />
 				<span>npm</span>
@@ -134,13 +134,13 @@ const features = [
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Features</h2>
 			<div class="grid grid-cols-2 gap-3 lg:grid-cols-3">
 				{features.map((feature) => (
-					<article class="rounded-lg border border-white/10 bg-white/[0.04] p-4 shadow-lg">
+					<article class="rounded-lg border border-line bg-raised p-4 shadow-lg">
 						<h3 class="flex items-center gap-2 font-mono font-semibold text-[var(--color-text)]">
 							<feature.icon width={18} height={18} stroke-width={2} class="text-[var(--color-brand)]" />
 							<span>{feature.title}</span>
 						</h3>
 						{feature.title === 'CLI' ? (
-							<p class="mt-2 text-sm text-white/80">
+							<p class="mt-2 text-sm text-subtle">
 								Forward, tail, and replay endpoint traffic from the terminal.{' '}
 								<a
 									href={npmUrl}
@@ -152,7 +152,7 @@ const features = [
 								</a>.
 							</p>
 						) : (
-							<p class="mt-2 text-sm text-white/80">{feature.body}</p>
+							<p class="mt-2 text-sm text-subtle">{feature.body}</p>
 						)}
 					</article>
 				))}
@@ -161,20 +161,20 @@ const features = [
 
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Use</h2>
-			<p class="text-white/95">Copy the receive URL, set it as the webhook target, then send a test request.</p>
+			<p class="text-strong">Copy the receive URL, set it as the webhook target, then send a test request.</p>
 			<div class="relative group">
-				<pre class="overflow-x-auto rounded-lg bg-black/40 p-4 pr-12 text-sm"><code id="webhooks-lol-curl-command" class="text-white/90">{curlExample}</code></pre>
+				<pre class="overflow-x-auto rounded-lg bg-sunken-strong p-4 pr-12 text-sm"><code id="webhooks-lol-curl-command" class="text-muted">{curlExample}</code></pre>
 				<button
 					id="webhooks-lol-copy-btn"
 					type="button"
-					class="absolute top-3 right-3 rounded-md bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+					class="absolute top-3 right-3 rounded-md bg-fill p-1.5 text-dim transition-colors hover:bg-fill-strong hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
 					aria-label="Copy curl example"
 				>
 					<Copy id="webhooks-lol-copy-icon" width={16} height={16} stroke-width={2} />
 					<Check id="webhooks-lol-check-icon" class="hidden" width={16} height={16} stroke-width={2} />
 				</button>
 			</div>
-			<p class="text-white/95">
+			<p class="text-strong">
 				Requests appear live in the inspector, with body, headers, query, and raw views in the detail pane.
 			</p>
 		</section>

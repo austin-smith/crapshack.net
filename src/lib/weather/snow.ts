@@ -3,35 +3,44 @@
  */
 
 interface Snowflake {
-  element: HTMLDivElement;
+	element: HTMLDivElement;
 }
 
-export function initSnowyDay(container: HTMLElement) {
-  const flakes: Snowflake[] = [];
-  const numberOfFlakes = 100;
+interface WeatherOptions {
+	/** Particle count. Fewer for small containers such as the settings previews. */
+	count?: number;
+	/** Multiplies particle size, so a preview tile is not full of full-size flakes. */
+	scale?: number;
+	/** Multiplies duration and delay. A short fall needs a short time to fall it. */
+	speed?: number;
+}
 
-  for (let i = 0; i < numberOfFlakes; i++) {
-    const flake = document.createElement('div');
-    flake.className = 'snowflake';
+export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {}) {
+	const { count: numberOfFlakes = 100, scale = 1, speed: speedScale = 1 } = options;
+	const flakes: Snowflake[] = [];
 
-    const x = Math.random() * 100;
-    const size = 2 + Math.random() * 3; // 2-5px
-    const speed = 6 + Math.random() * 6; // 6-12s
-    const delay = Math.random() * 6; // 0-6s stagger
-    const opacity = 0.7 + Math.random() * 0.3; // 0.7-1.0
+	for (let i = 0; i < numberOfFlakes; i++) {
+		const flake = document.createElement('div');
+		flake.className = 'snowflake';
 
-    flake.style.left = `${x}%`;
-    flake.style.width = `${size}px`;
-    flake.style.height = `${size}px`;
-    flake.style.opacity = `${opacity}`;
-    flake.style.animationDuration = `${speed}s`;
-    flake.style.animationDelay = `${delay}s`;
+		const x = Math.random() * 100;
+		const size = (2 + Math.random() * 3) * scale; // 2-5px unscaled
+		const speed = (6 + Math.random() * 6) * speedScale; // 6-12s unscaled
+		const delay = Math.random() * 6 * speedScale; // 0-6s stagger unscaled
+		const opacity = 0.7 + Math.random() * 0.3; // 0.7-1.0
 
-    container.appendChild(flake);
-    flakes.push({ element: flake });
-  }
+		flake.style.left = `${x}%`;
+		flake.style.width = `${size}px`;
+		flake.style.height = `${size}px`;
+		flake.style.opacity = `${opacity}`;
+		flake.style.animationDuration = `${speed}s`;
+		flake.style.animationDelay = `${delay}s`;
 
-  return () => {
-    for (const f of flakes) f.element.remove();
-  };
+		container.appendChild(flake);
+		flakes.push({ element: flake });
+	}
+
+	return () => {
+		for (const f of flakes) f.element.remove();
+	};
 }
