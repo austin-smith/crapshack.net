@@ -111,8 +111,7 @@ class ThemeController {
 			else option.removeAttribute('data-checked');
 			option.setAttribute('tabindex', checked ? '0' : '-1');
 		}
-		// Focus follows selection while it is inside the group, or the old option keeps
-		// its focus ring next to the new one's selected ring and both look chosen.
+		// Otherwise the old swatch keeps its focus ring next to the new one's selected ring.
 		if (document.activeElement instanceof HTMLElement && document.activeElement.matches('[data-theme-option]')) {
 			document.querySelector<HTMLElement>('[data-theme-option][data-checked]')?.focus();
 		}
@@ -144,8 +143,7 @@ class ThemeController {
 	}
 
 	private attachHandlers() {
-		// Keyed off what is rendered, not the stored preference, so it still flips
-		// visibly when the preference is `system`.
+		// Reads the rendered theme so it still flips visibly when the preference is `system`.
 		registerShortcut({
 			key: 'd',
 			run: () => {

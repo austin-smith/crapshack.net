@@ -26,8 +26,8 @@ function onKeyDown(event: KeyboardEvent): void {
 	for (const shortcut of registry) {
 		if (key !== shortcut.key) continue;
 		if (Boolean(shortcut.mod) !== mod) continue;
-		// A bare key with Alt or Shift held is a different chord, not this one.
-		if (!shortcut.mod && (event.altKey || event.shiftKey)) continue;
+		// cmd+shift+b is the browser's bookmarks bar, so extra modifiers pass through.
+		if (event.altKey || event.shiftKey) continue;
 		event.preventDefault();
 		shortcut.run();
 		return;

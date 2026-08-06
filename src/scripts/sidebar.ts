@@ -54,7 +54,12 @@ class SidebarController {
     registerShortcut({
       key: 'b',
       mod: true,
-      run: () => (this.isOpen ? this.close() : this.open()),
+      run: () => {
+        // The dialog returns focus to the gear on close, which would be offscreen.
+        if (isAnyDialogOpen()) return;
+        if (this.isOpen) this.close();
+        else this.open();
+      },
     });
     registerShortcut({
       key: 'i',
