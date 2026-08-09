@@ -27,9 +27,7 @@ const appCards = apps.map((app) => {
 		{ label: 'releases', href: `${app.repoUrl}/releases` },
 		app.appcastUrl
 			? { label: 'macOS', href: `${app.repoUrl}/releases`, kind: 'apple', appcastUrl: app.appcastUrl }
-			: app.directDownloadUrl
-				? { label: 'macOS', href: app.directDownloadUrl, kind: 'apple' }
-				: undefined,
+			: undefined,
 		app.dockerUrl ? { label: 'docker image', href: app.dockerUrl, kind: 'container' } : undefined,
 		app.appStoreUrl ? { label: 'app store', href: app.appStoreUrl, kind: 'apple' } : undefined,
 		app.appUrl ? { label: 'web app', href: app.appUrl, kind: 'external' } : undefined,

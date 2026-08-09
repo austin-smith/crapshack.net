@@ -5,7 +5,6 @@ interface AppDefinition {
 	icon: string;
 	description: string;
 	repoUrl: string;
-	directDownloadUrl?: string;
 	appcastUrl?: string;
 	dockerUrl?: string;
 	appStoreUrl?: string;
@@ -21,7 +20,7 @@ export const bitdream = {
 	icon: '/images/bitdream/bitdream.png',
 	description: 'A native, feature-rich remote control client for Transmission web server.',
 	repoUrl: 'https://github.com/austin-smith/BitDream',
-	directDownloadUrl: 'https://github.com/austin-smith/BitDream/releases/download/v1.2.0/BitDream-v1.2.0-arm64.dmg',
+	appcastUrl: 'https://austin-smith.github.io/BitDream/appcast.xml',
 };
 
 export const computerSolitaire = {
