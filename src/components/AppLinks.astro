@@ -1,5 +1,5 @@
 ---
-import { BookText, Container, ExternalLink, Package } from '@lucide/astro';
+import { BookText, Container, Download, ExternalLink, Package } from '@lucide/astro';
 import type { AppDefinition } from '../data/apps';
 
 interface Props {
@@ -37,16 +37,16 @@ const secondaryLinkClass = 'border border-line-strong text-[var(--color-text)] h
 		</a>
 	)}
 
-	{app.iosAppStoreUrl && (
-		<a href={app.iosAppStoreUrl} target="_blank" rel="noopener noreferrer" class:list={[linkClass, linkSizeClass, secondaryLinkClass]}>
+	{app.appStoreUrl && (
+		<a href={app.appStoreUrl} target="_blank" rel="noopener noreferrer" class:list={[linkClass, linkSizeClass, secondaryLinkClass]}>
 			<span aria-hidden="true" class:list={['mr-2 shrink-0 icon-apple', brandIconSizeClass]}></span>
-			<span>iOS</span>
+			<span>app store</span>
 		</a>
 	)}
 
 	{app.appcastUrl && app.releasesUrl && (
 		<a href={app.releasesUrl} target="_blank" rel="noopener noreferrer" data-appcast-url={app.appcastUrl} class:list={[linkClass, linkSizeClass, secondaryLinkClass]}>
-			<span aria-hidden="true" class:list={['mr-2 shrink-0 icon-apple', brandIconSizeClass]}></span>
+			<Download width={iconSize} height={iconSize} stroke-width={2} class="mr-2" />
 			<span>macOS</span>
 		</a>
 	)}

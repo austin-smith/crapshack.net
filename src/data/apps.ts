@@ -8,7 +8,7 @@ export interface AppDefinition {
 	releasesUrl?: string;
 	appcastUrl?: string;
 	dockerUrl?: string;
-	iosAppStoreUrl?: string;
+	appStoreUrl?: string;
 	appUrl?: string;
 	docsUrl?: string;
 	npmUrl?: string;
@@ -34,7 +34,7 @@ export const computerSolitaire = {
 	repoUrl: 'https://github.com/austin-smith/ComputerSolitaire',
 	releasesUrl: 'https://github.com/austin-smith/ComputerSolitaire/releases',
 	appcastUrl: 'https://austin-smith.github.io/ComputerSolitaire/appcast.xml',
-	iosAppStoreUrl: 'https://apps.apple.com/us/app/computer-solitaire/id6761316105',
+	appStoreUrl: 'https://apps.apple.com/us/app/computer-solitaire/id6761316105',
 };
 
 export const crapdash = {
@@ -78,7 +78,7 @@ export const stuckers = {
 	description: 'Hand-drawn animated sticker pack for iMessage. (i.e., stickers for phone.)',
 	repoUrl: 'https://github.com/austin-smith/Stuckers',
 	releasesUrl: 'https://github.com/austin-smith/Stuckers/releases',
-	iosAppStoreUrl: 'https://apps.apple.com/us/app/stuckers/id1173389437',
+	appStoreUrl: 'https://apps.apple.com/us/app/stuckers/id1173389437',
 };
 
 export const webhooks = {
