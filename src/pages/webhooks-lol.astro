@@ -1,22 +1,20 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { webhooks } from '../data/apps';
+import AppLinks from '../components/AppLinks.astro';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import {
-	BookText,
 	Braces,
 	Check,
 	Copy,
-	ExternalLink,
 	Forward,
-	Package,
 	Repeat2,
 	SlidersHorizontal,
 	Terminal,
 	Webhook,
 } from '@lucide/astro';
 
-const { repoUrl, appUrl, docsUrl, npmUrl, icon: iconUrl, description } = webhooks;
+const { npmUrl, icon: iconUrl, description } = webhooks;
 const receiveUrl = 'https://webhooks.lol/api/hook/<endpoint-id>';
 const curlExample = `curl -X POST "${receiveUrl}" \\
   -H "content-type: application/json" \\
@@ -84,44 +82,7 @@ const features = [
 			</div>
 		</header>
 
-		<div class="screenshots-scroll -mr-4 flex gap-2 overflow-x-auto pb-1 pr-4 overscroll-x-contain sm:mr-0 sm:gap-3 sm:pr-0">
-			<a
-				href={repoUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-on-brand hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-			>
-				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
-				<span>github</span>
-			</a>
-			<a
-				href={appUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-			>
-				<ExternalLink width={16} height={16} stroke-width={2} class="mr-2" />
-				<span>web app</span>
-			</a>
-			<a
-				href={docsUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-			>
-				<BookText width={16} height={16} stroke-width={2} class="mr-2" />
-				<span>docs</span>
-			</a>
-			<a
-				href={npmUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				class="inline-flex shrink-0 items-center whitespace-nowrap rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-			>
-				<Package width={16} height={16} stroke-width={2} class="mr-2" />
-				<span>npm</span>
-			</a>
-		</div>
+		<AppLinks app={webhooks} size="regular" />
 
 		<ScreenshotGallery
 			name="webhooks-lol"

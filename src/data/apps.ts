@@ -1,13 +1,14 @@
-interface AppDefinition {
+export interface AppDefinition {
 	name: string;
 	sidebarLabel: string;
 	href: string;
 	icon: string;
 	description: string;
 	repoUrl: string;
+	releasesUrl?: string;
 	appcastUrl?: string;
 	dockerUrl?: string;
-	appStoreUrl?: string;
+	iosAppStoreUrl?: string;
 	appUrl?: string;
 	docsUrl?: string;
 	npmUrl?: string;
@@ -20,6 +21,7 @@ export const bitdream = {
 	icon: '/images/bitdream/bitdream.png',
 	description: 'A native, feature-rich remote control client for Transmission web server.',
 	repoUrl: 'https://github.com/austin-smith/BitDream',
+	releasesUrl: 'https://github.com/austin-smith/BitDream/releases',
 	appcastUrl: 'https://austin-smith.github.io/BitDream/appcast.xml',
 };
 
@@ -30,7 +32,9 @@ export const computerSolitaire = {
 	icon: '/images/computer-solitaire/computer-solitaire-icon.png',
 	description: 'A fully native Solitaire app for iOS, iPadOS, and macOS.',
 	repoUrl: 'https://github.com/austin-smith/ComputerSolitaire',
+	releasesUrl: 'https://github.com/austin-smith/ComputerSolitaire/releases',
 	appcastUrl: 'https://austin-smith.github.io/ComputerSolitaire/appcast.xml',
+	iosAppStoreUrl: 'https://apps.apple.com/us/app/computer-solitaire/id6761316105',
 };
 
 export const crapdash = {
@@ -40,6 +44,7 @@ export const crapdash = {
 	icon: '/images/crapdash/compy.png',
 	description: 'Low-frills, customizable homepage to organize your links and services.',
 	repoUrl: 'https://github.com/austin-smith/crapdash',
+	releasesUrl: 'https://github.com/austin-smith/crapdash/releases',
 	dockerUrl: 'https://github.com/austin-smith/crapdash/pkgs/container/crapdash',
 };
 
@@ -50,6 +55,7 @@ export const plexbar = {
 	icon: '/images/plexbar/plexbar.png',
 	description: 'A lightweight macOS menu bar app for Plex server telemetry.',
 	repoUrl: 'https://github.com/austin-smith/PlexBar',
+	releasesUrl: 'https://github.com/austin-smith/PlexBar/releases',
 	appcastUrl: 'https://austin-smith.github.io/PlexBar/appcast.xml',
 };
 
@@ -60,6 +66,7 @@ export const spotuify = {
 	icon: '/images/spotuify/spotuify.png',
 	description: 'Spotify in ur terminal. Interactive TUI and scriptable CLI.',
 	repoUrl: 'https://github.com/austin-smith/spotuify',
+	releasesUrl: 'https://github.com/austin-smith/spotuify/releases',
 	npmUrl: 'https://www.npmjs.com/package/spotuify',
 };
 
@@ -70,7 +77,8 @@ export const stuckers = {
 	icon: '/images/stuckers/stuckers-icon.png',
 	description: 'Hand-drawn animated sticker pack for iMessage. (i.e., stickers for phone.)',
 	repoUrl: 'https://github.com/austin-smith/Stuckers',
-	appStoreUrl: 'https://apps.apple.com/us/app/stuckers/id1173389437',
+	releasesUrl: 'https://github.com/austin-smith/Stuckers/releases',
+	iosAppStoreUrl: 'https://apps.apple.com/us/app/stuckers/id1173389437',
 };
 
 export const webhooks = {
