@@ -1,0 +1,87 @@
+---
+import { BookText, Container, Download, ExternalLink, Package } from '@lucide/astro';
+import type { AppDefinition } from '../data/apps';
+
+interface Props {
+	app: AppDefinition;
+	size: 'small' | 'regular';
+}
+
+const { app, size } = Astro.props;
+const linkSizeClass = size === 'small' ? 'px-3 py-1.5 text-sm' : 'px-4 py-2';
+const iconSize = size === 'small' ? 15 : 16;
+const brandIconSizeClass = size === 'small' ? 'h-[15px] w-[15px]' : 'h-4 w-4';
+const linkClass = 'inline-flex shrink-0 items-center whitespace-nowrap rounded-md font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70';
+const secondaryLinkClass = 'border border-line-strong text-[var(--color-text)] hover:text-[var(--color-brand)]';
+---
+
+<div class="screenshots-scroll -mr-4 flex gap-2 overflow-x-auto pb-1 pr-4 overscroll-x-contain sm:mr-0 sm:gap-3 sm:pr-0">
+	<a
+		href={app.repoUrl}
+		target="_blank"
+		rel="noopener noreferrer"
+		class:list={[
+			linkClass,
+			linkSizeClass,
+			'bg-[var(--color-brand)] text-on-brand hover:opacity-90',
+		]}
+	>
+		<span aria-hidden="true" class:list={['mr-2 shrink-0 icon-github', brandIconSizeClass]}></span>
+		<span>github</span>
+	</a>
+
+	{app.releasesUrl && (
+		<a href={app.releasesUrl} target="_blank" rel="noopener noreferrer" class:list={[linkClass, linkSizeClass, secondaryLinkClass]}>
+			<Package width={iconSize} height={iconSize} stroke-width={2} class="mr-2" />
+			<span>releases</span>
+		</a>
+	)}
+
+	{app.appStoreUrl && (
+		<a href={app.appStoreUrl} target="_blank" rel="noopener noreferrer" class:list={[linkClass, linkSizeClass, secondaryLinkClass]}>
+			<span aria-hidden="true" class:list={['mr-2 shrink-0 icon-apple', brandIconSizeClass]}></span>
+			<span>app store</span>
+		</a>
+	)}
+
+	{app.appcastUrl && app.releasesUrl && (
+		<a href={app.releasesUrl} target="_blank" rel="noopener noreferrer" data-appcast-url={app.appcastUrl} class:list={[linkClass, linkSizeClass, secondaryLinkClass]}>
+			<Download width={iconSize} height={iconSize} stroke-width={2} class="mr-2" />
+			<span>macOS</span>
+		</a>
+	)}
+
+	{app.dockerUrl && (
+		<a href={app.dockerUrl} target="_blank" rel="noopener noreferrer" class:list={[linkClass, linkSizeClass, secondaryLinkClass]}>
+			<Container width={iconSize} height={iconSize} stroke-width={2} class="mr-2" />
+			<span>docker image</span>
+		</a>
+	)}
+
+	{app.appUrl && (
+		<a href={app.appUrl} target="_blank" rel="noopener noreferrer" class:list={[linkClass, linkSizeClass, secondaryLinkClass]}>
+			<ExternalLink width={iconSize} height={iconSize} stroke-width={2} class="mr-2" />
+			<span>web app</span>
+		</a>
+	)}
+
+	{app.docsUrl && (
+		<a href={app.docsUrl} target="_blank" rel="noopener noreferrer" class:list={[linkClass, linkSizeClass, secondaryLinkClass]}>
+			<BookText width={iconSize} height={iconSize} stroke-width={2} class="mr-2" />
+			<span>docs</span>
+		</a>
+	)}
+
+	{app.npmUrl && (
+		<a href={app.npmUrl} target="_blank" rel="noopener noreferrer" class:list={[linkClass, linkSizeClass, secondaryLinkClass]}>
+			<Package width={iconSize} height={iconSize} stroke-width={2} class="mr-2" />
+			<span>npm</span>
+		</a>
+	)}
+</div>
+
+<script>
+	import { initAppcastLinks } from '../lib/appcast';
+
+	initAppcastLinks();
+</script>

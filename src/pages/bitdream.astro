@@ -1,11 +1,10 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { bitdream } from '../data/apps';
+import AppLinks from '../components/AppLinks.astro';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
-import { Package } from '@lucide/astro';
 
-const { repoUrl, appcastUrl, icon: iconUrl, description } = bitdream;
-const releasesUrl = `${repoUrl}/releases`;
+const { icon: iconUrl, description } = bitdream;
 const rpcSpecUrl = 'https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md';
 const transmissionUrl = 'https://transmissionbt.com/';
 const screenshots = [
@@ -38,26 +37,7 @@ const screenshots = [
 			</div>
 		</header>
 
-		<div class="flex flex-wrap gap-2 sm:gap-3">
-			<a href={repoUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md bg-[var(--color-brand)] px-4 py-2 font-medium text-on-brand hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
-				<img src="/images/brands/github-black.svg" alt="" aria-hidden="true" class="mr-2 h-4 w-4" />
-				<span>github</span>
-			</a>
-			<a href={releasesUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70">
-				<Package width={16} height={16} stroke-width={2} class="mr-2" />
-				releases
-			</a>
-			<a
-				href={releasesUrl}
-				target="_blank"
-				rel="noopener noreferrer"
-				class="inline-flex items-center rounded-md border border-line-strong px-4 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-				data-appcast-url={appcastUrl}
-			>
-				<span aria-hidden="true" class="mr-2 h-4 w-4 shrink-0 icon-apple"></span>
-				<span>macOS</span>
-			</a>
-		</div>
+		<AppLinks app={bitdream} size="regular" />
 
 		<ScreenshotGallery
 			name="bitdream"
@@ -91,9 +71,3 @@ const screenshots = [
 		</section>
 	</section>
 </Layout>
-
-<script>
-	import { initAppcastLinks } from '../lib/appcast';
-
-	initAppcastLinks();
-</script>
