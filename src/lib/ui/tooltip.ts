@@ -22,7 +22,7 @@
  * panel. All visuals live in the .tooltip-* rules in global.css.
  */
 
-const SHOW_DELAY_MS = 150;
+const SHOW_DELAY_MS = 600;
 const HIDE_DELAY_MS = 100;
 const TARGET_GAP_PX = 6;
 
