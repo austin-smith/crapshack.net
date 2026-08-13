@@ -77,7 +77,6 @@ export const stuckers = {
 	icon: '/images/stuckers/stuckers-icon.png',
 	description: 'Hand-drawn animated sticker pack for iMessage. (i.e., stickers for phone.)',
 	repoUrl: 'https://github.com/austin-smith/Stuckers',
-	releasesUrl: 'https://github.com/austin-smith/Stuckers/releases',
 	appStoreUrl: 'https://apps.apple.com/us/app/stuckers/id1173389437',
 };
 
