@@ -62,12 +62,17 @@ const logo = '/images/crapshack.png';
 	.home-hero__character {
 		position: absolute;
 		z-index: 1;
-		bottom: -11rem;
+		bottom: 0;
 		left: 50%;
-		width: min(68rem, 72vw, max(46rem, 92svh));
+		/* Account for the portrait canvas's transparent padding as the viewport grows. */
+		width: clamp(
+			46rem,
+			max(92svh, calc(139svh - 34.25rem)),
+			114rem
+		);
 		margin: 0;
 		padding: 0;
-		transform: translateX(-50%);
+		transform: translate(-50%, 21%);
 		border: 0;
 		background: transparent;
 		filter: drop-shadow(0 0.8rem 0.9rem rgb(0 0 0 / 0.14));
@@ -82,19 +87,78 @@ const logo = '/images/crapshack.png';
 			drop-shadow(0 0 0.45rem var(--color-subtle));
 	}
 
+	/* Narrow screens reserve enough room for a two-line aphorism. */
 	@media (max-width: 620px) {
-		.home-hero__copy {
-			top: clamp(6.5rem, 17svh, 9rem);
-		}
-
 		.home-hero__logo {
 			width: min(22rem, 92vw);
 			margin-bottom: 0.65rem;
 		}
 
+		.home-hero__copy :global([data-aphorism-root]) {
+			min-height: 3.375rem;
+		}
+	}
+
+	/* Short portrait screens use flow layout so the copy and painted head cannot collide. */
+	@media (max-width: 620px) and (max-height: 52rem) {
+		.home-hero {
+			display: flex;
+			height: 100dvh;
+			flex-direction: column;
+			align-items: center;
+		}
+
+		.home-hero__copy {
+			position: relative;
+			top: auto;
+			left: auto;
+			flex: none;
+			margin-top: clamp(6.5rem, 17svh, 9rem);
+			transform: none;
+		}
+
 		.home-hero__character {
-			bottom: -9rem;
+			position: relative;
+			bottom: auto;
+			left: auto;
+			flex: none;
 			width: min(44rem, 170vw);
+			margin-top: -1.5rem;
+			transform: none;
+		}
+	}
+
+	/* Keep this last so short landscape wins when desktop zoom also crosses 620px. */
+	@media (max-height: 50rem) and (orientation: landscape) {
+		.home-hero {
+			display: block;
+			height: 100dvh;
+		}
+
+		.home-hero__copy {
+			position: absolute;
+			top: clamp(4rem, 12svh, 6rem);
+			left: 50%;
+			margin-top: 0;
+			transform: translateX(-50%);
+		}
+
+		.home-hero__logo {
+			width: min(24.375rem, 46vw, 62svh);
+		}
+
+		.home-hero__copy :global([data-aphorism-root]) {
+			min-height: 1.875rem;
+		}
+
+		.home-hero__character {
+			position: absolute;
+			top: clamp(12rem, 38svh, 15.5rem);
+			bottom: auto;
+			left: 50%;
+			width: min(60rem, 110svh, calc(33svh + 30rem));
+			margin-top: 0;
+			transform: translate(-50%, -7%);
 		}
 	}
 </style>
