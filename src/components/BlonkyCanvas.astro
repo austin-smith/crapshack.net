@@ -2,7 +2,7 @@
 import {
 	BLONKY_VIEWPORTS,
 	type BlonkyView,
-} from '../lib/blonky-drawing';
+} from '../lib/blonky';
 
 interface Props {
 	class?: string;
@@ -38,7 +38,7 @@ const viewport = BLONKY_VIEWPORTS[view];
 </div>
 
 <script>
-	import { registerBlonkyCanvasLifecycle } from '../lib/blonky.ts';
+	import { registerBlonkyCanvasLifecycle } from '../lib/blonky';
 
 	registerBlonkyCanvasLifecycle();
 </script>

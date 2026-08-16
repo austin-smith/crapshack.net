@@ -3,10 +3,10 @@ import { Pause, Play, StepBack, StepForward } from '@lucide/astro';
 import Layout from '../layouts/Layout.astro';
 import ButtonGroup from '../components/ui/ButtonGroup.astro';
 import Dropdown from '../components/ui/Dropdown.astro';
-import { BLONKY_ANIMATIONS } from '../lib/blonky-drawing';
+import { BLONKY_EMOTES } from '../lib/blonky';
 
-const animations = Object.entries(BLONKY_ANIMATIONS);
-const showFilter = animations.length > 8;
+const emotes = Object.entries(BLONKY_EMOTES);
+const showFilter = emotes.length > 8;
 ---
 
 <Layout title="crapshack (blonky debug)" noIndex={true} fullBleed={true}>
@@ -115,24 +115,24 @@ const showFilter = animations.length > 8;
 					</ButtonGroup>
 				</fieldset>
 
-				<fieldset class="console__cluster console__cluster--reactions">
-					<legend class="sr-only">reactions</legend>
+				<fieldset class="console__cluster console__cluster--emotes">
+					<legend class="sr-only">emotes</legend>
 					<div class="console__buttons">
 						{showFilter && (
 							<input
 								class="control console__filter"
 								type="search"
 								placeholder="filter"
-								aria-label="Filter animations"
+								aria-label="Filter emotes"
 								data-blonky-filter
 							/>
 						)}
-						{animations.map(([key, info]) => (
+						{emotes.map(([key, info]) => (
 							<button
-								class="control anim"
+								class="control emote"
 								type="button"
 								aria-pressed="false"
-								data-blonky-reaction={key}
+								data-blonky-emote={key}
 							>
 								{info.label}
 							</button>
@@ -155,9 +155,9 @@ const showFilter = animations.length > 8;
 </Layout>
 
 <script>
-	import { registerBlonkyPageLifecycle } from '../lib/blonky-page';
+	import { registerBlonkyDebugLifecycle } from '../lib/blonky/debug';
 
-	registerBlonkyPageLifecycle();
+	registerBlonkyDebugLifecycle();
 </script>
 
 <style>
@@ -173,7 +173,7 @@ const showFilter = animations.length > 8;
 	/*
 	 * One hero: the stage, with a single control strip attached underneath.
 	 * The strip is exactly as wide as the stage, so the composition stays
-	 * balanced no matter how many animations exist — buttons wrap in place.
+	 * balanced no matter how many emotes exist — buttons wrap in place.
 	 */
 	.blonky-debug {
 		--stage: min(60rem, calc(100svw - 6rem), calc((100svh - 13.5rem) * 1.125));
@@ -264,7 +264,7 @@ const showFilter = animations.length > 8;
 		border: 0;
 	}
 
-	.console__cluster--reactions {
+	.console__cluster--emotes {
 		margin-left: auto;
 	}
 
@@ -316,7 +316,7 @@ const showFilter = animations.length > 8;
 		cursor: text;
 	}
 
-	.anim[data-active] {
+	.emote[data-active] {
 		border-color: transparent;
 		background: var(--color-brand);
 		color: var(--color-on-brand);
@@ -374,7 +374,7 @@ const showFilter = animations.length > 8;
 			gap: 0.5rem;
 		}
 
-		.console__cluster--reactions {
+		.console__cluster--emotes {
 			margin-left: 0;
 		}
 

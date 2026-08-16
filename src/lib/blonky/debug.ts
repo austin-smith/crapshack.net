@@ -1,14 +1,10 @@
-import { createBlonkyAnimator } from './blonky';
+import { createBlonkyAnimator } from './animator';
 import {
-	BLONKY_ANIMATIONS,
-	BLONKY_FPS,
-	type BlonkyAnimationInfo,
-	type BlonkyReaction,
-} from './blonky-drawing';
-
-const isReaction = (value: string | undefined): value is BlonkyReaction => (
-	value !== undefined && value in BLONKY_ANIMATIONS
-);
+	BLONKY_EMOTES,
+	isBlonkyEmote,
+	type BlonkyEmoteInfo,
+} from './emotes';
+import { BLONKY_FPS } from './types';
 
 const isEditableTarget = (target: EventTarget | null): boolean => (
 	target instanceof HTMLElement
@@ -47,7 +43,7 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		|| !status
 	) return;
 
-	const animationRows = [...root.querySelectorAll<HTMLButtonElement>('[data-blonky-reaction]')];
+	const emoteRows = [...root.querySelectorAll<HTMLButtonElement>('[data-blonky-emote]')];
 	const filterInput = root.querySelector<HTMLInputElement>('[data-blonky-filter]');
 	const listeners = new AbortController();
 
@@ -91,29 +87,29 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		clearActiveRow();
 	};
 	const step = (frames: number): void => {
-		// Seeking drops any in-flight reaction, so the highlight goes with it.
+		// Seeking drops any in-flight emote, so the highlight goes with it.
 		animator.step(frames);
 		clearActiveRow();
 	};
-	const fireAnimation = (row: HTMLButtonElement): void => {
-		const reaction = row.dataset.blonkyReaction;
-		if (!isReaction(reaction)) return;
+	const fireEmote = (row: HTMLButtonElement): void => {
+		const emote = row.dataset.blonkyEmote;
+		if (!isBlonkyEmote(emote)) return;
 		if (activeRow === row) {
-			animator.release();
+			animator.releaseEmote();
 			animator.play();
 			clearActiveRow();
 			return;
 		}
-		animator.react(reaction);
+		animator.playEmote(emote);
 		animator.play();
 		clearActiveRow();
 		activeRow = row;
 		row.setAttribute('data-active', '');
 		row.setAttribute('aria-pressed', 'true');
-		const animation: BlonkyAnimationInfo = BLONKY_ANIMATIONS[reaction];
-		activeUntil = animation.holds
+		const emoteInfo: BlonkyEmoteInfo = BLONKY_EMOTES[emote];
+		activeUntil = emoteInfo.holds
 			? Number.POSITIVE_INFINITY
-			: animator.getTime() + animation.duration;
+			: animator.getTime() + emoteInfo.duration;
 	};
 
 	playbackButton.addEventListener('click', togglePlayback, { signal: listeners.signal });
@@ -142,14 +138,14 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		}, { signal: listeners.signal });
 	}
 
-	for (const row of animationRows) {
-		row.addEventListener('click', () => fireAnimation(row), { signal: listeners.signal });
+	for (const row of emoteRows) {
+		row.addEventListener('click', () => fireEmote(row), { signal: listeners.signal });
 	}
 
 	filterInput?.addEventListener('input', () => {
 		const query = filterInput.value.trim().toLowerCase();
-		for (const row of animationRows) {
-			row.hidden = query.length > 0 && !(row.dataset.blonkyReaction ?? '').includes(query);
+		for (const row of emoteRows) {
+			row.hidden = query.length > 0 && !(row.dataset.blonkyEmote ?? '').includes(query);
 		}
 	}, { signal: listeners.signal });
 
@@ -189,7 +185,7 @@ const mountBlonkyPage = (): void => {
 	destroyMountedPage = cleanup;
 };
 
-export function registerBlonkyPageLifecycle(): void {
+export function registerBlonkyDebugLifecycle(): void {
 	mountBlonkyPage();
 	if (lifecycleRegistered) return;
 	lifecycleRegistered = true;

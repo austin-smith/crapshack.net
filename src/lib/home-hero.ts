@@ -1,5 +1,5 @@
 import { createAphorismController } from './aphorism';
-import { reactBlonky } from './blonky';
+import { playBlonkyEmote } from './blonky';
 
 const HOME_BLONKY_ID = 'home-blonky';
 const POST_WRITE_NOTICE_HOLD_MS = 900;
@@ -22,12 +22,12 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 
 	const requestAnotherAphorism = async (): Promise<void> => {
 		const request = ++requestSequence;
-		reactBlonky(HOME_BLONKY_ID, 'notice');
+		playBlonkyEmote(HOME_BLONKY_ID, 'notice');
 		const completed = await aphorism.cycle({ erase: true });
 		if (!completed || request !== requestSequence) return;
 		await new Promise<void>((resolve) => window.setTimeout(resolve, POST_WRITE_NOTICE_HOLD_MS));
 		if (request !== requestSequence) return;
-		reactBlonky(HOME_BLONKY_ID, 'confirm');
+		playBlonkyEmote(HOME_BLONKY_ID, 'confirm');
 	};
 
 	aphorismButton.addEventListener('click', () => {

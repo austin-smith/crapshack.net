@@ -1,20 +1,22 @@
-import '../styles/blonky.css';
+import '../../styles/blonky.css';
 
 import {
-	BLONKY_ANIMATIONS,
-	BLONKY_VIEWPORTS,
+	BLONKY_EMOTES,
+	isBlonkyEmote,
+	sampleBlonkyEmoteOffset,
+	type BlonkyEmote,
+	type BlonkyEmoteInfo,
+	type BlonkyEmoteOffset,
+	type BlonkyEmotePose,
+} from './emotes';
+import { DEFAULT_BLONKY_PALETTE, drawBlonky } from './drawing';
+import {
+	BLONKY_EMOTE_TRANSITION_FRAMES,
 	BLONKY_FPS,
-	BLONKY_REACTION_TRANSITION_FRAMES,
-	DEFAULT_BLONKY_PALETTE,
-	drawBlonky,
-	sampleBlonkyReactionOffset,
-	type BlonkyReaction,
-	type BlonkyAnimationInfo,
+	BLONKY_VIEWPORTS,
 	type BlonkyPalette,
-	type BlonkyReactionOffset,
-	type BlonkyReactionPose,
 	type BlonkyView,
-} from './blonky-drawing';
+} from './types';
 
 interface BlonkyAnimatorOptions {
 	autoPauseOffscreen?: boolean;
@@ -35,8 +37,8 @@ export interface BlonkyAnimator {
 	isPlaying: () => boolean;
 	pause: () => void;
 	play: () => void;
-	react: (kind: BlonkyReaction) => void;
-	release: () => void;
+	playEmote: (kind: BlonkyEmote) => void;
+	releaseEmote: () => void;
 	reset: () => void;
 	seek: (time: number) => void;
 	setBodyVisible: (visible: boolean) => void;
@@ -45,15 +47,15 @@ export interface BlonkyAnimator {
 	step: (frames: number) => void;
 }
 
-interface ActiveReaction {
-	kind: BlonkyReaction | 'rest';
+interface ActiveEmote {
+	kind: BlonkyEmote | 'rest';
 	direction: -1 | 1;
 	startedAt: number;
-	transitionFrom?: BlonkyReactionOffset;
+	transitionFrom?: BlonkyEmoteOffset;
 }
 
 const mountedCanvases = new Map<HTMLElement, BlonkyAnimator>();
-const BLONKY_REACTION_EVENT = 'blonky:react';
+const BLONKY_EMOTE_EVENT = 'blonky:emote';
 let lifecycleRegistered = false;
 
 function resolveBlonkyPalette(canvas: HTMLCanvasElement): BlonkyPalette {
@@ -96,8 +98,8 @@ export function createBlonkyAnimator(
 	let startedAt = performance.now();
 	let lastFrame = -1;
 	let animationRequest: number | null = null;
-	let reaction: ActiveReaction | undefined;
-	let reactionDirection: -1 | 1 = -1;
+	let emote: ActiveEmote | undefined;
+	let emoteDirection: -1 | 1 = -1;
 	let observer: IntersectionObserver | undefined;
 	let themeObserver: MutationObserver | undefined;
 	let reportedPlayback: boolean | undefined;
@@ -115,29 +117,29 @@ export function createBlonkyAnimator(
 		elapsed + (running ? ((now - startedAt) / 1000) * playbackRate : 0)
 	);
 
-	const reactionPoseAt = (time: number): BlonkyReactionPose | undefined => {
-		if (!reaction) return;
-		const reactionElapsed = Math.max(0, time - reaction.startedAt);
-		if (reaction.kind === 'rest') {
-			if (reactionElapsed >= BLONKY_REACTION_TRANSITION_FRAMES / BLONKY_FPS) return;
+	const emotePoseAt = (time: number): BlonkyEmotePose | undefined => {
+		if (!emote) return;
+		const emoteElapsed = Math.max(0, time - emote.startedAt);
+		if (emote.kind === 'rest') {
+			if (emoteElapsed >= BLONKY_EMOTE_TRANSITION_FRAMES / BLONKY_FPS) return;
 			return {
 				kind: 'rest',
-				elapsed: reactionElapsed,
-				direction: reaction.direction,
-				transitionFrom: reaction.transitionFrom,
+				elapsed: emoteElapsed,
+				direction: emote.direction,
+				transitionFrom: emote.transitionFrom,
 			};
 		}
-		const animation: BlonkyAnimationInfo = BLONKY_ANIMATIONS[reaction.kind];
-		const holds = animation.holds === true;
-		if (reactionElapsed >= animation.duration && !holds) return;
+		const emoteInfo: BlonkyEmoteInfo = BLONKY_EMOTES[emote.kind];
+		const holds = emoteInfo.holds === true;
+		if (emoteElapsed >= emoteInfo.duration && !holds) return;
 		return {
-			kind: reaction.kind,
-			elapsed: holds ? Math.min(reactionElapsed, animation.duration) : reactionElapsed,
-			direction: reaction.direction,
-			heldElapsed: !holds || reactionElapsed <= animation.duration
+			kind: emote.kind,
+			elapsed: holds ? Math.min(emoteElapsed, emoteInfo.duration) : emoteElapsed,
+			direction: emote.direction,
+			heldElapsed: !holds || emoteElapsed <= emoteInfo.duration
 				? undefined
-				: reactionElapsed - animation.duration,
-			transitionFrom: reaction.transitionFrom,
+				: emoteElapsed - emoteInfo.duration,
+			transitionFrom: emote.transitionFrom,
 		};
 	};
 
@@ -152,13 +154,13 @@ export function createBlonkyAnimator(
 		const nextFrame = Math.floor(time * BLONKY_FPS);
 		if (!force && nextFrame === lastFrame) return;
 
-		const reactionPose = reactionPoseAt(time);
-		if (reaction && !reactionPose) reaction = undefined;
+		const emotePose = emotePoseAt(time);
+		if (emote && !emotePose) emote = undefined;
 
 		context.setTransform(canvas.width / viewport.width, 0, 0, canvas.height / viewport.height, 0, 0);
 		drawBlonky(context, time, {
 			palette,
-			reaction: reactionPose,
+			emote: emotePose,
 			showBody: bodyVisible,
 			showHead: headVisible,
 			view,
@@ -227,7 +229,7 @@ export function createBlonkyAnimator(
 		const nextTime = Number.isFinite(time) ? Math.max(0, time) : 0;
 		elapsed = nextTime;
 		startedAt = performance.now();
-		reaction = undefined;
+		emote = undefined;
 		lastFrame = -1;
 		draw(nextTime, true);
 	};
@@ -265,16 +267,16 @@ export function createBlonkyAnimator(
 		seek(animationTime() + frames / BLONKY_FPS);
 	};
 
-	const react = (kind: BlonkyReaction): void => {
+	const playEmote = (kind: BlonkyEmote): void => {
 		const time = animationTime();
-		const outgoingPose = reactionPoseAt(time);
+		const outgoingPose = emotePoseAt(time);
 		const transitionFrom = outgoingPose
-			? sampleBlonkyReactionOffset(outgoingPose)
+			? sampleBlonkyEmoteOffset(outgoingPose)
 			: undefined;
-		reactionDirection = reactionDirection === -1 ? 1 : -1;
-		reaction = {
+		emoteDirection = emoteDirection === -1 ? 1 : -1;
+		emote = {
 			kind,
-			direction: reactionDirection,
+			direction: emoteDirection,
 			startedAt: time,
 			transitionFrom,
 		};
@@ -283,15 +285,15 @@ export function createBlonkyAnimator(
 		scheduleAnimation();
 	};
 
-	const release = (): void => {
+	const releaseEmote = (): void => {
 		const time = animationTime();
-		const outgoingPose = reactionPoseAt(time);
+		const outgoingPose = emotePoseAt(time);
 		if (!outgoingPose || outgoingPose.kind === 'rest') return;
-		reaction = {
+		emote = {
 			kind: 'rest',
 			direction: outgoingPose.direction,
 			startedAt: time,
-			transitionFrom: sampleBlonkyReactionOffset(outgoingPose),
+			transitionFrom: sampleBlonkyEmoteOffset(outgoingPose),
 		};
 		lastFrame = -1;
 		draw(time, true);
@@ -358,8 +360,8 @@ export function createBlonkyAnimator(
 		isPlaying: () => running,
 		pause,
 		play,
-		react,
-		release,
+		playEmote,
+		releaseEmote,
 		reset,
 		seek,
 		setBodyVisible,
@@ -381,19 +383,17 @@ export function mountBlonkyCanvases(scope: ParentNode = document): void {
 		});
 		if (!animator) continue;
 
-		const handleReaction = (event: Event): void => {
+		const handleEmote = (event: Event): void => {
 			if (!(event instanceof CustomEvent)) return;
 			const kind = event.detail?.kind;
-			if (kind === 'notice' || kind === 'confirm' || kind === 'confused') {
-				animator.react(kind);
-			}
+			if (isBlonkyEmote(kind)) animator.playEmote(kind);
 		};
-		root.addEventListener(BLONKY_REACTION_EVENT, handleReaction);
+		root.addEventListener(BLONKY_EMOTE_EVENT, handleEmote);
 
 		mountedCanvases.set(root, {
 			...animator,
 			destroy: () => {
-				root.removeEventListener(BLONKY_REACTION_EVENT, handleReaction);
+				root.removeEventListener(BLONKY_EMOTE_EVENT, handleEmote);
 				animator.destroy();
 			},
 		});
@@ -405,9 +405,9 @@ export function unmountBlonkyCanvases(): void {
 	mountedCanvases.clear();
 }
 
-export function reactBlonky(id: string, kind: BlonkyReaction): void {
+export function playBlonkyEmote(id: string, kind: BlonkyEmote): void {
 	const root = document.querySelector<HTMLElement>(`[data-blonky-id="${CSS.escape(id)}"]`);
-	root?.dispatchEvent(new CustomEvent(BLONKY_REACTION_EVENT, { detail: { kind } }));
+	root?.dispatchEvent(new CustomEvent(BLONKY_EMOTE_EVENT, { detail: { kind } }));
 }
 
 export function registerBlonkyCanvasLifecycle(): void {

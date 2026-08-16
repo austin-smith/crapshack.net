@@ -1,87 +1,22 @@
 // Blonky, held at rest while every ink mark redraws.
 
+import { sampleBlonkyEmoteOffset } from './emotes';
+import { blinkPoseAt, hash, heldEnvelope, inkFrameTime, smoothstep } from './motion';
+import {
+	BLONKY_BUST_HEIGHT,
+	BLONKY_BUST_WIDTH,
+	BLONKY_FPS,
+	BLONKY_VIEWPORTS,
+	type BlonkyDrawOptions,
+	type BlonkyEmotePose,
+	type BlonkyPalette,
+} from './types';
+
 type Pt = { x: number; y: number };
-
-export const BLONKY_BUST_WIDTH = 900;
-export const BLONKY_BUST_HEIGHT = 800;
-export const BLONKY_FPS = 8;
-
-export const BLONKY_VIEWPORTS = {
-	bust: { width: BLONKY_BUST_WIDTH, height: BLONKY_BUST_HEIGHT },
-	debug: { width: 940, height: BLONKY_BUST_HEIGHT },
-	portrait: { width: 520, height: 520 },
-} as const;
-
-export type BlonkyView = keyof typeof BLONKY_VIEWPORTS;
-
-export interface BlonkyAnimationInfo {
-	label: string;
-	duration: number;
-	category: string;
-	holds?: boolean;
-}
-
-/*
- * The registry drives everything: the debug page renders its animation list
- * from these entries, so adding an animation here is the entire change.
- */
-export const BLONKY_ANIMATIONS = {
-	notice: { label: 'notice', duration: 0.625, category: 'reactions', holds: true },
-	confirm: { label: 'confirm', duration: 1, category: 'reactions' },
-	confused: { label: 'confused', duration: 1.375, category: 'reactions' },
-} as const satisfies Record<string, BlonkyAnimationInfo>;
-
-export type BlonkyReaction = keyof typeof BLONKY_ANIMATIONS;
-
-export const BLONKY_REACTION_TRANSITION_FRAMES = 2;
-
-export interface BlonkyReactionOffset {
-	presence: number;
-	headX: number;
-	headY: number;
-	headAngle: number;
-	headTurn: number;
-	faceLookY: number;
-	eyeLookY: number;
-	bodyX: number;
-	shoulderY: number;
-	shoulderTilt: number;
-	bellySpread: number;
-	mouthTension: number;
-	leftBrowLift: number;
-	rightBrowLift: number;
-	leftEyeOpen: number;
-	rightEyeOpen: number;
-}
-
-export interface BlonkyReactionPose {
-	kind: BlonkyReaction | 'rest';
-	elapsed: number;
-	direction: -1 | 1;
-	heldElapsed?: number;
-	transitionFrom?: BlonkyReactionOffset;
-}
-
-export interface BlonkyDrawOptions {
-	palette?: BlonkyPalette;
-	reaction?: BlonkyReactionPose;
-	showBody?: boolean;
-	showHead?: boolean;
-	view?: BlonkyView;
-}
-
-export interface BlonkyPalette {
-	outlineInk: string;
-	shirt: string;
-	shirtTextureAlpha: number;
-	shirtTextureInk: string;
-}
 
 const H = BLONKY_BUST_HEIGHT;
 const TAU = Math.PI * 2;
 const FPS = BLONKY_FPS;
-const INK_FRAME_SECONDS = 1 / FPS;
-const BLINK_PHRASE_SECONDS = 8.75;
 const BEHAVIOR_PHRASE_SECONDS = 16.25;
 const SKIN = '#efede6';
 const EYE_WHITE = '#f4f0e6';
@@ -94,12 +29,6 @@ export const DEFAULT_BLONKY_PALETTE: Readonly<BlonkyPalette> = {
 	shirtTextureInk: '#8ba2b8',
 };
 let frame = 0;
-
-function hash(seed: number, a: number, b = 0): number {
-	let n = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) + Math.imul(a, 0xc2b2ae35) + Math.imul(b, 0x27d4eb2f);
-	n = Math.imul(n ^ (n >>> 15), 0x85ebca6b);
-	return ((n ^ (n >>> 13)) >>> 0) / 4294967296;
-}
 
 function valueNoise(x: number, y: number, seed: number): number {
 	const x0 = Math.floor(x);
@@ -400,17 +329,19 @@ function stipple(
 interface Pose {
 	centerX: number;
 	shoulderY: number;
+	torsoY: number;
 	leftShoulderY: number;
 	rightShoulderY: number;
 	headX: number;
 	headY: number;
 	headAngle: number;
-	headReactionAngle: number;
+	headEmoteAngle: number;
 	headTurn: number;
 	faceLookY: number;
 	eyeLookY: number;
 	breath: number;
 	bellySpread: number;
+	mouthPurse: number;
 	mouthTension: number;
 	leftBrowLift: number;
 	rightBrowLift: number;
@@ -418,55 +349,6 @@ interface Pose {
 	rightEyeOpen: number;
 	leftArm: [Pt, Pt, Pt];
 	rightArm: [Pt, Pt, Pt];
-}
-
-interface BlinkPose {
-	leftEyeOpen: number;
-	rightEyeOpen: number;
-}
-
-function smoothstep(value: number): number {
-	const t = Math.max(0, Math.min(1, value));
-	return t * t * (3 - 2 * t);
-}
-
-function inkFrameTime(value: number): number {
-	return Math.round(value * FPS) / FPS;
-}
-
-function heldEnvelope(time: number, start: number, attack: number, hold: number, release: number): number {
-	if (time < start || time >= start + attack + hold + release) return 0;
-	if (time < start + attack) return smoothstep((time - start) / attack);
-	if (time < start + attack + hold) return 1;
-	return smoothstep(1 - (time - start - attack - hold) / release);
-}
-
-function blinkClosure(time: number, center: number, reach: number): number {
-	return smoothstep(1 - Math.abs(time - center) / reach);
-}
-
-function blinkPoseAt(time: number): BlinkPose {
-	const phrase = Math.floor(time / BLINK_PHRASE_SECONDS);
-	const phraseTime = time - phrase * BLINK_PHRASE_SECONDS;
-	const firstBlink = inkFrameTime(0.88 + hash(4021, phrase, 1) * 0.34);
-	const secondBlink = inkFrameTime(firstBlink + 0.29 + hash(4021, phrase, 2) * 0.07);
-	const regularBlink = inkFrameTime(secondBlink + 1.42 + hash(4021, phrase, 3) * 0.48);
-	const centers = [firstBlink, secondBlink, regularBlink];
-	let leftClosure = 0;
-	let rightClosure = 0;
-
-	for (const center of centers) {
-		leftClosure = Math.max(leftClosure, blinkClosure(phraseTime, center, 0.07));
-		// The right lid starts with the left but takes a fraction longer to
-		// finish reopening. On the stepped ink cadence that becomes one rough,
-		// half-open after-frame rather than a smooth tween or a wink.
-		rightClosure = Math.max(rightClosure, blinkClosure(phraseTime, center + 0.018, 0.155));
-	}
-
-	return {
-		leftEyeOpen: 1 - leftClosure,
-		rightEyeOpen: 1 - rightClosure,
-	};
 }
 
 interface IdleBehavior {
@@ -491,205 +373,24 @@ function idleBehaviorAt(time: number): IdleBehavior {
 	};
 }
 
-const NO_REACTION_OFFSET: BlonkyReactionOffset = {
-	presence: 0,
-	headX: 0,
-	headY: 0,
-	headAngle: 0,
-	headTurn: 0,
-	faceLookY: 0,
-	eyeLookY: 0,
-	bodyX: 0,
-	shoulderY: 0,
-	shoulderTilt: 0,
-	bellySpread: 0,
-	mouthTension: 0,
-	leftBrowLift: 0,
-	rightBrowLift: 0,
-	leftEyeOpen: 1,
-	rightEyeOpen: 1,
-};
-
-function blendReactionOffsets(
-	from: BlonkyReactionOffset,
-	to: BlonkyReactionOffset,
-	amount: number,
-): BlonkyReactionOffset {
-	const blend = (start: number, end: number): number => start + (end - start) * amount;
-	return {
-		presence: blend(from.presence, to.presence),
-		headX: blend(from.headX, to.headX),
-		headY: blend(from.headY, to.headY),
-		headAngle: blend(from.headAngle, to.headAngle),
-		headTurn: blend(from.headTurn, to.headTurn),
-		faceLookY: blend(from.faceLookY, to.faceLookY),
-		eyeLookY: blend(from.eyeLookY, to.eyeLookY),
-		bodyX: blend(from.bodyX, to.bodyX),
-		shoulderY: blend(from.shoulderY, to.shoulderY),
-		shoulderTilt: blend(from.shoulderTilt, to.shoulderTilt),
-		bellySpread: blend(from.bellySpread, to.bellySpread),
-		mouthTension: blend(from.mouthTension, to.mouthTension),
-		leftBrowLift: blend(from.leftBrowLift, to.leftBrowLift),
-		rightBrowLift: blend(from.rightBrowLift, to.rightBrowLift),
-		leftEyeOpen: blend(from.leftEyeOpen, to.leftEyeOpen),
-		rightEyeOpen: blend(from.rightEyeOpen, to.rightEyeOpen),
-	};
-}
-
-function confirmExitOffsetAt(from: BlonkyReactionOffset, elapsed: number): BlonkyReactionOffset {
-	const eyeReturn = smoothstep(elapsed / INK_FRAME_SECONDS);
-	const headReturn = smoothstep((elapsed - INK_FRAME_SECONDS) / (INK_FRAME_SECONDS * 2));
-	const bodyReturn = smoothstep((elapsed - INK_FRAME_SECONDS * 2) / (INK_FRAME_SECONDS * 2));
-	const settle = heldEnvelope(elapsed, INK_FRAME_SECONDS * 3, INK_FRAME_SECONDS, 0, INK_FRAME_SECONDS * 2);
-	const blendToRest = (value: number, amount: number, resting = 0): number => (
-		value + (resting - value) * amount
-	);
-
-	return {
-		presence: Math.max(1 - bodyReturn, settle * 0.5),
-		headX: blendToRest(from.headX, headReturn),
-		headY: blendToRest(from.headY, headReturn) + settle * 1.1,
-		headAngle: blendToRest(from.headAngle, headReturn) - from.headAngle * settle * 0.35,
-		headTurn: blendToRest(from.headTurn, headReturn) - from.headTurn * settle * 0.3,
-		faceLookY: blendToRest(from.faceLookY, headReturn),
-		eyeLookY: blendToRest(from.eyeLookY, eyeReturn),
-		bodyX: blendToRest(from.bodyX, bodyReturn),
-		shoulderY: blendToRest(from.shoulderY, bodyReturn) + settle * 0.4,
-		shoulderTilt: blendToRest(from.shoulderTilt, bodyReturn),
-		bellySpread: blendToRest(from.bellySpread, bodyReturn) - settle * 0.25,
-		mouthTension: blendToRest(from.mouthTension, headReturn),
-		leftBrowLift: blendToRest(from.leftBrowLift, headReturn),
-		rightBrowLift: blendToRest(from.rightBrowLift, headReturn),
-		leftEyeOpen: blendToRest(from.leftEyeOpen, eyeReturn, 1),
-		rightEyeOpen: blendToRest(from.rightEyeOpen, eyeReturn, 1),
-	};
-}
-
-function rawReactionOffsetAt(reaction?: BlonkyReactionPose): BlonkyReactionOffset {
-	if (!reaction) return { ...NO_REACTION_OFFSET };
-	if (reaction.kind === 'rest') return { ...NO_REACTION_OFFSET };
-
-	const duration = BLONKY_ANIMATIONS[reaction.kind].duration;
-	const elapsed = Math.max(0, Math.min(duration, reaction.elapsed));
-	const presence = heldEnvelope(elapsed, 0, 0.25, Math.max(0, duration - 0.625), 0.375);
-	const direction = reaction.direction;
-
-	if (reaction.kind === 'notice') {
-		// Gaze, head, shoulders, and belly arrive on successive ink frames.
-		const firstEyeBeat = heldEnvelope(elapsed, 0, 0.125, 0, 0.125);
-		const secondEyeBeat = heldEnvelope(elapsed, 0.125, 0.125, 0, 0.125);
-		const gaze = heldEnvelope(elapsed, 0, 0.125, 0.5, 0.25);
-		const headFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS, 0.125, 0.375, 0.25);
-		// Once his upward gaze has settled, keep the lids alive with the same
-		// quick-pair / pause / regular-blink phrase used at rest. Its clock starts
-		// with the hold and snaps to the ink cadence, so notice neither drops into
-		// the middle of a blink nor skips the shorter lid beat between draw frames.
-		const heldBlink = reaction.heldElapsed === undefined
-			? undefined
-			: blinkPoseAt(inkFrameTime(reaction.heldElapsed));
-		const shoulderFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS * 2, 0.125, 0.25, 0.25);
-		const bellyFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS * 3, 0.125, 0.125, 0.25);
-		const leftEyeLeads = direction < 0;
-		const leftEyeClosure = leftEyeLeads
-			? firstEyeBeat * 0.58 + secondEyeBeat * 0.22
-			: firstEyeBeat * 0.22 + secondEyeBeat * 0.48;
-		const rightEyeClosure = leftEyeLeads
-			? firstEyeBeat * 0.22 + secondEyeBeat * 0.48
-			: firstEyeBeat * 0.58 + secondEyeBeat * 0.22;
-		return {
-			presence: Math.max(firstEyeBeat, secondEyeBeat, gaze, headFollow),
-			headX: 0,
-			headY: -headFollow * 3.8,
-			headAngle: direction * headFollow * 0.009,
-			headTurn: direction * headFollow * 0.14,
-			faceLookY: -headFollow * 2.1,
-			eyeLookY: -gaze * 4.2,
-			bodyX: 0,
-			shoulderY: -shoulderFollow * 1.15,
-			shoulderTilt: 0,
-			bellySpread: bellyFollow * 0.85,
-			mouthTension: headFollow * 0.08,
-			leftBrowLift: gaze * 4.9,
-			rightBrowLift: gaze * 4.5,
-			leftEyeOpen: (heldBlink?.leftEyeOpen ?? 1 - leftEyeClosure) + gaze * 0.035,
-			rightEyeOpen: (heldBlink?.rightEyeOpen ?? 1 - rightEyeClosure) + gaze * 0.035,
-		};
-	}
-
-	if (reaction.kind === 'confirm') {
-		const down = heldEnvelope(elapsed, 0.125, 0.25, 0.125, 0.25);
-		const shoulderFollow = heldEnvelope(elapsed, 0.125 + INK_FRAME_SECONDS, 0.25, 0.125, 0.25);
-		const bellyFollow = heldEnvelope(elapsed, 0.125 + INK_FRAME_SECONDS * 2, 0.25, 0, 0.25);
-		return {
-			presence,
-			headX: 0,
-			headY: down * 3.4 - presence * 0.4,
-			headAngle: direction * presence * 0.003,
-			headTurn: direction * presence * 0.16,
-			faceLookY: 0,
-			eyeLookY: 0,
-			bodyX: 0,
-			shoulderY: shoulderFollow * 1.2,
-			shoulderTilt: direction * shoulderFollow * 0.14,
-			bellySpread: bellyFollow * 0.75,
-			mouthTension: direction * presence * 0.24,
-			leftBrowLift: presence * 0.55,
-			rightBrowLift: presence * 0.55,
-			leftEyeOpen: 1,
-			rightEyeOpen: 1,
-		};
-	}
-
-	const shoulderFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS, 0.25, 0.625, 0.375);
-	const bellyFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS * 2, 0.25, 0.5, 0.375);
-	return {
-		presence,
-		headX: direction * presence * 1.2,
-		headY: presence * 0.6,
-		headAngle: direction * presence * 0.026,
-		headTurn: direction * presence * 0.42,
-		faceLookY: 0,
-		eyeLookY: 0,
-		bodyX: direction * shoulderFollow * 0.65,
-		shoulderY: shoulderFollow * 0.18,
-		shoulderTilt: direction * shoulderFollow * 1.05,
-		bellySpread: bellyFollow * 0.4,
-		mouthTension: direction * presence * 0.58,
-		leftBrowLift: presence * (direction < 0 ? 4.4 : -0.8),
-		rightBrowLift: presence * (direction > 0 ? 4.4 : -0.8),
-		leftEyeOpen: 1,
-		rightEyeOpen: 1,
-	};
-}
-
-export function sampleBlonkyReactionOffset(reaction?: BlonkyReactionPose): BlonkyReactionOffset {
-	if (!reaction) return { ...NO_REACTION_OFFSET };
-	if (reaction.kind === 'confirm' && reaction.transitionFrom) {
-		return confirmExitOffsetAt(reaction.transitionFrom, reaction.elapsed);
-	}
-	const current = rawReactionOffsetAt(reaction);
-	if (!reaction.transitionFrom) return current;
-	const transitionFrame = Math.max(0, Math.floor(reaction.elapsed * FPS + 1e-6));
-	const transition = Math.min(1, transitionFrame / BLONKY_REACTION_TRANSITION_FRAMES);
-	return blendReactionOffsets(reaction.transitionFrom, current, transition);
-}
-
-function poseAtRest(time: number, reaction?: BlonkyReactionPose): Pose {
+function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 	const behavior = idleBehaviorAt(time);
-	const reactionOffset = sampleBlonkyReactionOffset(reaction);
-	const idleBehaviorWeight = 1 - reactionOffset.presence * 0.85;
+	const emoteOffset = sampleBlonkyEmoteOffset(emote);
+	const idleBehaviorWeight = 1 - emoteOffset.presence * 0.85;
 	const breathWave = Math.sin(time * 1.47 - 0.4);
 	const breath = breathWave + behavior.deepBreath * 0.82;
 	const swayPhase = time * 0.86;
 	const sway = Math.sin(swayPhase) * 2.8;
-	const centerX = 450 + sway + reactionOffset.bodyX;
-	const shoulderY = 294 - breath * 1.7 + reactionOffset.shoulderY;
-	const leftShoulderY = shoulderY + 3.4 + Math.sin(swayPhase - 0.2) * 0.65 + reactionOffset.shoulderTilt;
-	const rightShoulderY = shoulderY - 1.6 + Math.sin(swayPhase + 0.35) * 0.45 - reactionOffset.shoulderTilt;
+	const centerX = 450 + sway + emoteOffset.bodyX;
+	const restingShoulderY = 294 - breath * 1.7;
+	const shoulderY = restingShoulderY + emoteOffset.shoulderY;
+	const torsoY = restingShoulderY + emoteOffset.torsoY;
+	const leftShoulderY = shoulderY + 3.4 + Math.sin(swayPhase - 0.2) * 0.65 + emoteOffset.shoulderTilt;
+	const rightShoulderY = shoulderY - 1.6 + Math.sin(swayPhase + 0.35) * 0.45 - emoteOffset.shoulderTilt;
 	const armSway = Math.sin(swayPhase - 0.24) * 2.25;
 	const armBreath = Math.sin(time * 1.47 - 0.68);
-	const armBodyX = reactionOffset.bodyX * 0.65;
-	const armBodyY = reactionOffset.shoulderY * 0.35;
+	const armBodyX = emoteOffset.bodyX * 0.65;
+	const armBodyY = emoteOffset.torsoY * 0.35;
 	const { leftEyeOpen, rightEyeOpen } = blinkPoseAt(time);
 	const leftArm: [Pt, Pt, Pt] = [
 		{ x: 450 + armSway + armBodyX - 341, y: leftShoulderY + 320 },
@@ -705,22 +406,24 @@ function poseAtRest(time: number, reaction?: BlonkyReactionPose): Pose {
 	return {
 		centerX,
 		shoulderY,
+		torsoY,
 		leftShoulderY,
 		rightShoulderY,
-		headX: centerX - 5 + Math.sin(swayPhase - 0.43) * 1.45 + behavior.headCorrection * 1.2 * idleBehaviorWeight + reactionOffset.headX,
-		headY: 295 - breathWave * 0.62 - behavior.deepBreath * 0.75 + reactionOffset.headY,
+		headX: centerX - 5 + Math.sin(swayPhase - 0.43) * 1.45 + behavior.headCorrection * 1.2 * idleBehaviorWeight + emoteOffset.headX,
+		headY: 295 - breathWave * 0.62 - behavior.deepBreath * 0.75 + emoteOffset.headY,
 		headAngle: -0.024 + Math.sin(swayPhase - 0.48) * 0.009 + behavior.headCorrection * 0.008 * idleBehaviorWeight,
-		headReactionAngle: reactionOffset.headAngle,
-		headTurn: Math.sin(time * 0.7 - 0.4) * 0.24 + behavior.headCorrection * 0.82 * idleBehaviorWeight + reactionOffset.headTurn,
-		faceLookY: reactionOffset.faceLookY,
-		eyeLookY: reactionOffset.eyeLookY,
+		headEmoteAngle: emoteOffset.headAngle,
+		headTurn: Math.sin(time * 0.7 - 0.4) * 0.24 + behavior.headCorrection * 0.82 * idleBehaviorWeight + emoteOffset.headTurn,
+		faceLookY: emoteOffset.faceLookY,
+		eyeLookY: emoteOffset.eyeLookY,
 		breath,
-		bellySpread: breath * 2.15 + behavior.deepBreath * 1.4 + reactionOffset.bellySpread,
-		mouthTension: behavior.mouthSet * idleBehaviorWeight + reactionOffset.mouthTension,
-		leftBrowLift: reactionOffset.leftBrowLift,
-		rightBrowLift: reactionOffset.rightBrowLift,
-		leftEyeOpen: leftEyeOpen + (reactionOffset.leftEyeOpen - leftEyeOpen) * reactionOffset.presence,
-		rightEyeOpen: rightEyeOpen + (reactionOffset.rightEyeOpen - rightEyeOpen) * reactionOffset.presence,
+		bellySpread: breath * 2.15 + behavior.deepBreath * 1.4 + emoteOffset.bellySpread,
+		mouthPurse: emoteOffset.mouthPurse,
+		mouthTension: behavior.mouthSet * idleBehaviorWeight + emoteOffset.mouthTension,
+		leftBrowLift: emoteOffset.leftBrowLift,
+		rightBrowLift: emoteOffset.rightBrowLift,
+		leftEyeOpen: leftEyeOpen + (emoteOffset.leftEyeOpen - leftEyeOpen) * emoteOffset.presence,
+		rightEyeOpen: rightEyeOpen + (emoteOffset.rightEyeOpen - rightEyeOpen) * emoteOffset.presence,
 		leftArm,
 		rightArm,
 	};
@@ -782,7 +485,7 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 	// the jaw can tip naturally over the neck skin behind it.
 	const neckPivot = { x: pose.centerX, y: pose.shoulderY - 10 };
 	ctx.translate(neckPivot.x, neckPivot.y);
-	ctx.rotate(pose.headAngle + pose.headReactionAngle);
+	ctx.rotate(pose.headAngle + pose.headEmoteAngle);
 	ctx.translate(pose.headX - neckPivot.x, pose.headY - neckPivot.y);
 	ctx.scale(2.05, 1.9);
 	const turn = pose.headTurn;
@@ -894,11 +597,12 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: -16 + turn * 2.25, y: 2 },
 		{ x: -25 + turn * 2.15, y: -2 },
 	], 636, { width: 1.7, boil: 0.4 });
+	const mouthPurse = pose.mouthPurse;
 	stroke(ctx, [
-		{ x: -38 + turn * 0.65, y: 15 + pose.mouthTension * 0.8 },
-		{ x: -17 + turn * 0.8, y: 13 },
-		{ x: 1 + turn, y: 12 },
-		{ x: 17 + turn * 1.2, y: 14 - pose.mouthTension * 1.15 },
+		{ x: -38 + turn * 0.65 + mouthPurse * 10, y: 15 + pose.mouthTension * 0.8 },
+		{ x: -17 + turn * 0.8 + mouthPurse * 2, y: 13 },
+		{ x: 1 + turn - mouthPurse * 2, y: 12 },
+		{ x: 17 + turn * 1.2 - mouthPurse * 8, y: 14 - pose.mouthTension * 1.15 },
 	], 637, { width: 1.62, boil: 0.36 });
 	stroke(ctx, [{ x: -18, y: 22 }, { x: -5, y: 21 }], 638, { width: 1.08, alpha: 0.7, passes: 1 });
 	stroke(ctx, [{ x: -55, y: 32 }, { x: -39, y: 44 }, { x: -12, y: 51 }, { x: 14, y: 49 }, { x: 43, y: 33 }], 639, { width: 1.5, alpha: 0.7, boil: 0.34 });
@@ -937,30 +641,34 @@ interface CollarGeometry {
 }
 
 function collarGeometry(pose: Pose): CollarGeometry {
+	const shoulderTravel = pose.shoulderY - pose.torsoY;
+	const anchoredY = (offset: number, shoulderWeight: number): number => (
+		pose.torsoY + offset + shoulderTravel * shoulderWeight
+	);
 	const leftContact = { x: pose.centerX - 202, y: pose.shoulderY - 8 };
 	const rightContact = { x: pose.centerX + 208, y: pose.shoulderY - 10 };
-	const bottom = { x: pose.centerX - 3, y: pose.shoulderY + 180 };
-	const leftMid = { x: pose.centerX - 164, y: pose.shoulderY + 108 };
-	const rightMid = { x: pose.centerX + 190, y: pose.shoulderY + 105 };
+	const bottom = { x: pose.centerX - 3, y: anchoredY(180, 0.35) };
+	const leftMid = { x: pose.centerX - 164, y: anchoredY(108, 0.55) };
+	const rightMid = { x: pose.centerX + 190, y: anchoredY(105, 0.55) };
 	const leftHalf = quadratic(
 		leftContact,
-		{ x: pose.centerX - 207, y: pose.shoulderY + 58 },
+		{ x: pose.centerX - 207, y: anchoredY(58, 0.76) },
 		leftMid,
 		14,
 	).concat(quadratic(
 		leftMid,
-		{ x: pose.centerX - 96, y: pose.shoulderY + 171 },
+		{ x: pose.centerX - 96, y: anchoredY(171, 0.42) },
 		bottom,
 		12,
 	).slice(1));
 	const rightHalf = quadratic(
 		bottom,
-		{ x: pose.centerX + 93, y: pose.shoulderY + 174 },
+		{ x: pose.centerX + 93, y: anchoredY(174, 0.42) },
 		rightMid,
 		12,
 	).concat(quadratic(
 		rightMid,
-		{ x: pose.centerX + 211, y: pose.shoulderY + 59 },
+		{ x: pose.centerX + 211, y: anchoredY(59, 0.76) },
 		rightContact,
 		14,
 	).slice(1));
@@ -973,23 +681,23 @@ function collarGeometry(pose: Pose): CollarGeometry {
 	fullSeam[0] = lerp(fullSeam[0], fullSeam[1], 0.2);
 	const rightShoulder = { x: pose.centerX + 292, y: pose.rightShoulderY + 24 };
 	const seam = endPolylineAtSegment(fullSeam, rightContact, rightShoulder);
-	const leftChestTop = { x: pose.centerX - 150, y: pose.shoulderY - 18 };
-	const rightChestTop = { x: pose.centerX + 150, y: pose.shoulderY - 18 };
+	const leftChestTop = { x: pose.centerX - 150, y: anchoredY(-18, 0.72) };
+	const rightChestTop = { x: pose.centerX + 150, y: anchoredY(-18, 0.72) };
 	const skinTop = quadratic(
 		leftContact,
-		{ x: pose.centerX - 184, y: pose.shoulderY - 17 },
+		{ x: pose.centerX - 184, y: anchoredY(-17, 0.82) },
 		leftChestTop,
 		5,
 	).concat(
 		quadratic(
 			leftChestTop,
-			{ x: pose.centerX, y: pose.shoulderY - 30 },
+			{ x: pose.centerX, y: anchoredY(-30, 0.58) },
 			rightChestTop,
 			12,
 		).slice(1),
 		quadratic(
 			rightChestTop,
-			{ x: pose.centerX + 184, y: pose.shoulderY - 17 },
+			{ x: pose.centerX + 184, y: anchoredY(-17, 0.82) },
 			rightContact,
 			5,
 		).slice(1),
@@ -1025,10 +733,10 @@ function drawBody(ctx: CanvasRenderingContext2D, pose: Pose, palette: BlonkyPale
 	];
 	const leftArmpit = { x: pose.centerX - 215, y: leftY + 215 };
 	const leftBodyFillTop = { x: pose.centerX - 232, y: leftY + 282 };
-	const leftBodySide = { x: pose.centerX - 278 - belly * 0.72, y: pose.shoulderY + 395 };
+	const leftBodySide = { x: pose.centerX - 278 - belly * 0.72, y: pose.torsoY + 395 };
 	const leftBodyBottom = { x: pose.centerX - 286 - belly, y: H + 18 };
 	const rightBodyBottom = { x: pose.centerX + 288 + belly * 0.86, y: H + 18 };
-	const rightBodySide = { x: pose.centerX + 280 + belly * 0.64, y: pose.shoulderY + 395 };
+	const rightBodySide = { x: pose.centerX + 280 + belly * 0.64, y: pose.torsoY + 395 };
 	const rightBodyFillTop = { x: pose.centerX + 232, y: rightY + 282 };
 	const bodyOuter: Pt[] = [
 		leftBodyFillTop,
@@ -1104,15 +812,15 @@ function drawBody(ctx: CanvasRenderingContext2D, pose: Pose, palette: BlonkyPale
 	), 768, { width: 2.85, boil: 0.42, color: palette.outlineInk });
 
 	stroke(ctx, quadratic(
-		{ x: pose.centerX - 72 - belly * 0.3, y: pose.shoulderY + 296 - pose.breath * 1.1 },
-		{ x: pose.centerX - 18, y: pose.shoulderY + 284 - pose.breath * 1.45 },
-		{ x: pose.centerX + 58 + belly * 0.25, y: pose.shoulderY + 299 - pose.breath * 0.9 },
+		{ x: pose.centerX - 72 - belly * 0.3, y: pose.torsoY + 296 - pose.breath * 1.1 },
+		{ x: pose.centerX - 18, y: pose.torsoY + 284 - pose.breath * 1.45 },
+		{ x: pose.centerX + 58 + belly * 0.25, y: pose.torsoY + 299 - pose.breath * 0.9 },
 		18,
 	), 762, { width: 1.55, alpha: 0.5, boil: 0.24, color: palette.outlineInk });
 	stroke(ctx, quadratic(
-		{ x: pose.centerX - 150 - belly * 0.65, y: pose.shoulderY + 354 + pose.breath * 0.65 },
-		{ x: pose.centerX + 10, y: pose.shoulderY + 327 - pose.breath * 0.35 },
-		{ x: pose.centerX + 138 + belly * 0.55, y: pose.shoulderY + 360 + pose.breath * 0.8 },
+		{ x: pose.centerX - 150 - belly * 0.65, y: pose.torsoY + 354 + pose.breath * 0.65 },
+		{ x: pose.centerX + 10, y: pose.torsoY + 327 - pose.breath * 0.35 },
+		{ x: pose.centerX + 138 + belly * 0.55, y: pose.torsoY + 360 + pose.breath * 0.8 },
 		18,
 	), 763, { width: 1.9, alpha: 0.6, boil: 0.26, color: palette.outlineInk });
 }
@@ -1124,7 +832,7 @@ export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options:
 	const viewport = BLONKY_VIEWPORTS[view];
 	const palette = options.palette ?? DEFAULT_BLONKY_PALETTE;
 	ctx.clearRect(0, 0, viewport.width, viewport.height);
-	const pose = poseAtRest(inkTime, options.reaction);
+	const pose = poseAtRest(inkTime, options.emote);
 	ctx.save();
 	if (view === 'debug') {
 		ctx.translate((viewport.width - BLONKY_BUST_WIDTH) / 2, 0);
