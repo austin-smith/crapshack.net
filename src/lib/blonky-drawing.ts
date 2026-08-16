@@ -8,6 +8,7 @@ export const BLONKY_FPS = 8;
 
 export const BLONKY_VIEWPORTS = {
 	bust: { width: BLONKY_BUST_WIDTH, height: BLONKY_BUST_HEIGHT },
+	debug: { width: 940, height: BLONKY_BUST_HEIGHT },
 	portrait: { width: 520, height: 520 },
 } as const;
 
@@ -64,6 +65,7 @@ export interface BlonkyReactionPose {
 export interface BlonkyDrawOptions {
 	palette?: BlonkyPalette;
 	reaction?: BlonkyReactionPose;
+	showBody?: boolean;
 	showHead?: boolean;
 	view?: BlonkyView;
 }
@@ -1065,11 +1067,13 @@ export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options:
 	ctx.clearRect(0, 0, viewport.width, viewport.height);
 	const pose = poseAtRest(inkTime, options.reaction);
 	ctx.save();
-	if (view === 'portrait') {
+	if (view === 'debug') {
+		ctx.translate((viewport.width - BLONKY_BUST_WIDTH) / 2, 0);
+	} else if (view === 'portrait') {
 		ctx.translate(8, -5);
 		ctx.scale(0.56, 0.56);
 	}
-	drawBody(ctx, pose, palette);
+	if (options.showBody !== false) drawBody(ctx, pose, palette);
 	if (options.showHead !== false) drawHead(ctx, pose, palette.outlineInk);
 	ctx.restore();
 }

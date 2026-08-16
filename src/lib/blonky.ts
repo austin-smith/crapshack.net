@@ -21,6 +21,7 @@ interface BlonkyAnimatorOptions {
 	initiallyPaused?: boolean;
 	onFrame?: (time: number) => void;
 	onPlaybackChange?: (playing: boolean) => void;
+	showBody?: boolean;
 	showHead?: boolean;
 	view?: BlonkyView;
 }
@@ -29,6 +30,8 @@ export interface BlonkyAnimator {
 	destroy: () => void;
 	getPlaybackRate: () => number;
 	getTime: () => number;
+	isBodyVisible: () => boolean;
+	isHeadVisible: () => boolean;
 	isPlaying: () => boolean;
 	pause: () => void;
 	play: () => void;
@@ -36,6 +39,8 @@ export interface BlonkyAnimator {
 	release: () => void;
 	reset: () => void;
 	seek: (time: number) => void;
+	setBodyVisible: (visible: boolean) => void;
+	setHeadVisible: (visible: boolean) => void;
 	setPlaybackRate: (rate: number) => void;
 	step: (frames: number) => void;
 }
@@ -97,6 +102,8 @@ export function createBlonkyAnimator(
 	let themeObserver: MutationObserver | undefined;
 	let reportedPlayback: boolean | undefined;
 	let palette = resolveBlonkyPalette(canvas);
+	let bodyVisible = options.showBody ?? true;
+	let headVisible = options.showHead ?? true;
 
 	const reportPlayback = (): void => {
 		if (reportedPlayback === running) return;
@@ -152,7 +159,8 @@ export function createBlonkyAnimator(
 		drawBlonky(context, time, {
 			palette,
 			reaction: reactionPose,
-			showHead: options.showHead,
+			showBody: bodyVisible,
+			showHead: headVisible,
 			view,
 		});
 		lastFrame = nextFrame;
@@ -236,6 +244,20 @@ export function createBlonkyAnimator(
 		startedAt = now;
 		lastFrame = -1;
 		draw(animationTime(now), true);
+	};
+
+	const setBodyVisible = (visible: boolean): void => {
+		if (bodyVisible === visible) return;
+		bodyVisible = visible;
+		lastFrame = -1;
+		draw(animationTime(), true);
+	};
+
+	const setHeadVisible = (visible: boolean): void => {
+		if (headVisible === visible) return;
+		headVisible = visible;
+		lastFrame = -1;
+		draw(animationTime(), true);
 	};
 
 	const step = (frames: number): void => {
@@ -331,6 +353,8 @@ export function createBlonkyAnimator(
 		destroy,
 		getPlaybackRate: () => playbackRate,
 		getTime: () => animationTime(),
+		isBodyVisible: () => bodyVisible,
+		isHeadVisible: () => headVisible,
 		isPlaying: () => running,
 		pause,
 		play,
@@ -338,6 +362,8 @@ export function createBlonkyAnimator(
 		release,
 		reset,
 		seek,
+		setBodyVisible,
+		setHeadVisible,
 		setPlaybackRate,
 		step,
 	};

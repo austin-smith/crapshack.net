@@ -25,6 +25,8 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	const playIcon = root.querySelector<HTMLElement>('[data-blonky-playback-icon="play"]');
 	const pauseIcon = root.querySelector<HTMLElement>('[data-blonky-playback-icon="pause"]');
 	const resetButton = root.querySelector<HTMLButtonElement>('[data-blonky-reset]');
+	const headVisibilityButton = root.querySelector<HTMLButtonElement>('[data-blonky-head-visibility]');
+	const bodyVisibilityButton = root.querySelector<HTMLButtonElement>('[data-blonky-body-visibility]');
 	const speedDropdown = root.querySelector<HTMLElement>('#blonky-speed');
 	const stateOutput = root.querySelector<HTMLOutputElement>('[data-blonky-state]');
 	const timeOutput = root.querySelector<HTMLOutputElement>('[data-blonky-time]');
@@ -36,6 +38,8 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		|| !playIcon
 		|| !pauseIcon
 		|| !resetButton
+		|| !headVisibilityButton
+		|| !bodyVisibilityButton
 		|| !speedDropdown
 		|| !stateOutput
 		|| !timeOutput
@@ -73,7 +77,7 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		autoPauseOffscreen: false,
 		onFrame: syncFrame,
 		onPlaybackChange: syncPlayback,
-		view: 'bust',
+		view: 'debug',
 	});
 	if (!animator) return;
 
@@ -114,6 +118,20 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 
 	playbackButton.addEventListener('click', togglePlayback, { signal: listeners.signal });
 	resetButton.addEventListener('click', reset, { signal: listeners.signal });
+	headVisibilityButton.addEventListener('click', () => {
+		const visible = !animator.isHeadVisible();
+		animator.setHeadVisible(visible);
+		headVisibilityButton.toggleAttribute('data-active', visible);
+		headVisibilityButton.setAttribute('aria-pressed', String(visible));
+		status.textContent = `Blonky head ${visible ? 'shown' : 'hidden'}`;
+	}, { signal: listeners.signal });
+	bodyVisibilityButton.addEventListener('click', () => {
+		const visible = !animator.isBodyVisible();
+		animator.setBodyVisible(visible);
+		bodyVisibilityButton.toggleAttribute('data-active', visible);
+		bodyVisibilityButton.setAttribute('aria-pressed', String(visible));
+		status.textContent = `Blonky body ${visible ? 'shown' : 'hidden'}`;
+	}, { signal: listeners.signal });
 	speedDropdown.addEventListener('dropdown-change', ((event: CustomEvent<{ value: string }>) => {
 		animator.setPlaybackRate(Number(event.detail.value));
 	}) as EventListener, { signal: listeners.signal });

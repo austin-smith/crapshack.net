@@ -30,7 +30,7 @@ const showFilter = animations.length > 8;
 				<canvas
 					id="blonky-drawing"
 					data-blonky-page-canvas
-					width="900"
+					width="940"
 					height="800"
 					role="img"
 					aria-label="Blonky, a large hand-drawn character"
@@ -89,6 +89,30 @@ const showFilter = animations.length > 8;
 							]}
 						/>
 					</div>
+				</fieldset>
+
+				<fieldset class="console__cluster">
+					<legend class="sr-only">components</legend>
+					<ButtonGroup ariaLabel="Components">
+						<button
+							class="control component"
+							type="button"
+							aria-pressed="true"
+							data-active
+							data-blonky-head-visibility
+						>
+							head
+						</button>
+						<button
+							class="control component"
+							type="button"
+							aria-pressed="true"
+							data-active
+							data-blonky-body-visibility
+						>
+							body
+						</button>
+					</ButtonGroup>
 				</fieldset>
 
 				<fieldset class="console__cluster console__cluster--reactions">
@@ -220,7 +244,7 @@ const showFilter = animations.length > 8;
 		display: block;
 		width: 100%;
 		height: auto;
-		aspect-ratio: 9 / 8;
+		aspect-ratio: 47 / 40;
 	}
 
 	.console__strip {
@@ -296,6 +320,15 @@ const showFilter = animations.length > 8;
 		border-color: transparent;
 		background: var(--color-brand);
 		color: var(--color-on-brand);
+	}
+
+	.component[data-active] {
+		background: var(--color-sunken-strong);
+	}
+
+	.component:not([data-active]) {
+		background: transparent;
+		color: var(--color-faint);
 	}
 
 	.blonky-debug__shortcuts {
