@@ -37,6 +37,9 @@ export function sampleShrugEmote(elapsed: number, direction: -1 | 1): BlonkyEmot
 		mouthTension: direction * glance * 0.42,
 		leftBrowLift: glance * (direction < 0 ? 2.8 : 1.4),
 		rightBrowLift: glance * (direction > 0 ? 2.8 : 1.4),
+		leftBrowArch: 0,
+		rightBrowArch: 0,
+		mouthCurl: 0,
 		leftEyeOpen: 1 - glance * leftEyePinch - settle * 0.24,
 		rightEyeOpen: 1 - glance * rightEyePinch - settle * 0.24,
 	};

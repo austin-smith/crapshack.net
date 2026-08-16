@@ -345,6 +345,9 @@ interface Pose {
 	mouthTension: number;
 	leftBrowLift: number;
 	rightBrowLift: number;
+	leftBrowArch: number;
+	rightBrowArch: number;
+	mouthCurl: number;
 	leftEyeOpen: number;
 	rightEyeOpen: number;
 	leftArm: [Pt, Pt, Pt];
@@ -422,6 +425,9 @@ function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 		mouthTension: behavior.mouthSet * idleBehaviorWeight + emoteOffset.mouthTension,
 		leftBrowLift: emoteOffset.leftBrowLift,
 		rightBrowLift: emoteOffset.rightBrowLift,
+		leftBrowArch: emoteOffset.leftBrowArch,
+		rightBrowArch: emoteOffset.rightBrowArch,
+		mouthCurl: emoteOffset.mouthCurl,
 		leftEyeOpen: leftEyeOpen + (emoteOffset.leftEyeOpen - leftEyeOpen) * emoteOffset.presence,
 		rightEyeOpen: rightEyeOpen + (emoteOffset.rightEyeOpen - rightEyeOpen) * emoteOffset.presence,
 		leftArm,
@@ -577,14 +583,14 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 	stroke(ctx, [{ x: -47, y: -40 + underEyeFollow }, { x: -38, y: -35 + underEyeFollow }, { x: -28, y: -35 + underEyeFollow }, { x: -20, y: -40 + underEyeFollow }], 632, { width: 1.12, alpha: 0.82, passes: 1, boil: 0.28 });
 	stroke(ctx, [{ x: 21, y: -35 + underEyeFollow }, { x: 28, y: -32 + underEyeFollow }, { x: 36, y: -33 + underEyeFollow }, { x: 41, y: -37 + underEyeFollow }], 633, { width: 1.02, alpha: 0.76, passes: 1, boil: 0.28 });
 	stroke(ctx, [
-		{ x: -49, y: -67 - pose.leftBrowLift * 0.5 },
-		{ x: -41, y: -75 - pose.leftBrowLift },
-		{ x: -30, y: -78 - pose.leftBrowLift * 0.7 },
+		{ x: -49, y: -67 - pose.leftBrowLift * 0.5 - pose.leftBrowArch * 0.75 },
+		{ x: -41, y: -75 - pose.leftBrowLift - pose.leftBrowArch },
+		{ x: -30, y: -78 - pose.leftBrowLift * 0.7 - pose.leftBrowArch * 0.2 },
 	], 634, { width: 1.55, boil: 0.36 });
 	stroke(ctx, [
-		{ x: 25, y: -70 - pose.rightBrowLift * 0.7 },
-		{ x: 35, y: -73 - pose.rightBrowLift },
-		{ x: 46, y: -66 - pose.rightBrowLift * 0.5 },
+		{ x: 25, y: -70 - pose.rightBrowLift * 0.7 - pose.rightBrowArch * 0.2 },
+		{ x: 35, y: -73 - pose.rightBrowLift - pose.rightBrowArch },
+		{ x: 46, y: -66 - pose.rightBrowLift * 0.5 - pose.rightBrowArch * 0.75 },
 	], 635, { width: 1.38, boil: 0.36 });
 	const noseBridgeX = 9 + turn * 0.35;
 	const noseTipX = -6 + turn * 2.6;
@@ -598,12 +604,15 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: -25 + turn * 2.15, y: -2 },
 	], 636, { width: 1.7, boil: 0.4 });
 	const mouthPurse = pose.mouthPurse;
-	stroke(ctx, [
-		{ x: -38 + turn * 0.65 + mouthPurse * 10, y: 15 + pose.mouthTension * 0.8 },
-		{ x: -17 + turn * 0.8 + mouthPurse * 2, y: 13 },
-		{ x: 1 + turn - mouthPurse * 2, y: 12 },
-		{ x: 17 + turn * 1.2 - mouthPurse * 8, y: 14 - pose.mouthTension * 1.15 },
-	], 637, { width: 1.62, boil: 0.36 });
+	const leftMouthCurl = Math.max(0, -pose.mouthCurl);
+	const rightMouthCurl = Math.max(0, pose.mouthCurl);
+	const mouthLine: Pt[] = [
+		{ x: -38 + turn * 0.65 + mouthPurse * 10 + leftMouthCurl * 4, y: 15 + pose.mouthTension * 0.8 - leftMouthCurl * 3.2 },
+		{ x: -17 + turn * 0.8 + mouthPurse * 2 + leftMouthCurl * 1.4, y: 13 - leftMouthCurl * 1.2 },
+		{ x: 1 + turn - mouthPurse * 2 - rightMouthCurl * 1.4, y: 12 - rightMouthCurl * 1.2 },
+		{ x: 17 + turn * 1.2 - mouthPurse * 8 - rightMouthCurl * 4, y: 14 - pose.mouthTension * 1.15 - rightMouthCurl * 3.2 },
+	];
+	stroke(ctx, mouthLine, 637, { width: 1.62, boil: 0.36 });
 	stroke(ctx, [{ x: -18, y: 22 }, { x: -5, y: 21 }], 638, { width: 1.08, alpha: 0.7, passes: 1 });
 	stroke(ctx, [{ x: -55, y: 32 }, { x: -39, y: 44 }, { x: -12, y: 51 }, { x: 14, y: 49 }, { x: 43, y: 33 }], 639, { width: 1.5, alpha: 0.7, boil: 0.34 });
 	stroke(ctx, [{ x: -42, y: 49 }, { x: -20, y: 58 }, { x: 2, y: 61 }, { x: 22, y: 56 }, { x: 36, y: 48 }], 640, { width: 1.12, alpha: 0.54, passes: 1, boil: 0.3 });

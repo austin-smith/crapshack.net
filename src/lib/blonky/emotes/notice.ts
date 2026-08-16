@@ -45,6 +45,9 @@ export function sampleNoticeEmote(
 		mouthTension: headFollow * 0.08,
 		leftBrowLift: gaze * 4.9,
 		rightBrowLift: gaze * 4.5,
+		leftBrowArch: 0,
+		rightBrowArch: 0,
+		mouthCurl: 0,
 		leftEyeOpen: (heldBlink?.leftEyeOpen ?? 1 - leftEyeClosure) + gaze * 0.035,
 		rightEyeOpen: (heldBlink?.rightEyeOpen ?? 1 - rightEyeClosure) + gaze * 0.035,
 	};

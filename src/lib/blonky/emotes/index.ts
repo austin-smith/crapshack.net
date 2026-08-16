@@ -1,6 +1,6 @@
 import { sampleConfirmEmote, sampleConfirmExit } from './confirm';
-import { sampleConfusedEmote } from './confused';
 import { sampleNoticeEmote } from './notice';
+import { sampleSkepticalEmote } from './skeptical';
 import { sampleShrugEmote } from './shrug';
 import {
 	BLONKY_EMOTE_TRANSITION_FRAMES,
@@ -14,7 +14,7 @@ import {
 export const BLONKY_EMOTES = {
 	notice: { label: 'notice', duration: 0.625, holds: true },
 	confirm: { label: 'confirm', duration: 1 },
-	confused: { label: 'confused', duration: 1.375 },
+	skeptical: { label: 'skeptical', duration: 1.375 },
 	shrug: { label: 'shrug', duration: 1.5 },
 } as const satisfies Record<BlonkyEmote, BlonkyEmoteInfo>;
 
@@ -35,6 +35,9 @@ const NO_EMOTE_OFFSET: BlonkyEmoteOffset = {
 	mouthTension: 0,
 	leftBrowLift: 0,
 	rightBrowLift: 0,
+	leftBrowArch: 0,
+	rightBrowArch: 0,
+	mouthCurl: 0,
 	leftEyeOpen: 1,
 	rightEyeOpen: 1,
 };
@@ -62,6 +65,9 @@ function blendEmoteOffsets(
 		mouthTension: blend(from.mouthTension, to.mouthTension),
 		leftBrowLift: blend(from.leftBrowLift, to.leftBrowLift),
 		rightBrowLift: blend(from.rightBrowLift, to.rightBrowLift),
+		leftBrowArch: blend(from.leftBrowArch, to.leftBrowArch),
+		rightBrowArch: blend(from.rightBrowArch, to.rightBrowArch),
+		mouthCurl: blend(from.mouthCurl, to.mouthCurl),
 		leftEyeOpen: blend(from.leftEyeOpen, to.leftEyeOpen),
 		rightEyeOpen: blend(from.rightEyeOpen, to.rightEyeOpen),
 	};
@@ -78,8 +84,8 @@ function rawEmoteOffsetAt(emote: BlonkyEmotePose): BlonkyEmoteOffset {
 			return sampleNoticeEmote(elapsed, emote.direction, emote.heldElapsed);
 		case 'confirm':
 			return sampleConfirmEmote(elapsed, emote.direction);
-		case 'confused':
-			return sampleConfusedEmote(elapsed, emote.direction);
+		case 'skeptical':
+			return sampleSkepticalEmote(elapsed, emote.direction);
 		case 'shrug':
 			return sampleShrugEmote(elapsed, emote.direction);
 	}

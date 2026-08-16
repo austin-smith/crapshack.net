@@ -24,6 +24,9 @@ export function sampleConfirmEmote(elapsed: number, direction: -1 | 1): BlonkyEm
 		mouthTension: direction * presence * 0.24,
 		leftBrowLift: presence * 0.55,
 		rightBrowLift: presence * 0.55,
+		leftBrowArch: 0,
+		rightBrowArch: 0,
+		mouthCurl: 0,
 		leftEyeOpen: 1,
 		rightEyeOpen: 1,
 	};
@@ -55,6 +58,9 @@ export function sampleConfirmExit(from: BlonkyEmoteOffset, elapsed: number): Blo
 		mouthTension: blendToRest(from.mouthTension, headReturn),
 		leftBrowLift: blendToRest(from.leftBrowLift, headReturn),
 		rightBrowLift: blendToRest(from.rightBrowLift, headReturn),
+		leftBrowArch: blendToRest(from.leftBrowArch, headReturn),
+		rightBrowArch: blendToRest(from.rightBrowArch, headReturn),
+		mouthCurl: blendToRest(from.mouthCurl, headReturn),
 		leftEyeOpen: blendToRest(from.leftEyeOpen, eyeReturn, 1),
 		rightEyeOpen: blendToRest(from.rightEyeOpen, eyeReturn, 1),
 	};
