@@ -1,0 +1,356 @@
+---
+import { StepBack, StepForward } from '@lucide/astro';
+import Layout from '../layouts/Layout.astro';
+import ButtonGroup from '../components/ui/ButtonGroup.astro';
+import Dropdown from '../components/ui/Dropdown.astro';
+import { BLONKY_ANIMATIONS } from '../lib/blonky-drawing';
+
+const animations = Object.entries(BLONKY_ANIMATIONS);
+const showFilter = animations.length > 8;
+---
+
+<Layout title="crapshack (blonky debug)" noIndex={true} fullBleed={true}>
+	<section class="blonky-debug" data-blonky-page-root>
+		<header class="blonky-debug__header">
+			<h1>blonky</h1>
+
+			<p class="blonky-debug__readout" aria-label="Animation state">
+				<output data-blonky-state>playing</output>
+				<span aria-hidden="true">·</span>
+				<output data-blonky-time>0.000 s</output>
+				<span aria-hidden="true">·</span>
+				<span>f<output data-blonky-frame>0000</output></span>
+				<span aria-hidden="true">·</span>
+				<span>8 fps</span>
+			</p>
+		</header>
+
+		<div class="console">
+			<figure class="console__stage">
+				<canvas
+					id="blonky-drawing"
+					data-blonky-page-canvas
+					width="900"
+					height="800"
+					role="img"
+					aria-label="Blonky, a large hand-drawn character"
+				>
+					Blonky, a large hand-drawn character.
+				</canvas>
+			</figure>
+
+			<div class="console__strip">
+				<fieldset class="console__cluster">
+					<legend class="sr-only">playback</legend>
+					<div class="console__buttons">
+						<ButtonGroup ariaLabel="Transport">
+							<button
+								class="control control--icon"
+								type="button"
+								data-blonky-step="-1"
+								aria-label="Step backward one frame"
+								title="step one frame back"
+							>
+								<StepBack aria-hidden="true" width={14} height={14} stroke-width={2} />
+							</button>
+							<button class="control control--primary" type="button" data-blonky-playback aria-pressed="true">
+								<span data-blonky-playback-label>pause</span>
+							</button>
+							<button
+								class="control control--icon"
+								type="button"
+								data-blonky-step="1"
+								aria-label="Step forward one frame"
+								title="step one frame forward"
+							>
+								<StepForward aria-hidden="true" width={14} height={14} stroke-width={2} />
+							</button>
+						</ButtonGroup>
+						<button class="control" type="button" data-blonky-reset>reset</button>
+						<Dropdown
+							id="blonky-speed"
+							class="blonky-debug__speed"
+							ariaLabel="Playback speed"
+							defaultValue="1"
+							options={[
+								{ value: '0.25', label: '0.25x' },
+								{ value: '0.5', label: '0.50x' },
+								{ value: '1', label: '1.00x' },
+								{ value: '2', label: '2.00x' },
+							]}
+						/>
+					</div>
+				</fieldset>
+
+				<fieldset class="console__cluster console__cluster--reactions">
+					<legend class="sr-only">reactions</legend>
+					<div class="console__buttons">
+						{showFilter && (
+							<input
+								class="control console__filter"
+								type="search"
+								placeholder="filter"
+								aria-label="Filter animations"
+								data-blonky-filter
+							/>
+						)}
+						{animations.map(([key, info]) => (
+							<button
+								class="control anim"
+								type="button"
+								data-blonky-reaction={key}
+								title={`${info.duration}s`}
+							>
+								{info.label}
+							</button>
+						))}
+					</div>
+				</fieldset>
+			</div>
+		</div>
+
+		<p class="blonky-debug__shortcuts">
+			<kbd>space</kbd> play/pause
+			<span aria-hidden="true">·</span>
+			<kbd>←</kbd><kbd>→</kbd> step
+		</p>
+
+		<span class="sr-only" data-blonky-page-status role="status" aria-live="polite" aria-atomic="true">
+			Blonky animation playing
+		</span>
+	</section>
+</Layout>
+
+<script>
+	import { registerBlonkyPageLifecycle } from '../lib/blonky-page';
+
+	registerBlonkyPageLifecycle();
+</script>
+
+<style>
+	:global(body.layout-full-bleed) {
+		background: var(--color-bg);
+		color: var(--color-text);
+	}
+
+	:global(.weather-container) {
+		display: none;
+	}
+
+	/*
+	 * One hero: the stage, with a single control strip attached underneath.
+	 * The strip is exactly as wide as the stage, so the composition stays
+	 * balanced no matter how many animations exist — buttons wrap in place.
+	 */
+	.blonky-debug {
+		--stage: min(60rem, calc(100svw - 6rem), calc((100svh - 13.5rem) * 1.125));
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.9rem;
+		min-height: 100svh;
+		/* Top padding clears the fixed env badge (left) and sidebar toggle (right). */
+		padding: 3.25rem clamp(1rem, 3vw, 2.5rem) 1.25rem;
+		background: var(--color-bg);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	}
+
+	.blonky-debug__header,
+	.console {
+		box-sizing: border-box;
+		width: var(--stage);
+		max-width: 100%;
+	}
+
+	.blonky-debug__header {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 1.5rem;
+	}
+
+	h1 {
+		margin: 0;
+		font-size: 1.6rem;
+		font-weight: 650;
+		letter-spacing: -0.03em;
+		line-height: 1;
+	}
+
+	.blonky-debug__readout {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		margin: 0 0 0.15rem;
+		color: var(--color-dim);
+		font-size: 0.7rem;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.blonky-debug__readout output {
+		color: var(--color-subtle);
+	}
+
+	.console {
+		overflow: clip;
+		border: 1px solid var(--color-line-strong);
+		border-radius: 0.9rem;
+		background: var(--color-sidebar-bg);
+		box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.2);
+	}
+
+	.console__stage {
+		margin: 0;
+		/* Plate keeps the near-black ink readable on dark themes. */
+		background: var(--color-plate);
+	}
+
+	canvas {
+		display: block;
+		width: 100%;
+		height: auto;
+		aspect-ratio: 9 / 8;
+	}
+
+	.console__strip {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 0.5rem 1.5rem;
+		padding: 0.65rem 0.75rem;
+		border-top: 1px solid var(--color-line);
+	}
+
+	fieldset {
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.console__cluster--reactions {
+		margin-left: auto;
+	}
+
+	.console__buttons {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+
+	.control {
+		box-sizing: border-box;
+		height: 2.2rem;
+		padding: 0 0.7rem;
+		border: 1px solid var(--color-line-strong);
+		border-radius: 0.42rem;
+		background: var(--color-sunken);
+		color: var(--color-text);
+		font: inherit;
+		font-size: 0.72rem;
+		line-height: 1;
+		cursor: pointer;
+	}
+
+	.control:hover {
+		background: var(--color-sunken-strong);
+	}
+
+	.control:focus-visible {
+		outline: 2px solid var(--color-brand);
+		outline-offset: 2px;
+	}
+
+	.control--icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 0.55rem;
+	}
+
+	/* Wide enough for either label, so play ⇄ pause doesn't shift the row. */
+	.control--primary {
+		min-width: 4.6rem;
+		background: var(--color-brand);
+		color: var(--color-on-brand);
+		font-weight: 700;
+	}
+
+	.control--primary:hover {
+		background: color-mix(in srgb, var(--color-brand) 88%, white);
+	}
+
+	/* Match the strip's control height; the component defaults to 10rem wide. */
+	:global(.blonky-debug__speed) {
+		--control-height: 2.2rem;
+		width: 6rem;
+	}
+
+	.console__filter {
+		width: 6.5rem;
+		cursor: text;
+	}
+
+	.anim[data-active] {
+		border-color: transparent;
+		background: var(--color-brand);
+		color: var(--color-on-brand);
+	}
+
+	.blonky-debug__shortcuts {
+		margin: 0;
+		color: var(--color-faint);
+		font-size: 0.6rem;
+		line-height: 1.9;
+		text-align: center;
+	}
+
+	kbd {
+		padding: 0.1rem 0.28rem;
+		border: 1px solid var(--color-line-strong);
+		border-radius: 0.25rem;
+		background: var(--color-sunken);
+		color: var(--color-subtle);
+		font: inherit;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	@media (max-width: 640px) {
+		.blonky-debug {
+			--stage: 100%;
+			justify-content: flex-start;
+			gap: 0.75rem;
+			padding: 3.5rem 0.75rem 1rem;
+		}
+
+		.blonky-debug__header {
+			align-items: flex-start;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.console__cluster--reactions {
+			margin-left: 0;
+		}
+
+		.control {
+			flex: 1 1 auto;
+		}
+	}
+</style>

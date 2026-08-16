@@ -1,12 +1,98 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import BlonkyCanvas from '../components/BlonkyCanvas.astro';
 import Aphorism from '../components/Aphorism.astro';
+import Layout from '../layouts/Layout.astro';
+
 const logo = '/images/crapshack.png';
 ---
 
-<Layout>
-	<div class="flex flex-col justify-center gap-3 text-center min-h-[calc(100dvh-64px)]">
-		<img src={logo} alt="crapshack" class="mx-auto drop-shadow-lg" width="350" />
-		<Aphorism />
+<Layout fullBleed>
+	<div class="home-hero" data-home-hero-root>
+		<div class="home-hero__copy">
+			<img src={logo} alt="crapshack" class="home-hero__logo" width="390" />
+			<Aphorism />
+		</div>
+
+		<button
+			type="button"
+			class="home-hero__character"
+			data-home-hero-character
+			aria-label="Give Blonky another thought"
+		>
+			<BlonkyCanvas
+				id="home-blonky"
+				label="Blonky, a large hand-drawn character leaning into the page"
+				view="portrait"
+			/>
+		</button>
 	</div>
 </Layout>
+
+<script>
+	import { registerHomeHeroLifecycle } from '../lib/home-hero';
+
+	registerHomeHeroLifecycle();
+</script>
+
+<style>
+	.home-hero {
+		position: relative;
+		min-height: 100dvh;
+		overflow: clip;
+		text-align: center;
+	}
+
+	.home-hero__copy {
+		position: absolute;
+		z-index: 2;
+		top: clamp(6rem, 12svh, 9rem);
+		left: 50%;
+		width: min(42rem, calc(100% - 2rem));
+		transform: translateX(-50%);
+	}
+
+	.home-hero__logo {
+		display: block;
+		width: min(24.375rem, 88vw);
+		height: auto;
+		margin: 0 auto 0.85rem;
+		filter: drop-shadow(0 0.55rem 0.7rem rgb(0 0 0 / 0.16));
+	}
+
+	.home-hero__character {
+		position: absolute;
+		z-index: 1;
+		bottom: -11rem;
+		left: 50%;
+		width: min(68rem, 72vw, max(46rem, 92svh));
+		margin: 0;
+		padding: 0;
+		transform: translateX(-50%);
+		border: 0;
+		background: transparent;
+		filter: drop-shadow(0 0.8rem 0.9rem rgb(0 0 0 / 0.14));
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+
+	.home-hero__character:focus-visible {
+		outline: 2px solid var(--color-subtle);
+		outline-offset: -2rem;
+	}
+
+	@media (max-width: 620px) {
+		.home-hero__copy {
+			top: clamp(6.5rem, 17svh, 9rem);
+		}
+
+		.home-hero__logo {
+			width: min(22rem, 92vw);
+			margin-bottom: 0.65rem;
+		}
+
+		.home-hero__character {
+			bottom: -9rem;
+			width: min(44rem, 170vw);
+		}
+	}
+</style>
