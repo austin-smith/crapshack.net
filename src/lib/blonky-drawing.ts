@@ -62,9 +62,17 @@ export interface BlonkyReactionPose {
 }
 
 export interface BlonkyDrawOptions {
+	palette?: BlonkyPalette;
 	reaction?: BlonkyReactionPose;
 	showHead?: boolean;
 	view?: BlonkyView;
+}
+
+export interface BlonkyPalette {
+	outlineInk: string;
+	shirt: string;
+	shirtTextureAlpha: number;
+	shirtTextureInk: string;
 }
 
 const H = BLONKY_BUST_HEIGHT;
@@ -73,9 +81,15 @@ const FPS = BLONKY_FPS;
 const INK_FRAME_SECONDS = 1 / FPS;
 const BLINK_PHRASE_SECONDS = 8.75;
 const BEHAVIOR_PHRASE_SECONDS = 16.25;
-const PAPER = '#efede6';
-const INK = '#252422';
+const SKIN = '#efede6';
+const FACE_INK = '#252422';
 const WASH = '#9a6f59';
+export const DEFAULT_BLONKY_PALETTE: Readonly<BlonkyPalette> = {
+	outlineInk: FACE_INK,
+	shirt: '#4f7092',
+	shirtTextureAlpha: 0.42,
+	shirtTextureInk: '#8ba2b8',
+};
 let frame = 0;
 
 function hash(seed: number, a: number, b = 0): number {
@@ -206,7 +220,7 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 	const length = points.slice(1).reduce((total, point, index) => total + Math.hypot(point.x - points[index].x, point.y - points[index].y), 0);
 	const contourScale = Math.min(1, length / 180);
 	ctx.save();
-	ctx.fillStyle = options.color ?? INK;
+	ctx.fillStyle = options.color ?? FACE_INK;
 	for (let pass = 0; pass < passes; pass++) {
 		ctx.globalAlpha = (options.alpha ?? 0.9) * (pass === 0 ? 0.72 : 0.34);
 		const moved = points.map((point, index) => {
@@ -278,6 +292,7 @@ interface HatchOptions {
 	alpha?: number;
 	width?: number;
 	cross?: boolean;
+	color?: string;
 }
 
 function hatch(ctx: CanvasRenderingContext2D, polygon: Pt[], id: number, options: HatchOptions = {}): void {
@@ -306,6 +321,7 @@ function hatch(ctx: CanvasRenderingContext2D, polygon: Pt[], id: number, options
 					alpha,
 					passes: 1,
 					boil: 0.25,
+					color: options.color,
 				});
 			}
 			y += (options.spacing ?? 7) * (0.72 + hash(passId, line, 107) * 0.58);
@@ -318,10 +334,17 @@ function hatch(ctx: CanvasRenderingContext2D, polygon: Pt[], id: number, options
 	if (options.cross) pass((options.angle ?? -0.74) * -0.78, id + 9001, (options.alpha ?? 0.7) * 0.58);
 }
 
-function stipple(ctx: CanvasRenderingContext2D, polygon: Pt[], id: number, count: number, alpha = 0.6): void {
+function stipple(
+	ctx: CanvasRenderingContext2D,
+	polygon: Pt[],
+	id: number,
+	count: number,
+	color: string,
+	alpha = 0.6,
+): void {
 	const { minX, maxX, minY, maxY } = polygonBounds(polygon);
 	ctx.save();
-	ctx.fillStyle = INK;
+	ctx.fillStyle = color;
 	ctx.globalAlpha = alpha;
 	for (let index = 0; index < count; index++) {
 		const point = {
@@ -653,16 +676,23 @@ function tube(chain: [Pt, Pt, Pt], startRadius: number, endRadius: number): { le
 	return { left, right, center };
 }
 
-function drawLimb(ctx: CanvasRenderingContext2D, chain: [Pt, Pt, Pt], id: number, startRadius: number, endRadius: number): void {
+function drawLimb(
+	ctx: CanvasRenderingContext2D,
+	chain: [Pt, Pt, Pt],
+	id: number,
+	startRadius: number,
+	endRadius: number,
+	outlineInk: string,
+): void {
 	const shape = tube(chain, startRadius, endRadius);
 	const polygon = shape.left.concat(shape.right.slice().reverse());
-	fill(ctx, polygon, PAPER, 1);
+	fill(ctx, polygon, SKIN, 1);
 	fill(ctx, polygon, WASH, 0.12);
-	stroke(ctx, shape.left, id, { width: 2.2, boil: 0.42 });
-	stroke(ctx, shape.right, id + 1, { width: 2.2, boil: 0.42 });
+	stroke(ctx, shape.left, id, { width: 2.2, boil: 0.42, color: outlineInk });
+	stroke(ctx, shape.right, id + 1, { width: 2.2, boil: 0.42, color: outlineInk });
 }
 
-function drawHead(ctx: CanvasRenderingContext2D, pose: Pose): void {
+function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string): void {
 	ctx.save();
 	// Every head turn shares one body-anchored pivot at the base of the neck.
 	// The shirt never enters this transform, so its collar remains planted while
@@ -686,9 +716,9 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose): void {
 		skull[21],
 		...skull.slice(0, 10),
 	];
-	fill(ctx, skull, PAPER, 1);
+	fill(ctx, skull, SKIN, 1);
 	fill(ctx, skull, WASH, 0.11);
-	stroke(ctx, outerHead, 611, { width: 1.82, boil: 0.46 });
+	stroke(ctx, outerHead, 611, { width: 1.82, boil: 0.46, color: outlineInk });
 
 	const crown = densify(skull.slice(1, 9), false, 8);
 	for (let index = 1; index < crown.length - 1; index++) {
@@ -700,7 +730,12 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose): void {
 			y: point.y + 27 + (hash(617, index, 3) - 0.5) * 8,
 		});
 		const length = 2.8 + hash(617, index, 4) * 4.6;
-		stroke(ctx, [point, add(point, mul(direction, length))], 620 + index, { width: 0.72, passes: 1, boil: 0.35 });
+		stroke(ctx, [point, add(point, mul(direction, length))], 620 + index, {
+			width: 0.72,
+			passes: 1,
+			boil: 0.35,
+			color: outlineInk,
+		});
 	}
 
 	ctx.save();
@@ -781,16 +816,17 @@ function drawCuffBand(
 	lowerStart: Pt,
 	lowerEnd: Pt,
 	id: number,
+	color: string,
 ): void {
-	stroke(ctx, [upperStart, upperEnd], id, { width: 2.1, alpha: 0.82, boil: 0.38 });
-	stroke(ctx, [lowerStart, lowerEnd], id + 1, { width: 2.1, alpha: 0.82, boil: 0.38 });
+	stroke(ctx, [upperStart, upperEnd], id, { width: 2.1, alpha: 0.82, boil: 0.38, color });
+	stroke(ctx, [lowerStart, lowerEnd], id + 1, { width: 2.1, alpha: 0.82, boil: 0.38, color });
 	const zigzag: Pt[] = [];
 	const teeth = 10;
 	for (let index = 0; index <= teeth * 2; index++) {
 		const t = index / (teeth * 2);
 		zigzag.push(lerp(index % 2 === 0 ? upperStart : lowerStart, index % 2 === 0 ? upperEnd : lowerEnd, t));
 	}
-	stroke(ctx, zigzag, id + 2, { width: 1.4, alpha: 0.76, passes: 1, boil: 0.32 });
+	stroke(ctx, zigzag, id + 2, { width: 1.4, alpha: 0.76, passes: 1, boil: 0.32, color });
 }
 
 interface CollarGeometry {
@@ -855,11 +891,11 @@ function collarGeometry(pose: Pose): CollarGeometry {
 	return { chestSkin, chestTop, edge, leftContact, rightContact };
 }
 
-function drawBody(ctx: CanvasRenderingContext2D, pose: Pose): void {
+function drawBody(ctx: CanvasRenderingContext2D, pose: Pose, palette: BlonkyPalette): void {
 	// The bare arms are laid in first so the oversized shirt naturally masks
 	// their shoulders and opens cleanly at each cuff.
-	drawLimb(ctx, pose.leftArm, 740, 98, 82);
-	drawLimb(ctx, pose.rightArm, 745, 94, 84);
+	drawLimb(ctx, pose.leftArm, 740, 98, 82, palette.outlineInk);
+	drawLimb(ctx, pose.rightArm, 745, 94, 84, palette.outlineInk);
 	const leftY = pose.leftShoulderY;
 	const rightY = pose.rightShoulderY;
 	const belly = pose.bellySpread;
@@ -890,18 +926,23 @@ function drawBody(ctx: CanvasRenderingContext2D, pose: Pose): void {
 	// The shirt wraps around a shallow chest opening. The skin begins at the
 	// shoulder line; there is no separate neck tower behind the head.
 	const shirt = torsoOuter.concat(collar.edge.slice(1, -1).reverse());
-	fill(ctx, collar.chestSkin, PAPER, 1);
+	fill(ctx, collar.chestSkin, SKIN, 1);
 	fill(ctx, collar.chestSkin, WASH, 0.11);
-	fill(ctx, shirt, PAPER, 1);
-	fill(ctx, shirt, INK, 0.78);
-	stipple(ctx, shirt, 750, 1320, 0.29);
-	hatch(ctx, shirt, 751, { spacing: 38, angle: -0.78, alpha: 0.045, width: 0.68 });
+	fill(ctx, shirt, palette.shirt, 1);
+	stipple(ctx, shirt, 750, 1320, palette.shirtTextureInk, palette.shirtTextureAlpha);
+	hatch(ctx, shirt, 751, {
+		spacing: 38,
+		angle: -0.78,
+		alpha: 0.045,
+		width: 0.68,
+		color: palette.shirtTextureInk,
+	});
 	// The outer contour and collar are separate authored marks. The collar is a
 	// real boiled ink stroke, fixed to the breathing body and later occluded only
 	// where the independently rendered head genuinely sits in front of it.
-	stroke(ctx, torsoOuter, 752, { width: 3.45, boil: 0.46 });
-	stroke(ctx, collar.edge, 753, { width: 3.25, alpha: 0.95, boil: 0.46 });
-	stroke(ctx, collar.chestTop, 764, { width: 1.82, boil: 0.46 });
+	stroke(ctx, torsoOuter, 752, { width: 3.45, boil: 0.46, color: palette.outlineInk });
+	stroke(ctx, collar.edge, 753, { width: 3.25, alpha: 0.95, boil: 0.46, color: palette.outlineInk });
+	stroke(ctx, collar.chestTop, 764, { width: 1.82, boil: 0.46, color: palette.outlineInk });
 
 	drawCuffBand(
 		ctx,
@@ -910,6 +951,7 @@ function drawBody(ctx: CanvasRenderingContext2D, pose: Pose): void {
 		{ x: pose.centerX - 450, y: leftY + 331 },
 		{ x: pose.centerX - 230, y: leftY + 367 },
 		755,
+		palette.outlineInk,
 	);
 	drawCuffBand(
 		ctx,
@@ -918,6 +960,7 @@ function drawBody(ctx: CanvasRenderingContext2D, pose: Pose): void {
 		{ x: pose.centerX + 230, y: rightY + 365 },
 		{ x: pose.centerX + 450, y: rightY + 316 },
 		758,
+		palette.outlineInk,
 	);
 
 	// The sleeve creases do not mirror one another. They inherit the shoulder
@@ -928,26 +971,26 @@ function drawBody(ctx: CanvasRenderingContext2D, pose: Pose): void {
 		{ x: pose.centerX - 337, y: leftY + 125 - pose.breath * 0.65 },
 		{ x: pose.centerX - 354, y: leftY + 188 },
 		12,
-	), 760, { width: 1.05, alpha: 0.24, passes: 1, boil: 0.24 });
+	), 760, { width: 1.05, alpha: 0.24, passes: 1, boil: 0.24, color: palette.outlineInk });
 	stroke(ctx, quadratic(
 		{ x: pose.centerX + 326, y: rightY + 91 },
 		{ x: pose.centerX + 357, y: rightY + 137 - pose.breath * 0.5 },
 		{ x: pose.centerX + 371, y: rightY + 173 },
 		11,
-	), 761, { width: 0.95, alpha: 0.2, passes: 1, boil: 0.22 });
+	), 761, { width: 0.95, alpha: 0.2, passes: 1, boil: 0.22, color: palette.outlineInk });
 
 	stroke(ctx, quadratic(
 		{ x: pose.centerX - 72 - belly * 0.3, y: pose.shoulderY + 296 - pose.breath * 1.1 },
 		{ x: pose.centerX - 18, y: pose.shoulderY + 284 - pose.breath * 1.45 },
 		{ x: pose.centerX + 58 + belly * 0.25, y: pose.shoulderY + 299 - pose.breath * 0.9 },
 		18,
-	), 762, { width: 1.55, alpha: 0.5, boil: 0.24 });
+	), 762, { width: 1.55, alpha: 0.5, boil: 0.24, color: palette.outlineInk });
 	stroke(ctx, quadratic(
 		{ x: pose.centerX - 150 - belly * 0.65, y: pose.shoulderY + 354 + pose.breath * 0.65 },
 		{ x: pose.centerX + 10, y: pose.shoulderY + 327 - pose.breath * 0.35 },
 		{ x: pose.centerX + 138 + belly * 0.55, y: pose.shoulderY + 360 + pose.breath * 0.8 },
 		18,
-	), 763, { width: 1.9, alpha: 0.6, boil: 0.26 });
+	), 763, { width: 1.9, alpha: 0.6, boil: 0.26, color: palette.outlineInk });
 }
 
 export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options: BlonkyDrawOptions = {}): void {
@@ -955,6 +998,7 @@ export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options:
 	const inkTime = frame / FPS;
 	const view = options.view ?? 'bust';
 	const viewport = BLONKY_VIEWPORTS[view];
+	const palette = options.palette ?? DEFAULT_BLONKY_PALETTE;
 	ctx.clearRect(0, 0, viewport.width, viewport.height);
 	const pose = poseAtRest(inkTime, options.reaction);
 	ctx.save();
@@ -962,7 +1006,7 @@ export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options:
 		ctx.translate(8, -5);
 		ctx.scale(0.56, 0.56);
 	}
-	drawBody(ctx, pose);
-	if (options.showHead !== false) drawHead(ctx, pose);
+	drawBody(ctx, pose, palette);
+	if (options.showHead !== false) drawHead(ctx, pose, palette.outlineInk);
 	ctx.restore();
 }

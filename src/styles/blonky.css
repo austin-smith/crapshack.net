@@ -1,0 +1,21 @@
+[data-blonky-root],
+[data-blonky-page-root] {
+	--blonky-outline: #252422;
+	--blonky-shirt: #4f7092;
+	--blonky-shirt-texture: #8ba2b8;
+	--blonky-shirt-texture-alpha: 0.42;
+}
+
+html[data-theme='dark'] :is([data-blonky-root], [data-blonky-page-root]) {
+	--blonky-outline: rgb(var(--app-fg-rgb));
+	--blonky-shirt: var(--app-overlay);
+	--blonky-shirt-texture: rgb(var(--app-fg-rgb));
+	--blonky-shirt-texture-alpha: 0.18;
+}
+
+html[data-theme='black'] :is([data-blonky-root], [data-blonky-page-root]) {
+	--blonky-outline: rgb(var(--app-fg-rgb));
+	--blonky-shirt: var(--app-overlay);
+	--blonky-shirt-texture: rgb(var(--app-fg-rgb));
+	--blonky-shirt-texture-alpha: 0.18;
+}

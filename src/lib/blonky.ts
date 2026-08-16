@@ -1,12 +1,16 @@
+import '../styles/blonky.css';
+
 import {
 	BLONKY_ANIMATIONS,
 	BLONKY_VIEWPORTS,
 	BLONKY_FPS,
 	BLONKY_REACTION_TRANSITION_FRAMES,
+	DEFAULT_BLONKY_PALETTE,
 	drawBlonky,
 	sampleBlonkyReactionOffset,
 	type BlonkyReaction,
 	type BlonkyAnimationInfo,
+	type BlonkyPalette,
 	type BlonkyReactionOffset,
 	type BlonkyReactionPose,
 	type BlonkyView,
@@ -47,6 +51,24 @@ const mountedCanvases = new Map<HTMLElement, BlonkyAnimator>();
 const BLONKY_REACTION_EVENT = 'blonky:react';
 let lifecycleRegistered = false;
 
+function resolveBlonkyPalette(canvas: HTMLCanvasElement): BlonkyPalette {
+	const styles = getComputedStyle(canvas);
+	const textureAlpha = Number.parseFloat(
+		styles.getPropertyValue('--blonky-shirt-texture-alpha'),
+	);
+	return {
+		outlineInk: styles.getPropertyValue('--blonky-outline').trim()
+			|| DEFAULT_BLONKY_PALETTE.outlineInk,
+		shirt: styles.getPropertyValue('--blonky-shirt').trim()
+			|| DEFAULT_BLONKY_PALETTE.shirt,
+		shirtTextureAlpha: Number.isFinite(textureAlpha)
+			? textureAlpha
+			: DEFAULT_BLONKY_PALETTE.shirtTextureAlpha,
+		shirtTextureInk: styles.getPropertyValue('--blonky-shirt-texture').trim()
+			|| DEFAULT_BLONKY_PALETTE.shirtTextureInk,
+	};
+}
+
 export function createBlonkyAnimator(
 	canvas: HTMLCanvasElement,
 	options: BlonkyAnimatorOptions = {},
@@ -72,7 +94,9 @@ export function createBlonkyAnimator(
 	let reaction: ActiveReaction | undefined;
 	let reactionDirection: -1 | 1 = -1;
 	let observer: IntersectionObserver | undefined;
+	let themeObserver: MutationObserver | undefined;
 	let reportedPlayback: boolean | undefined;
+	let palette = resolveBlonkyPalette(canvas);
 
 	const reportPlayback = (): void => {
 		if (reportedPlayback === running) return;
@@ -126,6 +150,7 @@ export function createBlonkyAnimator(
 
 		context.setTransform(canvas.width / viewport.width, 0, 0, canvas.height / viewport.height, 0, 0);
 		drawBlonky(context, time, {
+			palette,
 			reaction: reactionPose,
 			showHead: options.showHead,
 			view,
@@ -254,6 +279,7 @@ export function createBlonkyAnimator(
 	const destroy = (): void => {
 		stopAnimation();
 		observer?.disconnect();
+		themeObserver?.disconnect();
 		listeners.abort();
 	};
 
@@ -285,6 +311,16 @@ export function createBlonkyAnimator(
 		}, { rootMargin: '80px 0px' });
 		observer.observe(canvas);
 	}
+
+	themeObserver = new MutationObserver(() => {
+		palette = resolveBlonkyPalette(canvas);
+		lastFrame = -1;
+		draw(animationTime(), true);
+	});
+	themeObserver.observe(document.documentElement, {
+		attributes: true,
+		attributeFilter: ['data-theme'],
+	});
 
 	configureCanvas();
 	draw(0, true);
