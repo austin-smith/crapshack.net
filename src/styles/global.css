@@ -187,6 +187,13 @@
 		-webkit-backdrop-filter: blur(12px);
 	}
 
+	/* Set by lib/ui/dropdown.ts when the menu would clip the viewport bottom. */
+	.dropdown[data-direction="up"] .dropdown-menu {
+		bottom: 100%;
+		margin-top: 0;
+		margin-bottom: 0.375rem;
+	}
+
 	.dropdown-options {
 		display: flex;
 		flex-direction: column;
@@ -664,4 +671,41 @@
 	#site-sidebar:focus-visible {
 		outline: none !important;
 	}
+}
+
+/*
+ * Button group component: fuses adjacent controls into one segmented unit.
+ * Deliberately unlayered: the radius/margin trims are structural and must
+ * out-rank whatever (unlayered, scoped) skin a page puts on the buttons.
+ */
+.button-group {
+	display: inline-flex;
+}
+
+.button-group > * {
+	position: relative;
+}
+
+/* Collapse the shared 1px borders so segments touch. */
+.button-group > * + * {
+	margin-left: -1px;
+}
+
+/* Doubled class: Astro's attribute-scoped page styles weigh (0,2,0), and a
+   later tie would let a page's border-radius win over the trim. */
+.button-group.button-group > :not(:first-child) {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+}
+
+.button-group.button-group > :not(:last-child) {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+/* Lift the interacted segment so its border and focus ring aren't clipped
+   by the overlapping neighbour. */
+.button-group > :hover,
+.button-group > :focus-visible {
+	z-index: 1;
 }
