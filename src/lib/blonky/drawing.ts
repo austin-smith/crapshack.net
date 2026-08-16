@@ -1,5 +1,12 @@
 import { sampleBlonkyEmoteOffset } from './emotes';
-import { blinkPoseAt, hash, heldEnvelope, inkFrameTime, smoothstep } from './motion';
+import {
+	blinkPoseAt,
+	hash,
+	heldEnvelope,
+	INK_FRAME_SECONDS,
+	inkFrameTime,
+	smoothstep,
+} from './motion';
 import {
 	BLONKY_BUST_HEIGHT,
 	BLONKY_BUST_WIDTH,
@@ -16,6 +23,10 @@ const H = BLONKY_BUST_HEIGHT;
 const TAU = Math.PI * 2;
 const FPS = BLONKY_FPS;
 const BEHAVIOR_PHRASE_SECONDS = 16.25;
+const BREATH_CYCLE_SECONDS = 4.5;
+const BREATH_INHALE_SECONDS = 1.5;
+const BREATH_HOLD_SECONDS = 0.25;
+const BREATH_EXHALE_SECONDS = 2.25;
 const SKIN = '#efede6';
 const EYE_WHITE = '#f4f0e6';
 const FACE_INK = '#252422';
@@ -373,33 +384,48 @@ function idleBehaviorAt(time: number): IdleBehavior {
 	};
 }
 
+function breathAt(time: number): number {
+	const cycleTime = ((time % BREATH_CYCLE_SECONDS) + BREATH_CYCLE_SECONDS)
+		% BREATH_CYCLE_SECONDS;
+	if (cycleTime < BREATH_INHALE_SECONDS) {
+		return smoothstep(cycleTime / BREATH_INHALE_SECONDS);
+	}
+	if (cycleTime < BREATH_INHALE_SECONDS + BREATH_HOLD_SECONDS) return 1;
+	const exhaleTime = cycleTime - BREATH_INHALE_SECONDS - BREATH_HOLD_SECONDS;
+	if (exhaleTime < BREATH_EXHALE_SECONDS) {
+		return 1 - smoothstep(exhaleTime / BREATH_EXHALE_SECONDS);
+	}
+	return 0;
+}
+
 function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 	const behavior = idleBehaviorAt(time);
 	const emoteOffset = sampleBlonkyEmoteOffset(emote);
 	const idleBehaviorWeight = 1 - emoteOffset.presence * 0.85;
-	const breathWave = Math.sin(time * 1.47 - 0.4);
-	const breath = breathWave + behavior.deepBreath * 0.82;
+	const breathDepth = 1 + behavior.deepBreath * 0.45 * idleBehaviorWeight;
+	const breath = breathAt(time) * breathDepth;
+	const shoulderBreath = breathAt(time - INK_FRAME_SECONDS) * breathDepth;
 	const swayPhase = time * 0.86;
 	const sway = Math.sin(swayPhase) * 2.8;
 	const centerX = 450 + sway + emoteOffset.bodyX;
-	const restingShoulderY = 294 - breath * 1.7;
+	const restingShoulderY = 294 - shoulderBreath * 3.8;
 	const shoulderY = restingShoulderY + emoteOffset.shoulderY;
-	const torsoY = restingShoulderY + emoteOffset.torsoY;
+	const torsoY = 294 - breath * 0.9 + emoteOffset.torsoY;
 	const leftShoulderY = shoulderY + 3.4 + Math.sin(swayPhase - 0.2) * 0.65 + emoteOffset.shoulderTilt;
 	const rightShoulderY = shoulderY - 1.6 + Math.sin(swayPhase + 0.35) * 0.45 - emoteOffset.shoulderTilt;
 	const armSway = Math.sin(swayPhase - 0.24) * 2.25;
-	const armBreath = Math.sin(time * 1.47 - 0.68);
+	const armBreath = breathAt(time - INK_FRAME_SECONDS * 2) * breathDepth;
 	const armBodyX = emoteOffset.bodyX * 0.65;
 	const armBodyY = emoteOffset.torsoY * 0.35;
 	const { leftEyeOpen, rightEyeOpen } = blinkPoseAt(time);
 	const leftArm: [Pt, Pt, Pt] = [
 		{ x: 450 + armSway + armBodyX - 341, y: leftShoulderY + 320 },
-		{ x: 450 + armSway + armBodyX - 358, y: 742 - armBreath * 0.85 + armBodyY },
+		{ x: 450 + armSway + armBodyX - 358, y: 742 - armBreath * 1.4 + armBodyY },
 		{ x: 450 + armSway + armBodyX - 349, y: 846 + armBodyY * 0.4 },
 	];
 	const rightArm: [Pt, Pt, Pt] = [
 		{ x: 450 + armSway + armBodyX + 342, y: rightShoulderY + 318 },
-		{ x: 450 + armSway + armBodyX + 363, y: 745 - armBreath * 0.72 + armBodyY },
+		{ x: 450 + armSway + armBodyX + 363, y: 745 - armBreath * 1.2 + armBodyY },
 		{ x: 450 + armSway + armBodyX + 352, y: 846 + armBodyY * 0.4 },
 	];
 
@@ -410,14 +436,14 @@ function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 		leftShoulderY,
 		rightShoulderY,
 		headX: centerX - 5 + Math.sin(swayPhase - 0.43) * 1.45 + behavior.headCorrection * 1.2 * idleBehaviorWeight + emoteOffset.headX,
-		headY: 295 - breathWave * 0.62 - behavior.deepBreath * 0.75 + emoteOffset.headY,
+		headY: 295 - shoulderBreath * 0.35 + emoteOffset.headY,
 		headAngle: -0.024 + Math.sin(swayPhase - 0.48) * 0.009 + behavior.headCorrection * 0.008 * idleBehaviorWeight,
 		headEmoteAngle: emoteOffset.headAngle,
 		headTurn: Math.sin(time * 0.7 - 0.4) * 0.24 + behavior.headCorrection * 0.82 * idleBehaviorWeight + emoteOffset.headTurn,
 		faceLookY: emoteOffset.faceLookY,
 		eyeLookY: emoteOffset.eyeLookY,
-		breath,
-		bellySpread: breath * 2.15 + behavior.deepBreath * 1.4 + emoteOffset.bellySpread,
+		breath: breath * 1.5,
+		bellySpread: breath * 6.2 + emoteOffset.bellySpread,
 		mouthPurse: emoteOffset.mouthPurse,
 		mouthTension: behavior.mouthSet * idleBehaviorWeight + emoteOffset.mouthTension,
 		leftBrowLift: emoteOffset.leftBrowLift,
