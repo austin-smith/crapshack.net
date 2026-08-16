@@ -17,6 +17,7 @@ export interface BlonkyAnimationInfo {
 	label: string;
 	duration: number;
 	category: string;
+	holds?: boolean;
 }
 
 /*
@@ -24,17 +25,40 @@ export interface BlonkyAnimationInfo {
  * from these entries, so adding an animation here is the entire change.
  */
 export const BLONKY_ANIMATIONS = {
-	notice: { label: 'notice', duration: 0.875, category: 'reactions' },
+	notice: { label: 'notice', duration: 0.625, category: 'reactions', holds: true },
 	confirm: { label: 'confirm', duration: 1, category: 'reactions' },
 	confused: { label: 'confused', duration: 1.375, category: 'reactions' },
 } as const satisfies Record<string, BlonkyAnimationInfo>;
 
 export type BlonkyReaction = keyof typeof BLONKY_ANIMATIONS;
 
+export const BLONKY_REACTION_TRANSITION_FRAMES = 2;
+
+export interface BlonkyReactionOffset {
+	presence: number;
+	headX: number;
+	headY: number;
+	headAngle: number;
+	headTurn: number;
+	faceLookY: number;
+	eyeLookY: number;
+	bodyX: number;
+	shoulderY: number;
+	shoulderTilt: number;
+	bellySpread: number;
+	mouthTension: number;
+	leftBrowLift: number;
+	rightBrowLift: number;
+	leftEyeOpen: number;
+	rightEyeOpen: number;
+}
+
 export interface BlonkyReactionPose {
-	kind: BlonkyReaction;
+	kind: BlonkyReaction | 'rest';
 	elapsed: number;
 	direction: -1 | 1;
+	heldElapsed?: number;
+	transitionFrom?: BlonkyReactionOffset;
 }
 
 export interface BlonkyDrawOptions {
@@ -46,6 +70,7 @@ export interface BlonkyDrawOptions {
 const H = BLONKY_BUST_HEIGHT;
 const TAU = Math.PI * 2;
 const FPS = BLONKY_FPS;
+const INK_FRAME_SECONDS = 1 / FPS;
 const BLINK_PHRASE_SECONDS = 8.75;
 const BEHAVIOR_PHRASE_SECONDS = 16.25;
 const PAPER = '#efede6';
@@ -324,6 +349,8 @@ interface Pose {
 	headAngle: number;
 	headReactionAngle: number;
 	headTurn: number;
+	faceLookY: number;
+	eyeLookY: number;
 	breath: number;
 	bellySpread: number;
 	mouthTension: number;
@@ -406,33 +433,54 @@ function idleBehaviorAt(time: number): IdleBehavior {
 	};
 }
 
-interface ReactionOffset {
-	presence: number;
-	headX: number;
-	headY: number;
-	headAngle: number;
-	headTurn: number;
-	mouthTension: number;
-	leftBrowLift: number;
-	rightBrowLift: number;
-	leftEyeOpen: number;
-	rightEyeOpen: number;
+const NO_REACTION_OFFSET: BlonkyReactionOffset = {
+	presence: 0,
+	headX: 0,
+	headY: 0,
+	headAngle: 0,
+	headTurn: 0,
+	faceLookY: 0,
+	eyeLookY: 0,
+	bodyX: 0,
+	shoulderY: 0,
+	shoulderTilt: 0,
+	bellySpread: 0,
+	mouthTension: 0,
+	leftBrowLift: 0,
+	rightBrowLift: 0,
+	leftEyeOpen: 1,
+	rightEyeOpen: 1,
+};
+
+function blendReactionOffsets(
+	from: BlonkyReactionOffset,
+	to: BlonkyReactionOffset,
+	amount: number,
+): BlonkyReactionOffset {
+	const blend = (start: number, end: number): number => start + (end - start) * amount;
+	return {
+		presence: blend(from.presence, to.presence),
+		headX: blend(from.headX, to.headX),
+		headY: blend(from.headY, to.headY),
+		headAngle: blend(from.headAngle, to.headAngle),
+		headTurn: blend(from.headTurn, to.headTurn),
+		faceLookY: blend(from.faceLookY, to.faceLookY),
+		eyeLookY: blend(from.eyeLookY, to.eyeLookY),
+		bodyX: blend(from.bodyX, to.bodyX),
+		shoulderY: blend(from.shoulderY, to.shoulderY),
+		shoulderTilt: blend(from.shoulderTilt, to.shoulderTilt),
+		bellySpread: blend(from.bellySpread, to.bellySpread),
+		mouthTension: blend(from.mouthTension, to.mouthTension),
+		leftBrowLift: blend(from.leftBrowLift, to.leftBrowLift),
+		rightBrowLift: blend(from.rightBrowLift, to.rightBrowLift),
+		leftEyeOpen: blend(from.leftEyeOpen, to.leftEyeOpen),
+		rightEyeOpen: blend(from.rightEyeOpen, to.rightEyeOpen),
+	};
 }
 
-function reactionOffsetAt(reaction?: BlonkyReactionPose): ReactionOffset {
-	const none: ReactionOffset = {
-		presence: 0,
-		headX: 0,
-		headY: 0,
-		headAngle: 0,
-		headTurn: 0,
-		mouthTension: 0,
-		leftBrowLift: 0,
-		rightBrowLift: 0,
-		leftEyeOpen: 1,
-		rightEyeOpen: 1,
-	};
-	if (!reaction) return none;
+function rawReactionOffsetAt(reaction?: BlonkyReactionPose): BlonkyReactionOffset {
+	if (!reaction) return { ...NO_REACTION_OFFSET };
+	if (reaction.kind === 'rest') return { ...NO_REACTION_OFFSET };
 
 	const duration = BLONKY_ANIMATIONS[reaction.kind].duration;
 	const elapsed = Math.max(0, Math.min(duration, reaction.elapsed));
@@ -440,41 +488,64 @@ function reactionOffsetAt(reaction?: BlonkyReactionPose): ReactionOffset {
 	const direction = reaction.direction;
 
 	if (reaction.kind === 'notice') {
-		// The eyes catch first, followed by a small turn around the planted base
-		// of the skull. Translation stays at zero so the shirt connection never
-		// travels with the head.
+		// The eyes catch first, then the face lifts toward the aphorism above him.
+		// The shoulders and belly answer one and two ink frames later, preserving
+		// his weight without making the shirt travel with the head.
 		const firstEyeBeat = heldEnvelope(elapsed, 0, 0.125, 0, 0.125);
 		const secondEyeBeat = heldEnvelope(elapsed, 0.125, 0.125, 0, 0.125);
 		const notice = heldEnvelope(elapsed, 0.25, 0.125, 0.25, 0.25);
-		const looksLeft = direction < 0;
-		const leftEyeClosure = looksLeft
+		// Once his upward gaze has settled, keep the lids alive with the same
+		// quick-pair / pause / regular-blink phrase used at rest. Its clock starts
+		// with the hold and snaps to the ink cadence, so notice neither drops into
+		// the middle of a blink nor skips the shorter lid beat between draw frames.
+		const heldBlink = reaction.heldElapsed === undefined
+			? undefined
+			: blinkPoseAt(inkFrameTime(reaction.heldElapsed));
+		const shoulderFollow = heldEnvelope(elapsed, 0.25 + INK_FRAME_SECONDS, 0.125, 0.125, 0.25);
+		const bellyFollow = heldEnvelope(elapsed, 0.25 + INK_FRAME_SECONDS * 2, 0.125, 0, 0.25);
+		const leftEyeLeads = direction < 0;
+		const leftEyeClosure = leftEyeLeads
 			? firstEyeBeat * 0.58 + secondEyeBeat * 0.22
 			: firstEyeBeat * 0.22 + secondEyeBeat * 0.48;
-		const rightEyeClosure = looksLeft
+		const rightEyeClosure = leftEyeLeads
 			? firstEyeBeat * 0.22 + secondEyeBeat * 0.48
 			: firstEyeBeat * 0.58 + secondEyeBeat * 0.22;
 		return {
 			presence: Math.max(firstEyeBeat, secondEyeBeat, notice),
 			headX: 0,
-			headY: 0,
-			headAngle: direction * notice * 0.014,
-			headTurn: direction * notice * 0.72,
-			mouthTension: -direction * notice * 0.32,
-			leftBrowLift: notice * (looksLeft ? 5.4 : 3.1),
-			rightBrowLift: notice * (looksLeft ? 3.1 : 5.4),
-			leftEyeOpen: 1 - leftEyeClosure + notice * (looksLeft ? 0.04 : -0.03),
-			rightEyeOpen: 1 - rightEyeClosure + notice * (looksLeft ? -0.03 : 0.04),
+			headY: -notice * 3.8,
+			headAngle: 0,
+			headTurn: 0,
+			faceLookY: -notice * 2.1,
+			eyeLookY: -notice * 4.2,
+			bodyX: 0,
+			shoulderY: -shoulderFollow * 1.15,
+			shoulderTilt: 0,
+			bellySpread: bellyFollow * 0.85,
+			mouthTension: notice * 0.08,
+			leftBrowLift: notice * 4.9,
+			rightBrowLift: notice * 4.5,
+			leftEyeOpen: (heldBlink?.leftEyeOpen ?? 1 - leftEyeClosure) + notice * 0.035,
+			rightEyeOpen: (heldBlink?.rightEyeOpen ?? 1 - rightEyeClosure) + notice * 0.035,
 		};
 	}
 
 	if (reaction.kind === 'confirm') {
 		const down = heldEnvelope(elapsed, 0.125, 0.25, 0.125, 0.25);
+		const shoulderFollow = heldEnvelope(elapsed, 0.125 + INK_FRAME_SECONDS, 0.25, 0.125, 0.25);
+		const bellyFollow = heldEnvelope(elapsed, 0.125 + INK_FRAME_SECONDS * 2, 0.25, 0, 0.25);
 		return {
 			presence,
 			headX: 0,
 			headY: down * 3.4 - presence * 0.4,
 			headAngle: direction * presence * 0.003,
 			headTurn: direction * presence * 0.16,
+			faceLookY: 0,
+			eyeLookY: 0,
+			bodyX: 0,
+			shoulderY: shoulderFollow * 1.2,
+			shoulderTilt: direction * shoulderFollow * 0.14,
+			bellySpread: bellyFollow * 0.75,
 			mouthTension: direction * presence * 0.24,
 			leftBrowLift: presence * 0.55,
 			rightBrowLift: presence * 0.55,
@@ -483,12 +554,20 @@ function reactionOffsetAt(reaction?: BlonkyReactionPose): ReactionOffset {
 		};
 	}
 
+	const shoulderFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS, 0.25, 0.625, 0.375);
+	const bellyFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS * 2, 0.25, 0.5, 0.375);
 	return {
 		presence,
 		headX: direction * presence * 1.2,
 		headY: presence * 0.6,
 		headAngle: direction * presence * 0.026,
 		headTurn: direction * presence * 0.42,
+		faceLookY: 0,
+		eyeLookY: 0,
+		bodyX: direction * shoulderFollow * 0.65,
+		shoulderY: shoulderFollow * 0.18,
+		shoulderTilt: direction * shoulderFollow * 1.05,
+		bellySpread: bellyFollow * 0.4,
 		mouthTension: direction * presence * 0.58,
 		leftBrowLift: presence * (direction < 0 ? 4.4 : -0.8),
 		rightBrowLift: presence * (direction > 0 ? 4.4 : -0.8),
@@ -497,30 +576,41 @@ function reactionOffsetAt(reaction?: BlonkyReactionPose): ReactionOffset {
 	};
 }
 
+export function sampleBlonkyReactionOffset(reaction?: BlonkyReactionPose): BlonkyReactionOffset {
+	if (!reaction) return { ...NO_REACTION_OFFSET };
+	const current = rawReactionOffsetAt(reaction);
+	if (!reaction.transitionFrom) return current;
+	const transitionFrame = Math.max(0, Math.floor(reaction.elapsed * FPS + 1e-6));
+	const transition = Math.min(1, transitionFrame / BLONKY_REACTION_TRANSITION_FRAMES);
+	return blendReactionOffsets(reaction.transitionFrom, current, transition);
+}
+
 function poseAtRest(time: number, reaction?: BlonkyReactionPose): Pose {
 	const behavior = idleBehaviorAt(time);
-	const reactionOffset = reactionOffsetAt(reaction);
+	const reactionOffset = sampleBlonkyReactionOffset(reaction);
 	const idleBehaviorWeight = 1 - reactionOffset.presence * 0.85;
 	const breathWave = Math.sin(time * 1.47 - 0.4);
 	const breath = breathWave + behavior.deepBreath * 0.82;
 	const swayPhase = time * 0.86;
 	const sway = Math.sin(swayPhase) * 2.8;
-	const centerX = 450 + sway;
-	const shoulderY = 294 - breath * 1.7;
-	const leftShoulderY = shoulderY + 3.4 + Math.sin(swayPhase - 0.2) * 0.65;
-	const rightShoulderY = shoulderY - 1.6 + Math.sin(swayPhase + 0.35) * 0.45;
+	const centerX = 450 + sway + reactionOffset.bodyX;
+	const shoulderY = 294 - breath * 1.7 + reactionOffset.shoulderY;
+	const leftShoulderY = shoulderY + 3.4 + Math.sin(swayPhase - 0.2) * 0.65 + reactionOffset.shoulderTilt;
+	const rightShoulderY = shoulderY - 1.6 + Math.sin(swayPhase + 0.35) * 0.45 - reactionOffset.shoulderTilt;
 	const armSway = Math.sin(swayPhase - 0.24) * 2.25;
 	const armBreath = Math.sin(time * 1.47 - 0.68);
+	const armBodyX = reactionOffset.bodyX * 0.65;
+	const armBodyY = reactionOffset.shoulderY * 0.35;
 	const { leftEyeOpen, rightEyeOpen } = blinkPoseAt(time);
 	const leftArm: [Pt, Pt, Pt] = [
-		{ x: 450 + armSway - 341, y: leftShoulderY + 320 },
-		{ x: 450 + armSway - 358, y: 742 - armBreath * 0.85 },
-		{ x: 450 + armSway - 349, y: 846 },
+		{ x: 450 + armSway + armBodyX - 341, y: leftShoulderY + 320 },
+		{ x: 450 + armSway + armBodyX - 358, y: 742 - armBreath * 0.85 + armBodyY },
+		{ x: 450 + armSway + armBodyX - 349, y: 846 + armBodyY * 0.4 },
 	];
 	const rightArm: [Pt, Pt, Pt] = [
-		{ x: 450 + armSway + 342, y: rightShoulderY + 318 },
-		{ x: 450 + armSway + 363, y: 745 - armBreath * 0.72 },
-		{ x: 450 + armSway + 352, y: 846 },
+		{ x: 450 + armSway + armBodyX + 342, y: rightShoulderY + 318 },
+		{ x: 450 + armSway + armBodyX + 363, y: 745 - armBreath * 0.72 + armBodyY },
+		{ x: 450 + armSway + armBodyX + 352, y: 846 + armBodyY * 0.4 },
 	];
 
 	return {
@@ -533,8 +623,10 @@ function poseAtRest(time: number, reaction?: BlonkyReactionPose): Pose {
 		headAngle: -0.024 + Math.sin(swayPhase - 0.48) * 0.009 + behavior.headCorrection * 0.008 * idleBehaviorWeight,
 		headReactionAngle: reactionOffset.headAngle,
 		headTurn: Math.sin(time * 0.7 - 0.4) * 0.24 + behavior.headCorrection * 0.82 * idleBehaviorWeight + reactionOffset.headTurn,
+		faceLookY: reactionOffset.faceLookY,
+		eyeLookY: reactionOffset.eyeLookY,
 		breath,
-		bellySpread: breath * 2.15 + behavior.deepBreath * 1.4,
+		bellySpread: breath * 2.15 + behavior.deepBreath * 1.4 + reactionOffset.bellySpread,
 		mouthTension: behavior.mouthSet * idleBehaviorWeight + reactionOffset.mouthTension,
 		leftBrowLift: reactionOffset.leftBrowLift,
 		rightBrowLift: reactionOffset.rightBrowLift,
@@ -611,8 +703,11 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose): void {
 		stroke(ctx, [point, add(point, mul(direction, length))], 620 + index, { width: 0.72, passes: 1, boil: 0.35 });
 	}
 
-	const leftEyeCenter = { x: -34 + turn * 1.05, y: -56.5 + turn * 0.18 };
-	const rightEyeCenter = { x: 30 + turn * 1.7, y: -49 - turn * 0.12 };
+	ctx.save();
+	ctx.translate(0, pose.faceLookY);
+	const leftEyeCenter = { x: -34 + turn * 1.05, y: -56.5 + turn * 0.18 + pose.eyeLookY };
+	const rightEyeCenter = { x: 30 + turn * 1.7, y: -49 - turn * 0.12 + pose.eyeLookY };
+	const underEyeFollow = pose.eyeLookY * 0.1;
 	const blink = (points: Pt[], center: Pt, openness: number): Pt[] => points.map((point) => ({
 		x: point.x,
 		y: center.y + (point.y - center.y) * openness,
@@ -642,8 +737,8 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose): void {
 	], rightEyeCenter, pose.rightEyeOpen);
 	stroke(ctx, leftEye, 630, { closed: true, width: 1.95, passes: 2, boil: 0.34 });
 	stroke(ctx, rightEye, 631, { closed: true, width: 1.86, passes: 2, boil: 0.34 });
-	stroke(ctx, [{ x: -47, y: -40 }, { x: -38, y: -35 }, { x: -28, y: -35 }, { x: -20, y: -40 }], 632, { width: 1.12, alpha: 0.82, passes: 1, boil: 0.28 });
-	stroke(ctx, [{ x: 21, y: -35 }, { x: 28, y: -32 }, { x: 36, y: -33 }, { x: 41, y: -37 }], 633, { width: 1.02, alpha: 0.76, passes: 1, boil: 0.28 });
+	stroke(ctx, [{ x: -47, y: -40 + underEyeFollow }, { x: -38, y: -35 + underEyeFollow }, { x: -28, y: -35 + underEyeFollow }, { x: -20, y: -40 + underEyeFollow }], 632, { width: 1.12, alpha: 0.82, passes: 1, boil: 0.28 });
+	stroke(ctx, [{ x: 21, y: -35 + underEyeFollow }, { x: 28, y: -32 + underEyeFollow }, { x: 36, y: -33 + underEyeFollow }, { x: 41, y: -37 + underEyeFollow }], 633, { width: 1.02, alpha: 0.76, passes: 1, boil: 0.28 });
 	stroke(ctx, [
 		{ x: -49, y: -67 - pose.leftBrowLift * 0.5 },
 		{ x: -41, y: -75 - pose.leftBrowLift },
@@ -674,6 +769,7 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose): void {
 	stroke(ctx, [{ x: -18, y: 22 }, { x: -5, y: 21 }], 638, { width: 1.08, alpha: 0.7, passes: 1 });
 	stroke(ctx, [{ x: -55, y: 32 }, { x: -39, y: 44 }, { x: -12, y: 51 }, { x: 14, y: 49 }, { x: 43, y: 33 }], 639, { width: 1.5, alpha: 0.7, boil: 0.34 });
 	stroke(ctx, [{ x: -42, y: 49 }, { x: -20, y: 58 }, { x: 2, y: 61 }, { x: 22, y: 56 }, { x: 36, y: 48 }], 640, { width: 1.12, alpha: 0.54, passes: 1, boil: 0.3 });
+	ctx.restore();
 
 	ctx.restore();
 }

@@ -1,5 +1,10 @@
 import { createBlonkyAnimator } from './blonky';
-import { BLONKY_ANIMATIONS, BLONKY_FPS, type BlonkyReaction } from './blonky-drawing';
+import {
+	BLONKY_ANIMATIONS,
+	BLONKY_FPS,
+	type BlonkyAnimationInfo,
+	type BlonkyReaction,
+} from './blonky-drawing';
 
 const isReaction = (value: string | undefined): value is BlonkyReaction => (
 	value !== undefined && value in BLONKY_ANIMATIONS
@@ -17,7 +22,8 @@ let destroyMountedPage: (() => void) | undefined;
 function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	const canvas = root.querySelector<HTMLCanvasElement>('[data-blonky-page-canvas]');
 	const playbackButton = root.querySelector<HTMLButtonElement>('[data-blonky-playback]');
-	const playbackLabel = root.querySelector<HTMLElement>('[data-blonky-playback-label]');
+	const playIcon = root.querySelector<HTMLElement>('[data-blonky-playback-icon="play"]');
+	const pauseIcon = root.querySelector<HTMLElement>('[data-blonky-playback-icon="pause"]');
 	const resetButton = root.querySelector<HTMLButtonElement>('[data-blonky-reset]');
 	const speedDropdown = root.querySelector<HTMLElement>('#blonky-speed');
 	const stateOutput = root.querySelector<HTMLOutputElement>('[data-blonky-state]');
@@ -27,7 +33,8 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	if (
 		!canvas
 		|| !playbackButton
-		|| !playbackLabel
+		|| !playIcon
+		|| !pauseIcon
 		|| !resetButton
 		|| !speedDropdown
 		|| !stateOutput
@@ -44,6 +51,7 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	let activeUntil = 0;
 	const clearActiveRow = (): void => {
 		activeRow?.removeAttribute('data-active');
+		activeRow?.setAttribute('aria-pressed', 'false');
 		activeRow = null;
 	};
 
@@ -53,7 +61,9 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		if (activeRow && time >= activeUntil) clearActiveRow();
 	};
 	const syncPlayback = (playing: boolean): void => {
-		playbackLabel.textContent = playing ? 'pause' : 'play';
+		playIcon.hidden = playing;
+		pauseIcon.hidden = !playing;
+		playbackButton.setAttribute('aria-label', playing ? 'Pause animation' : 'Play animation');
 		playbackButton.setAttribute('aria-pressed', String(playing));
 		stateOutput.value = playing ? 'playing' : 'paused';
 		status.textContent = playing ? 'Blonky animation playing' : 'Blonky animation paused';
@@ -84,12 +94,22 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	const fireAnimation = (row: HTMLButtonElement): void => {
 		const reaction = row.dataset.blonkyReaction;
 		if (!isReaction(reaction)) return;
+		if (activeRow === row) {
+			animator.release();
+			animator.play();
+			clearActiveRow();
+			return;
+		}
 		animator.react(reaction);
 		animator.play();
 		clearActiveRow();
 		activeRow = row;
 		row.setAttribute('data-active', '');
-		activeUntil = animator.getTime() + BLONKY_ANIMATIONS[reaction].duration;
+		row.setAttribute('aria-pressed', 'true');
+		const animation: BlonkyAnimationInfo = BLONKY_ANIMATIONS[reaction];
+		activeUntil = animation.holds
+			? Number.POSITIVE_INFINITY
+			: animator.getTime() + animation.duration;
 	};
 
 	playbackButton.addEventListener('click', togglePlayback, { signal: listeners.signal });

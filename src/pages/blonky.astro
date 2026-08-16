@@ -1,5 +1,5 @@
 ---
-import { StepBack, StepForward } from '@lucide/astro';
+import { Pause, Play, StepBack, StepForward } from '@lucide/astro';
 import Layout from '../layouts/Layout.astro';
 import ButtonGroup from '../components/ui/ButtonGroup.astro';
 import Dropdown from '../components/ui/Dropdown.astro';
@@ -49,19 +49,28 @@ const showFilter = animations.length > 8;
 								type="button"
 								data-blonky-step="-1"
 								aria-label="Step backward one frame"
-								title="step one frame back"
 							>
 								<StepBack aria-hidden="true" width={14} height={14} stroke-width={2} />
 							</button>
-							<button class="control control--primary" type="button" data-blonky-playback aria-pressed="true">
-								<span data-blonky-playback-label>pause</span>
+							<button
+								class="control control--icon"
+								type="button"
+								data-blonky-playback
+								aria-label="Pause animation"
+								aria-pressed="true"
+							>
+								<span data-blonky-playback-icon="play" hidden>
+									<Play aria-hidden="true" width={14} height={14} stroke-width={2} />
+								</span>
+								<span data-blonky-playback-icon="pause">
+									<Pause aria-hidden="true" width={14} height={14} stroke-width={2} />
+								</span>
 							</button>
 							<button
 								class="control control--icon"
 								type="button"
 								data-blonky-step="1"
 								aria-label="Step forward one frame"
-								title="step one frame forward"
 							>
 								<StepForward aria-hidden="true" width={14} height={14} stroke-width={2} />
 							</button>
@@ -98,8 +107,8 @@ const showFilter = animations.length > 8;
 							<button
 								class="control anim"
 								type="button"
+								aria-pressed="false"
 								data-blonky-reaction={key}
-								title={`${info.duration}s`}
 							>
 								{info.label}
 							</button>
@@ -271,18 +280,6 @@ const showFilter = animations.length > 8;
 		align-items: center;
 		justify-content: center;
 		padding: 0 0.55rem;
-	}
-
-	/* Wide enough for either label, so play ⇄ pause doesn't shift the row. */
-	.control--primary {
-		min-width: 4.6rem;
-		background: var(--color-brand);
-		color: var(--color-on-brand);
-		font-weight: 700;
-	}
-
-	.control--primary:hover {
-		background: color-mix(in srgb, var(--color-brand) 88%, white);
 	}
 
 	/* Match the strip's control height; the component defaults to 10rem wide. */

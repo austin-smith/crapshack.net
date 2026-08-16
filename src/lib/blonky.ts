@@ -2,8 +2,12 @@ import {
 	BLONKY_ANIMATIONS,
 	BLONKY_VIEWPORTS,
 	BLONKY_FPS,
+	BLONKY_REACTION_TRANSITION_FRAMES,
 	drawBlonky,
+	sampleBlonkyReactionOffset,
 	type BlonkyReaction,
+	type BlonkyAnimationInfo,
+	type BlonkyReactionOffset,
 	type BlonkyReactionPose,
 	type BlonkyView,
 } from './blonky-drawing';
@@ -25,14 +29,18 @@ export interface BlonkyAnimator {
 	pause: () => void;
 	play: () => void;
 	react: (kind: BlonkyReaction) => void;
+	release: () => void;
 	reset: () => void;
 	seek: (time: number) => void;
 	setPlaybackRate: (rate: number) => void;
 	step: (frames: number) => void;
 }
 
-interface ActiveReaction extends BlonkyReactionPose {
+interface ActiveReaction {
+	kind: BlonkyReaction | 'rest';
+	direction: -1 | 1;
 	startedAt: number;
+	transitionFrom?: BlonkyReactionOffset;
 }
 
 const mountedCanvases = new Map<HTMLElement, BlonkyAnimator>();
@@ -76,6 +84,32 @@ export function createBlonkyAnimator(
 		elapsed + (running ? ((now - startedAt) / 1000) * playbackRate : 0)
 	);
 
+	const reactionPoseAt = (time: number): BlonkyReactionPose | undefined => {
+		if (!reaction) return;
+		const reactionElapsed = Math.max(0, time - reaction.startedAt);
+		if (reaction.kind === 'rest') {
+			if (reactionElapsed >= BLONKY_REACTION_TRANSITION_FRAMES / BLONKY_FPS) return;
+			return {
+				kind: 'rest',
+				elapsed: reactionElapsed,
+				direction: reaction.direction,
+				transitionFrom: reaction.transitionFrom,
+			};
+		}
+		const animation: BlonkyAnimationInfo = BLONKY_ANIMATIONS[reaction.kind];
+		const holds = animation.holds === true;
+		if (reactionElapsed >= animation.duration && !holds) return;
+		return {
+			kind: reaction.kind,
+			elapsed: holds ? Math.min(reactionElapsed, animation.duration) : reactionElapsed,
+			direction: reaction.direction,
+			heldElapsed: !holds || reactionElapsed <= animation.duration
+				? undefined
+				: reactionElapsed - animation.duration,
+			transitionFrom: reaction.transitionFrom,
+		};
+	};
+
 	const configureCanvas = (): void => {
 		const ratio = Math.min(2, devicePixelRatio || 1);
 		canvas.width = Math.round(viewport.width * ratio);
@@ -87,18 +121,8 @@ export function createBlonkyAnimator(
 		const nextFrame = Math.floor(time * BLONKY_FPS);
 		if (!force && nextFrame === lastFrame) return;
 
-		let reactionPose: BlonkyReactionPose | undefined;
-		if (reaction) {
-			const reactionElapsed = Math.max(0, time - reaction.startedAt);
-			if (reactionElapsed >= BLONKY_ANIMATIONS[reaction.kind].duration) reaction = undefined;
-			else {
-				reactionPose = {
-					kind: reaction.kind,
-					elapsed: reactionElapsed,
-					direction: reaction.direction,
-				};
-			}
-		}
+		const reactionPose = reactionPoseAt(time);
+		if (reaction && !reactionPose) reaction = undefined;
 
 		context.setTransform(canvas.width / viewport.width, 0, 0, canvas.height / viewport.height, 0, 0);
 		drawBlonky(context, time, {
@@ -195,15 +219,35 @@ export function createBlonkyAnimator(
 	};
 
 	const react = (kind: BlonkyReaction): void => {
+		const time = animationTime();
+		const outgoingPose = reactionPoseAt(time);
+		const transitionFrom = outgoingPose
+			? sampleBlonkyReactionOffset(outgoingPose)
+			: undefined;
 		reactionDirection = reactionDirection === -1 ? 1 : -1;
 		reaction = {
 			kind,
-			elapsed: 0,
 			direction: reactionDirection,
-			startedAt: animationTime(),
+			startedAt: time,
+			transitionFrom,
 		};
 		lastFrame = -1;
-		draw(animationTime(), true);
+		draw(time, true);
+		scheduleAnimation();
+	};
+
+	const release = (): void => {
+		const time = animationTime();
+		const outgoingPose = reactionPoseAt(time);
+		if (!outgoingPose || outgoingPose.kind === 'rest') return;
+		reaction = {
+			kind: 'rest',
+			direction: outgoingPose.direction,
+			startedAt: time,
+			transitionFrom: sampleBlonkyReactionOffset(outgoingPose),
+		};
+		lastFrame = -1;
+		draw(time, true);
 		scheduleAnimation();
 	};
 
@@ -255,6 +299,7 @@ export function createBlonkyAnimator(
 		pause,
 		play,
 		react,
+		release,
 		reset,
 		seek,
 		setPlaybackRate,
