@@ -14,7 +14,7 @@ import {
 	type BlonkyEmotePose,
 } from '../types';
 
-export const BLONKY_EMOTES = {
+export const BLONKY_EMOTES: Record<BlonkyEmote, BlonkyEmoteInfo> = {
 	notice: { label: 'notice', duration: 0.625, holds: true },
 	confirm: { label: 'confirm', duration: 1 },
 	skeptical: { label: 'skeptical', duration: 1.375 },
@@ -22,7 +22,7 @@ export const BLONKY_EMOTES = {
 	shudder: { label: 'shudder', duration: 1.625 },
 	smh: { label: 'smh', duration: 2.125 },
 	sigh: { label: 'sigh', duration: 2.75 },
-} as const satisfies Record<BlonkyEmote, BlonkyEmoteInfo>;
+};
 
 const NO_EMOTE_OFFSET: BlonkyEmoteOffset = {
 	presence: 0,
