@@ -1,14 +1,18 @@
 import { createBlonkyAnimator } from './animator';
-import {
-	BLONKY_EMOTES,
-	isBlonkyEmote,
-	type BlonkyEmoteInfo,
-} from './emotes';
+import { BLONKY_EMOTES, isBlonkyEmote } from './emotes';
 import { BLONKY_FPS } from './types';
 
-const isEditableTarget = (target: EventTarget | null): boolean => (
+const isTextEntry = (target: EventTarget | null): boolean => (
 	target instanceof HTMLElement
-	&& (target.isContentEditable || target.matches('button, input, select, textarea'))
+	&& (target.isContentEditable || target.matches('input, select, textarea'))
+);
+
+const isButton = (target: EventTarget | null): boolean => (
+	target instanceof HTMLElement && target.matches('button')
+);
+
+const isDropdownOpen = (root: HTMLElement): boolean => (
+	root.querySelector('[data-dropdown-trigger][aria-expanded="true"]') !== null
 );
 
 let lifecycleRegistered = false;
@@ -43,22 +47,11 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		|| !status
 	) return;
 
-	const emoteRows = [...root.querySelectorAll<HTMLButtonElement>('[data-blonky-emote]')];
-	const filterInput = root.querySelector<HTMLInputElement>('[data-blonky-filter]');
 	const listeners = new AbortController();
-
-	let activeRow: HTMLButtonElement | null = null;
-	let activeUntil = 0;
-	const clearActiveRow = (): void => {
-		activeRow?.removeAttribute('data-active');
-		activeRow?.setAttribute('aria-pressed', 'false');
-		activeRow = null;
-	};
 
 	const syncFrame = (time: number): void => {
 		timeOutput.value = `${time.toFixed(3)} s`;
 		frameOutput.value = String(Math.floor(time * BLONKY_FPS)).padStart(4, '0');
-		if (activeRow && time >= activeUntil) clearActiveRow();
 	};
 	const syncPlayback = (playing: boolean): void => {
 		playIcon.hidden = playing;
@@ -84,32 +77,14 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	const reset = (): void => {
 		animator.pause();
 		animator.reset();
-		clearActiveRow();
 	};
-	const step = (frames: number): void => {
-		// Seeking drops any in-flight emote, so the highlight goes with it.
-		animator.step(frames);
-		clearActiveRow();
-	};
-	const fireEmote = (row: HTMLButtonElement): void => {
-		const emote = row.dataset.blonkyEmote;
+	// Firing is unconditional: pressing the same emote again replays it from the
+	// top, which is the usual way to judge a tweak.
+	const fireEmote = (emote: string | undefined): void => {
 		if (!isBlonkyEmote(emote)) return;
-		if (activeRow === row) {
-			animator.releaseEmote();
-			animator.play();
-			clearActiveRow();
-			return;
-		}
 		animator.playEmote(emote);
 		animator.play();
-		clearActiveRow();
-		activeRow = row;
-		row.setAttribute('data-active', '');
-		row.setAttribute('aria-pressed', 'true');
-		const emoteInfo: BlonkyEmoteInfo = BLONKY_EMOTES[emote];
-		activeUntil = emoteInfo.holds
-			? Number.POSITIVE_INFINITY
-			: animator.getTime() + emoteInfo.duration;
+		status.textContent = `Blonky ${BLONKY_EMOTES[emote].label}`;
 	};
 
 	playbackButton.addEventListener('click', togglePlayback, { signal: listeners.signal });
@@ -132,34 +107,34 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		animator.setPlaybackRate(Number(event.detail.value));
 	}) as EventListener, { signal: listeners.signal });
 
-	for (const button of root.querySelectorAll<HTMLButtonElement>('[data-blonky-step]')) {
+	for (const button of root.querySelectorAll<HTMLButtonElement>('[data-blonky-emote]')) {
 		button.addEventListener('click', () => {
-			step(Number(button.dataset.blonkyStep));
+			fireEmote(button.dataset.blonkyEmote);
 		}, { signal: listeners.signal });
 	}
 
-	for (const row of emoteRows) {
-		row.addEventListener('click', () => fireEmote(row), { signal: listeners.signal });
+	for (const button of root.querySelectorAll<HTMLButtonElement>('[data-blonky-step]')) {
+		button.addEventListener('click', () => {
+			animator.step(Number(button.dataset.blonkyStep));
+		}, { signal: listeners.signal });
 	}
 
-	filterInput?.addEventListener('input', () => {
-		const query = filterInput.value.trim().toLowerCase();
-		for (const row of emoteRows) {
-			row.hidden = query.length > 0 && !(row.dataset.blonkyEmote ?? '').includes(query);
-		}
-	}, { signal: listeners.signal });
-
 	window.addEventListener('keydown', (event) => {
-		if (isEditableTarget(event.target)) return;
+		if (event.metaKey || event.ctrlKey || event.altKey) return;
+		if (isTextEntry(event.target)) return;
+		// An open dropdown owns the keyboard until it closes.
+		if (isDropdownOpen(root)) return;
 		if (event.code === 'Space') {
+			// A focused button already activates on space; don't also toggle.
+			if (isButton(event.target)) return;
 			event.preventDefault();
 			togglePlayback();
 		} else if (event.key === 'ArrowLeft') {
 			event.preventDefault();
-			step(-1);
+			animator.step(-1);
 		} else if (event.key === 'ArrowRight') {
 			event.preventDefault();
-			step(1);
+			animator.step(1);
 		}
 	}, { signal: listeners.signal });
 

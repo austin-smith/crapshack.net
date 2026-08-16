@@ -6,7 +6,6 @@ import Dropdown from '../components/ui/Dropdown.astro';
 import { BLONKY_EMOTES } from '../lib/blonky';
 
 const emotes = Object.entries(BLONKY_EMOTES);
-const showFilter = emotes.length > 8;
 ---
 
 <Layout title="crapshack (blonky debug)" noIndex={true} fullBleed={true}>
@@ -114,32 +113,16 @@ const showFilter = emotes.length > 8;
 						</button>
 					</ButtonGroup>
 				</fieldset>
-
-				<fieldset class="console__cluster console__cluster--emotes">
-					<legend class="sr-only">emotes</legend>
-					<div class="console__buttons">
-						{showFilter && (
-							<input
-								class="control console__filter"
-								type="search"
-								placeholder="filter"
-								aria-label="Filter emotes"
-								data-blonky-filter
-							/>
-						)}
-						{emotes.map(([key, info]) => (
-							<button
-								class="control emote"
-								type="button"
-								aria-pressed="false"
-								data-blonky-emote={key}
-							>
-								{info.label}
-							</button>
-						))}
-					</div>
-				</fieldset>
 			</div>
+
+			<fieldset class="console__emotes">
+				<legend class="sr-only">emotes</legend>
+				{emotes.map(([key, info]) => (
+					<button class="control emote" type="button" data-blonky-emote={key}>
+						{info.label}
+					</button>
+				))}
+			</fieldset>
 		</div>
 
 		<p class="blonky-debug__shortcuts">
@@ -171,12 +154,12 @@ const showFilter = emotes.length > 8;
 	}
 
 	/*
-	 * One hero: the stage, with a single control strip attached underneath.
-	 * The strip is exactly as wide as the stage, so the composition stays
-	 * balanced no matter how many emotes exist — buttons wrap in place.
+	 * One hero: the stage, with the control strip and emote row attached
+	 * underneath at the same width. The stage height budget below leaves room
+	 * for both rows so the whole console still fits without scrolling.
 	 */
 	.blonky-debug {
-		--stage: min(60rem, calc(100svw - 6rem), calc((100svh - 13.5rem) * 1.125));
+		--stage: min(60rem, calc(100svw - 6rem), calc((100svh - 17rem) * 1.125));
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
@@ -264,8 +247,18 @@ const showFilter = emotes.length > 8;
 		border: 0;
 	}
 
-	.console__cluster--emotes {
-		margin-left: auto;
+	/*
+	 * Emotes get their own row rather than competing for strip width: the
+	 * strip holds playback settings, this holds triggers. Buttons wrap into
+	 * as many lines as the registry needs without disturbing the strip.
+	 */
+	.console__emotes {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		padding: 0.65rem 0.75rem;
+		border-top: 1px solid var(--color-line);
 	}
 
 	.console__buttons {
@@ -309,17 +302,6 @@ const showFilter = emotes.length > 8;
 	:global(.blonky-debug__speed) {
 		--control-height: 2.2rem;
 		width: 6rem;
-	}
-
-	.console__filter {
-		width: 6.5rem;
-		cursor: text;
-	}
-
-	.emote[data-active] {
-		border-color: transparent;
-		background: var(--color-brand);
-		color: var(--color-on-brand);
 	}
 
 	.component[data-active] {
