@@ -1,6 +1,7 @@
 import { sampleConfirmEmote, sampleConfirmExit } from './confirm';
 import { sampleNoticeEmote } from './notice';
 import { sampleSkepticalEmote } from './skeptical';
+import { sampleShudderEmote } from './shudder';
 import { sampleShrugEmote } from './shrug';
 import {
 	BLONKY_EMOTE_TRANSITION_FRAMES,
@@ -16,6 +17,7 @@ export const BLONKY_EMOTES = {
 	confirm: { label: 'confirm', duration: 1 },
 	skeptical: { label: 'skeptical', duration: 1.375 },
 	shrug: { label: 'shrug', duration: 1.5 },
+	shudder: { label: 'shudder', duration: 1.625 },
 } as const satisfies Record<BlonkyEmote, BlonkyEmoteInfo>;
 
 const NO_EMOTE_OFFSET: BlonkyEmoteOffset = {
@@ -88,6 +90,8 @@ function rawEmoteOffsetAt(emote: BlonkyEmotePose): BlonkyEmoteOffset {
 			return sampleSkepticalEmote(elapsed, emote.direction);
 		case 'shrug':
 			return sampleShrugEmote(elapsed, emote.direction);
+		case 'shudder':
+			return sampleShudderEmote(elapsed, emote.direction);
 	}
 }
 
