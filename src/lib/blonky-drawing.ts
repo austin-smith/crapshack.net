@@ -245,7 +245,8 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 	ctx.save();
 	ctx.fillStyle = options.color ?? FACE_INK;
 	for (let pass = 0; pass < passes; pass++) {
-		ctx.globalAlpha = (options.alpha ?? 0.9) * (pass === 0 ? 0.72 : 0.34);
+		const primaryPass = pass === 0;
+		ctx.globalAlpha = (options.alpha ?? 0.92) * (primaryPass ? 0.82 : 0.14);
 		const moved = points.map((point, index) => {
 			const before = points[Math.max(0, index - 1)];
 			const after = points[Math.min(points.length - 1, index + 1)];
@@ -259,7 +260,7 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 			const boilingWobble =
 				(valueNoise(u * 0.72, frame * 0.41 + pass * 9.1, id + 503) - 0.5) * live * 2
 				+ (valueNoise(u * 1.45, frame * 0.73 + pass * 4.7, id + 557) - 0.5) * live * 0.65;
-			const restatement = pass ? 0.36 : -0.12;
+			const restatement = pass ? 0.3 : 0;
 			const displacement = staticWobble + boilingWobble + restatement;
 			return { x: point.x + n.x * displacement, y: point.y + n.y * displacement };
 		});
@@ -269,9 +270,18 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 			return normal(norm(sub(after, before)));
 		});
 		const radii = moved.map((_, index) => {
-			const pressure = 0.92 + (valueNoise(index * 0.27, pass * 5.7, id + 709) - 0.5) * 0.44
-				+ (valueNoise(index * 0.19, frame * 0.29 + pass * 3.1, id + 811) - 0.5) * 0.18;
-			return Math.max(0.18, width * (pass === 0 ? 0.86 : 0.44) * pressure * 0.5);
+			const progress = moved.length === 1 ? 0.5 : index / (moved.length - 1);
+			const endpointPool = closed
+				? 0
+				: Math.max(
+					1 - smoothstep(Math.min(1, progress / 0.075)),
+					1 - smoothstep(Math.min(1, (1 - progress) / 0.075)),
+				) * 0.11;
+			const pressure = 0.96
+				+ (valueNoise(index * 0.2, pass * 5.7, id + 709) - 0.5) * 0.24
+				+ (valueNoise(index * 0.13, frame * 0.29 + pass * 3.1, id + 811) - 0.5) * 0.08
+				+ endpointPool;
+			return Math.max(0.18, width * (primaryPass ? 0.89 : 0.34) * pressure * 0.5);
 		});
 		const left = moved.map((point, index) => add(point, mul(bandNormals[index], radii[index])));
 		const right = moved.map((point, index) => add(point, mul(bandNormals[index], -radii[index])));
@@ -534,12 +544,11 @@ function rawReactionOffsetAt(reaction?: BlonkyReactionPose): BlonkyReactionOffse
 	const direction = reaction.direction;
 
 	if (reaction.kind === 'notice') {
-		// The eyes catch first, then the face lifts toward the aphorism above him.
-		// The shoulders and belly answer one and two ink frames later, preserving
-		// his weight without making the shirt travel with the head.
+		// Gaze, head, shoulders, and belly arrive on successive ink frames.
 		const firstEyeBeat = heldEnvelope(elapsed, 0, 0.125, 0, 0.125);
 		const secondEyeBeat = heldEnvelope(elapsed, 0.125, 0.125, 0, 0.125);
-		const notice = heldEnvelope(elapsed, 0.25, 0.125, 0.25, 0.25);
+		const gaze = heldEnvelope(elapsed, 0, 0.125, 0.5, 0.25);
+		const headFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS, 0.125, 0.375, 0.25);
 		// Once his upward gaze has settled, keep the lids alive with the same
 		// quick-pair / pause / regular-blink phrase used at rest. Its clock starts
 		// with the hold and snaps to the ink cadence, so notice neither drops into
@@ -547,8 +556,8 @@ function rawReactionOffsetAt(reaction?: BlonkyReactionPose): BlonkyReactionOffse
 		const heldBlink = reaction.heldElapsed === undefined
 			? undefined
 			: blinkPoseAt(inkFrameTime(reaction.heldElapsed));
-		const shoulderFollow = heldEnvelope(elapsed, 0.25 + INK_FRAME_SECONDS, 0.125, 0.125, 0.25);
-		const bellyFollow = heldEnvelope(elapsed, 0.25 + INK_FRAME_SECONDS * 2, 0.125, 0, 0.25);
+		const shoulderFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS * 2, 0.125, 0.25, 0.25);
+		const bellyFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS * 3, 0.125, 0.125, 0.25);
 		const leftEyeLeads = direction < 0;
 		const leftEyeClosure = leftEyeLeads
 			? firstEyeBeat * 0.58 + secondEyeBeat * 0.22
@@ -557,22 +566,22 @@ function rawReactionOffsetAt(reaction?: BlonkyReactionPose): BlonkyReactionOffse
 			? firstEyeBeat * 0.22 + secondEyeBeat * 0.48
 			: firstEyeBeat * 0.58 + secondEyeBeat * 0.22;
 		return {
-			presence: Math.max(firstEyeBeat, secondEyeBeat, notice),
+			presence: Math.max(firstEyeBeat, secondEyeBeat, gaze, headFollow),
 			headX: 0,
-			headY: -notice * 3.8,
-			headAngle: 0,
-			headTurn: 0,
-			faceLookY: -notice * 2.1,
-			eyeLookY: -notice * 4.2,
+			headY: -headFollow * 3.8,
+			headAngle: direction * headFollow * 0.009,
+			headTurn: direction * headFollow * 0.14,
+			faceLookY: -headFollow * 2.1,
+			eyeLookY: -gaze * 4.2,
 			bodyX: 0,
 			shoulderY: -shoulderFollow * 1.15,
 			shoulderTilt: 0,
 			bellySpread: bellyFollow * 0.85,
-			mouthTension: notice * 0.08,
-			leftBrowLift: notice * 4.9,
-			rightBrowLift: notice * 4.5,
-			leftEyeOpen: (heldBlink?.leftEyeOpen ?? 1 - leftEyeClosure) + notice * 0.035,
-			rightEyeOpen: (heldBlink?.rightEyeOpen ?? 1 - rightEyeClosure) + notice * 0.035,
+			mouthTension: headFollow * 0.08,
+			leftBrowLift: gaze * 4.9,
+			rightBrowLift: gaze * 4.5,
+			leftEyeOpen: (heldBlink?.leftEyeOpen ?? 1 - leftEyeClosure) + gaze * 0.035,
+			rightEyeOpen: (heldBlink?.rightEyeOpen ?? 1 - rightEyeClosure) + gaze * 0.035,
 		};
 	}
 
