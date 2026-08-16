@@ -84,6 +84,7 @@ const INK_FRAME_SECONDS = 1 / FPS;
 const BLINK_PHRASE_SECONDS = 8.75;
 const BEHAVIOR_PHRASE_SECONDS = 16.25;
 const SKIN = '#efede6';
+const EYE_WHITE = '#f4f0e6';
 const FACE_INK = '#252422';
 const WASH = '#9a6f59';
 export const DEFAULT_BLONKY_PALETTE: Readonly<BlonkyPalette> = {
@@ -232,6 +233,7 @@ interface StrokeOptions {
 	passes?: number;
 	boil?: number;
 	color?: string;
+	fillRule?: CanvasFillRule;
 }
 
 function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, options: StrokeOptions = {}): void {
@@ -291,7 +293,7 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 		for (let index = 1; index < left.length; index++) ctx.lineTo(left[index].x, left[index].y);
 		for (let index = right.length - 1; index >= 0; index--) ctx.lineTo(right[index].x, right[index].y);
 		ctx.closePath();
-		ctx.fill('evenodd');
+		ctx.fill(options.fillRule ?? 'evenodd');
 		if (!closed) {
 			for (const index of [0, moved.length - 1]) {
 				ctx.beginPath();
@@ -462,8 +464,8 @@ function blinkPoseAt(time: number): BlinkPose {
 	}
 
 	return {
-		leftEyeOpen: 1 - leftClosure * 0.92,
-		rightEyeOpen: 1 - rightClosure * 0.92,
+		leftEyeOpen: 1 - leftClosure,
+		rightEyeOpen: 1 - rightClosure,
 	};
 }
 
@@ -851,8 +853,24 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: rightEyeCenter.x - 5, y: rightEyeCenter.y + 9 },
 		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y + 3 },
 	], rightEyeCenter, pose.rightEyeOpen);
-	stroke(ctx, leftEye, 630, { closed: true, width: 1.95, passes: 2, boil: 0.34 });
-	stroke(ctx, rightEye, 631, { closed: true, width: 1.86, passes: 2, boil: 0.34 });
+	const leftEyeClosed = pose.leftEyeOpen <= 0.2;
+	const rightEyeClosed = pose.rightEyeOpen <= 0.2;
+	if (!leftEyeClosed) fill(ctx, leftEye, EYE_WHITE, 1);
+	if (!rightEyeClosed) fill(ctx, rightEye, EYE_WHITE, 1);
+	stroke(ctx, leftEye, 630, {
+		closed: true,
+		width: 1.95,
+		passes: 2,
+		boil: 0.34,
+		fillRule: leftEyeClosed ? 'nonzero' : 'evenodd',
+	});
+	stroke(ctx, rightEye, 631, {
+		closed: true,
+		width: 1.86,
+		passes: 2,
+		boil: 0.34,
+		fillRule: rightEyeClosed ? 'nonzero' : 'evenodd',
+	});
 	stroke(ctx, [{ x: -47, y: -40 + underEyeFollow }, { x: -38, y: -35 + underEyeFollow }, { x: -28, y: -35 + underEyeFollow }, { x: -20, y: -40 + underEyeFollow }], 632, { width: 1.12, alpha: 0.82, passes: 1, boil: 0.28 });
 	stroke(ctx, [{ x: 21, y: -35 + underEyeFollow }, { x: 28, y: -32 + underEyeFollow }, { x: 36, y: -33 + underEyeFollow }, { x: 41, y: -37 + underEyeFollow }], 633, { width: 1.02, alpha: 0.76, passes: 1, boil: 0.28 });
 	stroke(ctx, [
