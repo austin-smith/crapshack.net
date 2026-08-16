@@ -1,5 +1,3 @@
-// Blonky, held at rest while every ink mark redraws.
-
 import { sampleBlonkyEmoteOffset } from './emotes';
 import { blinkPoseAt, hash, heldEnvelope, inkFrameTime, smoothstep } from './motion';
 import {
@@ -184,9 +182,8 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 			const n = normal(norm(sub(after, before)));
 			const u = index * 0.34;
 			const staticWobble = (valueNoise(u, pass * 7.3, id + 101) - 0.5) * 2.35;
-			// The whole contour samples one slowly moving field. Every mark is
-			// redrawn, but neighbouring points travel together instead of fizzing
-			// independently in x and y.
+			// Sample one slowly moving field across the contour so neighboring
+			// points remain correlated instead of producing independent x/y jitter.
 			const live = (0.9 + contourScale * 0.45) * (0.92 + (options.boil ?? 0.36) * 0.22);
 			const boilingWobble =
 				(valueNoise(u * 0.72, frame * 0.41 + pass * 9.1, id + 503) - 0.5) * live * 2
@@ -368,8 +365,8 @@ function idleBehaviorAt(time: number): IdleBehavior {
 	const breathStart = inkFrameTime(correctionStart + 3.15 + hash(5297, phrase, 3) * 0.9);
 
 	return {
-		// One considered adjustment, held long enough to read as thought rather
-		// than a twitch. The face returns before the later deeper breath.
+		// Hold the correction across several ink frames, then return it before
+		// the later deep-breath envelope begins.
 		headCorrection: direction * heldEnvelope(phraseTime, correctionStart, 0.5, 0.75, 0.7),
 		mouthSet: direction * heldEnvelope(phraseTime, correctionStart + 0.25, 0.25, 0.42, 0.45),
 		deepBreath: heldEnvelope(phraseTime, breathStart, 0.85, 0.2, 1.1),
@@ -486,9 +483,8 @@ function drawLimb(
 
 function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string): void {
 	ctx.save();
-	// Every head turn shares one body-anchored pivot at the base of the neck.
-	// The shirt never enters this transform, so its collar remains planted while
-	// the jaw can tip naturally over the neck skin behind it.
+	// Apply head rotation around a body-anchored neck pivot. Excluding the shirt
+	// keeps collar geometry fixed while the jaw overlaps the neck skin.
 	const neckPivot = { x: pose.centerX, y: pose.shoulderY - 10 };
 	ctx.translate(neckPivot.x, neckPivot.y);
 	ctx.rotate(pose.headAngle + pose.headEmoteAngle);
@@ -531,9 +527,12 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 	}
 
 	ctx.save();
-	ctx.translate(0, pose.faceLookY);
-	const leftEyeCenter = { x: -34 + turn * 1.05, y: -56.5 + turn * 0.18 + pose.eyeLookY };
-	const rightEyeCenter = { x: 30 + turn * 1.7, y: -49 - turn * 0.12 + pose.eyeLookY };
+	// Apply base yaw to the full face. Add per-feature parallax below for depth.
+	ctx.translate(turn * 1.15, pose.faceLookY);
+	const leftEyeTurn = turn * -0.1;
+	const rightEyeTurn = turn * 0.55;
+	const leftEyeCenter = { x: -34 + leftEyeTurn, y: -56.5 + turn * 0.18 + pose.eyeLookY };
+	const rightEyeCenter = { x: 30 + rightEyeTurn, y: -49 - turn * 0.12 + pose.eyeLookY };
 	const underEyeFollow = pose.eyeLookY * 0.1;
 	const blink = (points: Pt[], center: Pt, openness: number): Pt[] => points.map((point) => ({
 		x: point.x,
@@ -580,17 +579,17 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		boil: 0.34,
 		fillRule: rightEyeClosed ? 'nonzero' : 'evenodd',
 	});
-	stroke(ctx, [{ x: -47, y: -40 + underEyeFollow }, { x: -38, y: -35 + underEyeFollow }, { x: -28, y: -35 + underEyeFollow }, { x: -20, y: -40 + underEyeFollow }], 632, { width: 1.12, alpha: 0.82, passes: 1, boil: 0.28 });
-	stroke(ctx, [{ x: 21, y: -35 + underEyeFollow }, { x: 28, y: -32 + underEyeFollow }, { x: 36, y: -33 + underEyeFollow }, { x: 41, y: -37 + underEyeFollow }], 633, { width: 1.02, alpha: 0.76, passes: 1, boil: 0.28 });
+	stroke(ctx, [{ x: -47 + leftEyeTurn, y: -40 + underEyeFollow }, { x: -38 + leftEyeTurn, y: -35 + underEyeFollow }, { x: -28 + leftEyeTurn, y: -35 + underEyeFollow }, { x: -20 + leftEyeTurn, y: -40 + underEyeFollow }], 632, { width: 1.12, alpha: 0.82, passes: 1, boil: 0.28 });
+	stroke(ctx, [{ x: 21 + rightEyeTurn, y: -35 + underEyeFollow }, { x: 28 + rightEyeTurn, y: -32 + underEyeFollow }, { x: 36 + rightEyeTurn, y: -33 + underEyeFollow }, { x: 41 + rightEyeTurn, y: -37 + underEyeFollow }], 633, { width: 1.02, alpha: 0.76, passes: 1, boil: 0.28 });
 	stroke(ctx, [
-		{ x: -49, y: -67 - pose.leftBrowLift * 0.5 - pose.leftBrowArch * 0.75 },
-		{ x: -41, y: -75 - pose.leftBrowLift - pose.leftBrowArch },
-		{ x: -30, y: -78 - pose.leftBrowLift * 0.7 - pose.leftBrowArch * 0.2 },
+		{ x: -49 + leftEyeTurn, y: -67 - pose.leftBrowLift * 0.5 - pose.leftBrowArch * 0.75 },
+		{ x: -41 + leftEyeTurn, y: -75 - pose.leftBrowLift - pose.leftBrowArch },
+		{ x: -30 + leftEyeTurn, y: -78 - pose.leftBrowLift * 0.7 - pose.leftBrowArch * 0.2 },
 	], 634, { width: 1.55, boil: 0.36 });
 	stroke(ctx, [
-		{ x: 25, y: -70 - pose.rightBrowLift * 0.7 - pose.rightBrowArch * 0.2 },
-		{ x: 35, y: -73 - pose.rightBrowLift - pose.rightBrowArch },
-		{ x: 46, y: -66 - pose.rightBrowLift * 0.5 - pose.rightBrowArch * 0.75 },
+		{ x: 25 + rightEyeTurn, y: -70 - pose.rightBrowLift * 0.7 - pose.rightBrowArch * 0.2 },
+		{ x: 35 + rightEyeTurn, y: -73 - pose.rightBrowLift - pose.rightBrowArch },
+		{ x: 46 + rightEyeTurn, y: -66 - pose.rightBrowLift * 0.5 - pose.rightBrowArch * 0.75 },
 	], 635, { width: 1.38, boil: 0.36 });
 	const noseBridgeX = 9 + turn * 0.35;
 	const noseTipX = -6 + turn * 2.6;
@@ -764,11 +763,11 @@ function drawBody(ctx: CanvasRenderingContext2D, pose: Pose, palette: BlonkyPale
 		{ x: pose.centerX + 292, y: rightY + 24 },
 		collar.rightContact,
 	];
-	// One closed silhouette supplies the shirt fill.
+	// Use one closed path to prevent seams between the torso and sleeves.
 	const torsoOuter = leftSleeveOuter
 		.concat(leftArmpit, bodyOuter, rightArmpit, rightSleeveOuter);
-	// The shirt wraps around a shallow chest opening. The skin begins at the
-	// shoulder line; there is no separate neck tower behind the head.
+	// Close the shirt around a shallow chest opening. Skin begins at the shoulder
+	// line; no separate neck geometry is drawn behind the head.
 	const shirt = torsoOuter.concat(collar.edge.slice(1, -1).reverse());
 	fill(ctx, collar.chestSkin, SKIN, 1);
 	fill(ctx, collar.chestSkin, WASH, 0.11);

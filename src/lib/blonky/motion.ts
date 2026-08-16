@@ -53,9 +53,8 @@ export function blinkPoseAt(time: number): BlinkPose {
 
 	for (const center of centers) {
 		leftClosure = Math.max(leftClosure, blinkClosure(phraseTime, center, 0.07));
-		// The right lid starts with the left but takes a fraction longer to
-		// finish reopening. On the stepped ink cadence that becomes one rough,
-		// half-open after-frame rather than a smooth tween or a wink.
+		// Delay right-lid reopening by 18 ms. At 8 fps, the delay adds one
+		// asymmetric half-open frame to each blink.
 		rightClosure = Math.max(rightClosure, blinkClosure(phraseTime, center + 0.018, 0.155));
 	}
 

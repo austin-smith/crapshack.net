@@ -2,10 +2,9 @@ import { heldEnvelope, INK_FRAME_SECONDS } from '../motion';
 import type { BlonkyEmoteOffset } from '../types';
 
 export function sampleShudderEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
-	// He tightens first, then three uneven contractions alternate through his
-	// shoulders on consecutive ink frames. The head counters the torso while
-	// the heavier belly lags, so the lateral motion reads as a twist rather than
-	// the whole drawing sliding from side to side.
+	// Begin with tension, then alternate three shoulder contractions on
+	// consecutive ink frames. Counter-rotate the head and delay belly compression
+	// to produce torsion without translating the full pose.
 	const brace = heldEnvelope(
 		elapsed,
 		0,

@@ -11,10 +11,7 @@ export function sampleNoticeEmote(
 	const secondEyeBeat = heldEnvelope(elapsed, 0.125, 0.125, 0, 0.125);
 	const gaze = heldEnvelope(elapsed, 0, 0.125, 0.5, 0.25);
 	const headFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS, 0.125, 0.375, 0.25);
-	// Once his upward gaze has settled, keep the lids alive with the same
-	// quick-pair / pause / regular-blink phrase used at rest. Its clock starts
-	// with the hold and snaps to the ink cadence, so notice neither drops into
-	// the middle of a blink nor skips the shorter lid beat between draw frames.
+	// Quantize a zero-based held clock to preserve the rest-state blink sequence.
 	const heldBlink = heldElapsed === undefined
 		? undefined
 		: blinkPoseAt(inkFrameTime(heldElapsed));

@@ -11,7 +11,7 @@ export const BLONKY_VIEWPORTS = {
 
 export type BlonkyView = keyof typeof BLONKY_VIEWPORTS;
 
-export type BlonkyEmote = 'notice' | 'confirm' | 'skeptical' | 'shrug' | 'shudder';
+export type BlonkyEmote = 'notice' | 'confirm' | 'skeptical' | 'shrug' | 'shudder' | 'smh';
 
 export interface BlonkyEmoteInfo {
 	label: string;

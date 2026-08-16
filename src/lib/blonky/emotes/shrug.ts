@@ -2,9 +2,8 @@ import { heldEnvelope, INK_FRAME_SECONDS } from '../motion';
 import type { BlonkyEmoteOffset } from '../types';
 
 export function sampleShrugEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
-	// A tiny brace gives the lift somewhere to come from. The head turns first;
-	// each shoulder then rises and drops on its own ink frame. Once the body
-	// lands, a late half-blink keeps the release dry instead of springy.
+	// Brace, glance, and shoulder motion begin on separate ink frames. The torso
+	// follows both shoulders; a late half-blink softens the transition to rest.
 	const brace = heldEnvelope(elapsed, 0, INK_FRAME_SECONDS, INK_FRAME_SECONDS, INK_FRAME_SECONDS);
 	const glance = heldEnvelope(elapsed, 0, INK_FRAME_SECONDS, 0.75, 0.25);
 	const firstShoulder = heldEnvelope(elapsed, INK_FRAME_SECONDS * 2, 0.25, 0.375, 0.25);
