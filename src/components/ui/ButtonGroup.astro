@@ -1,0 +1,13 @@
+---
+interface Props {
+	/** Accessible label for the group. */
+	ariaLabel?: string;
+	class?: string;
+}
+
+const { ariaLabel, class: className } = Astro.props;
+---
+
+<div class:list={['button-group', className]} role="group" aria-label={ariaLabel}>
+	<slot />
+</div>

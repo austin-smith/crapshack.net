@@ -19,6 +19,13 @@ function setOpen(dropdown: HTMLElement, open: boolean): void {
 
 	trigger.setAttribute('aria-expanded', String(open));
 	menu.hidden = !open;
+	if (open) {
+		const triggerRect = trigger.getBoundingClientRect();
+		const spaceBelow = window.innerHeight - triggerRect.bottom;
+		const needed = menu.offsetHeight + 8;
+		if (spaceBelow < needed && triggerRect.top > spaceBelow) dropdown.dataset.direction = 'up';
+		else delete dropdown.dataset.direction;
+	}
 }
 
 function closeOtherDropdowns(current?: HTMLElement): void {
