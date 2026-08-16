@@ -10,22 +10,22 @@ const emotes = Object.entries(BLONKY_EMOTES);
 
 <Layout title="crapshack (blonky debug)" noIndex={true} fullBleed={true}>
 	<section class="blonky-debug" data-blonky-page-root>
-		<header class="blonky-debug__header">
-			<h1>blonky</h1>
-
-			<p class="blonky-debug__readout" aria-label="Animation state">
-				<output data-blonky-state>playing</output>
-				<span aria-hidden="true">·</span>
-				<output data-blonky-time>0.000 s</output>
-				<span aria-hidden="true">·</span>
-				<span>f<output data-blonky-frame>0000</output></span>
-				<span aria-hidden="true">·</span>
-				<span>8 fps</span>
-			</p>
-		</header>
-
 		<div class="console">
 			<figure class="console__stage">
+				<header class="console__header">
+					<h1>blonky</h1>
+
+					<p class="blonky-debug__readout" aria-label="Animation state">
+						<output data-blonky-state>playing</output>
+						<span aria-hidden="true">·</span>
+						<output data-blonky-time>0.000 s</output>
+						<span aria-hidden="true">·</span>
+						<span>f<output data-blonky-frame>0000</output></span>
+						<span aria-hidden="true">·</span>
+						<span>8&nbsp;fps</span>
+					</p>
+				</header>
+
 				<canvas
 					id="blonky-drawing"
 					data-blonky-page-canvas
@@ -37,6 +37,34 @@ const emotes = Object.entries(BLONKY_EMOTES);
 					Blonky, a large hand-drawn character.
 				</canvas>
 			</figure>
+
+			<fieldset class="console__emotes">
+				<legend class="sr-only">emotes</legend>
+				<div class="console__emotes-header">
+					<p class="console__emotes-title">
+						<span>emotes</span>
+						<output data-blonky-emote-state>idle</output>
+					</p>
+					<button class="emote-release" type="button" data-blonky-emote-release disabled>
+						release
+					</button>
+				</div>
+				<div class="console__emote-list">
+					{emotes.map(([key, info]) => (
+						<button
+							class="control emote"
+							type="button"
+							aria-pressed="false"
+							data-blonky-emote={key}
+						>
+							<span>{info.label}</span>
+							<span class="emote__meta">
+								{info.holds ? 'hold' : `${info.duration.toFixed(3)}s`}
+							</span>
+						</button>
+					))}
+				</div>
+			</fieldset>
 
 			<div class="console__strip">
 				<fieldset class="console__cluster">
@@ -90,7 +118,7 @@ const emotes = Object.entries(BLONKY_EMOTES);
 					</div>
 				</fieldset>
 
-				<fieldset class="console__cluster">
+				<fieldset class="console__cluster console__cluster--components">
 					<legend class="sr-only">components</legend>
 					<ButtonGroup ariaLabel="Components">
 						<button
@@ -114,15 +142,6 @@ const emotes = Object.entries(BLONKY_EMOTES);
 					</ButtonGroup>
 				</fieldset>
 			</div>
-
-			<fieldset class="console__emotes">
-				<legend class="sr-only">emotes</legend>
-				{emotes.map(([key, info]) => (
-					<button class="control emote" type="button" data-blonky-emote={key}>
-						{info.label}
-					</button>
-				))}
-			</fieldset>
 		</div>
 
 		<p class="blonky-debug__shortcuts">
@@ -153,13 +172,13 @@ const emotes = Object.entries(BLONKY_EMOTES);
 		display: none;
 	}
 
-	/*
-	 * One hero: the stage, with the control strip and emote row attached
-	 * underneath at the same width. The stage height budget below leaves room
-	 * for both rows so the whole console still fits without scrolling.
-	 */
 	.blonky-debug {
-		--stage: min(60rem, calc(100svw - 6rem), calc((100svh - 17rem) * 1.125));
+		--palette: 11rem;
+		--stage: min(
+			60rem,
+			calc(100svw - 6rem - var(--palette)),
+			calc((100svh - 13.5rem) * 1.175)
+		);
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
@@ -173,18 +192,22 @@ const emotes = Object.entries(BLONKY_EMOTES);
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	}
 
-	.blonky-debug__header,
 	.console {
 		box-sizing: border-box;
-		width: var(--stage);
+		width: calc(var(--stage) + var(--palette));
 		max-width: 100%;
 	}
 
-	.blonky-debug__header {
+	.console__header {
+		position: absolute;
+		z-index: 1;
+		inset: 0.85rem 1rem auto;
 		display: flex;
-		align-items: flex-end;
+		align-items: center;
 		justify-content: space-between;
 		gap: 1.5rem;
+		min-width: 0;
+		pointer-events: none;
 	}
 
 	h1 {
@@ -199,18 +222,17 @@ const emotes = Object.entries(BLONKY_EMOTES);
 		display: flex;
 		align-items: baseline;
 		gap: 0.5rem;
-		margin: 0 0 0.15rem;
-		color: var(--color-dim);
+		margin: 0;
+		color: var(--color-subtle);
 		font-size: 0.7rem;
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
 	}
 
-	.blonky-debug__readout output {
-		color: var(--color-subtle);
-	}
-
 	.console {
+		display: grid;
+		grid-template-columns: minmax(0, var(--stage)) var(--palette);
+		grid-template-rows: auto auto;
 		overflow: clip;
 		border: 1px solid var(--color-line-strong);
 		border-radius: 0.9rem;
@@ -219,6 +241,9 @@ const emotes = Object.entries(BLONKY_EMOTES);
 	}
 
 	.console__stage {
+		position: relative;
+		grid-column: 1;
+		grid-row: 1;
 		margin: 0;
 		background: var(--color-bg);
 	}
@@ -231,6 +256,8 @@ const emotes = Object.entries(BLONKY_EMOTES);
 	}
 
 	.console__strip {
+		grid-column: 1;
+		grid-row: 2;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -247,18 +274,85 @@ const emotes = Object.entries(BLONKY_EMOTES);
 		border: 0;
 	}
 
-	/*
-	 * Emotes get their own row rather than competing for strip width: the
-	 * strip holds playback settings, this holds triggers. Buttons wrap into
-	 * as many lines as the registry needs without disturbing the strip.
-	 */
 	.console__emotes {
+		grid-column: 2;
+		grid-row: 1 / -1;
 		display: flex;
+		min-width: 0;
+		min-height: 0;
+		flex-direction: column;
+		border-left: 1px solid var(--color-line);
+		background: var(--color-sidebar-bg);
+	}
+
+	.console__emotes-header {
+		display: flex;
+		min-height: 2.65rem;
 		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.4rem;
-		padding: 0.65rem 0.75rem;
-		border-top: 1px solid var(--color-line);
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0 0.65rem;
+		border-bottom: 1px solid var(--color-line);
+	}
+
+	.console__emotes-title {
+		display: flex;
+		min-width: 0;
+		align-items: baseline;
+		gap: 0.45rem;
+		margin: 0;
+		font-size: 0.64rem;
+		font-weight: 650;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.console__emotes-title output {
+		overflow: hidden;
+		color: var(--color-faint);
+		font-size: 0.58rem;
+		font-weight: 400;
+		letter-spacing: 0;
+		text-overflow: ellipsis;
+		text-transform: none;
+		white-space: nowrap;
+	}
+
+	.emote-release {
+		padding: 0.25rem 0;
+		border: 0;
+		background: transparent;
+		color: var(--color-subtle);
+		font: inherit;
+		font-size: 0.58rem;
+		cursor: pointer;
+	}
+
+	.emote-release:hover:not(:disabled) {
+		color: var(--color-text);
+	}
+
+	.emote-release:focus-visible {
+		outline: 2px solid var(--color-brand);
+		outline-offset: 2px;
+	}
+
+	.emote-release:disabled {
+		color: var(--color-faint);
+		cursor: default;
+		opacity: 0.45;
+	}
+
+	.console__emote-list {
+		display: flex;
+		min-height: 0;
+		flex: 1;
+		flex-direction: column;
+		gap: 0.22rem;
+		overflow-y: auto;
+		padding: 0.42rem;
+		scrollbar-color: var(--color-line-strong) transparent;
+		scrollbar-width: thin;
 	}
 
 	.console__buttons {
@@ -266,6 +360,10 @@ const emotes = Object.entries(BLONKY_EMOTES);
 		align-items: center;
 		flex-wrap: wrap;
 		gap: 0.4rem;
+	}
+
+	.console__cluster--components {
+		margin-left: auto;
 	}
 
 	.control {
@@ -302,6 +400,40 @@ const emotes = Object.entries(BLONKY_EMOTES);
 	:global(.blonky-debug__speed) {
 		--control-height: 2.2rem;
 		width: 6rem;
+	}
+
+	.emote {
+		display: flex;
+		width: 100%;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.65rem;
+		border-color: transparent;
+		background: transparent;
+		text-align: left;
+		touch-action: manipulation;
+	}
+
+	.emote:hover {
+		background: var(--color-sunken);
+	}
+
+	.emote__meta {
+		color: var(--color-faint);
+		font-size: 0.58rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.emote[data-active] {
+		border-color: transparent;
+		background: var(--color-brand);
+		color: var(--color-on-brand);
+	}
+
+	.emote[data-active] .emote__meta {
+		color: currentColor;
+		opacity: 0.7;
 	}
 
 	.component[data-active] {
@@ -342,6 +474,51 @@ const emotes = Object.entries(BLONKY_EMOTES);
 		border: 0;
 	}
 
+	@media (max-width: 920px) {
+		.blonky-debug {
+			--palette: 0rem;
+			--stage: min(calc(100svw - 6rem), calc((100svh - 15.5rem) * 1.175));
+		}
+
+		.console {
+			width: var(--stage);
+		}
+
+		.console {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.console__stage {
+			order: 1;
+		}
+
+		.console__emotes {
+			order: 2;
+			border-top: 1px solid var(--color-line);
+			border-left: 0;
+		}
+
+		.console__emotes-header {
+			min-height: 2.2rem;
+		}
+
+		.console__emote-list {
+			flex-direction: row;
+			overflow-x: auto;
+			overflow-y: hidden;
+		}
+
+		.emote {
+			width: auto;
+			min-width: 7.25rem;
+		}
+
+		.console__strip {
+			order: 3;
+		}
+	}
+
 	@media (max-width: 640px) {
 		.blonky-debug {
 			--stage: 100%;
@@ -350,17 +527,21 @@ const emotes = Object.entries(BLONKY_EMOTES);
 			padding: 3.5rem 0.75rem 1rem;
 		}
 
-		.blonky-debug__header {
-			align-items: flex-start;
-			flex-direction: column;
-			gap: 0.5rem;
+		.console__header {
+			gap: 0.75rem;
+			inset: 0.65rem 0.7rem auto;
 		}
 
-		.console__cluster--emotes {
-			margin-left: 0;
+		h1 {
+			font-size: 1.3rem;
 		}
 
-		.control {
+		.blonky-debug__readout {
+			gap: 0.3rem;
+			font-size: 0.58rem;
+		}
+
+		.control:not(.emote) {
 			flex: 1 1 auto;
 		}
 	}

@@ -1,5 +1,9 @@
 import { createBlonkyAnimator } from './animator';
-import { BLONKY_EMOTES, isBlonkyEmote } from './emotes';
+import {
+	BLONKY_EMOTES,
+	isBlonkyEmote,
+	type BlonkyEmoteInfo,
+} from './emotes';
 import { BLONKY_FPS } from './types';
 
 const isTextEntry = (target: EventTarget | null): boolean => (
@@ -27,6 +31,8 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	const resetButton = root.querySelector<HTMLButtonElement>('[data-blonky-reset]');
 	const headVisibilityButton = root.querySelector<HTMLButtonElement>('[data-blonky-head-visibility]');
 	const bodyVisibilityButton = root.querySelector<HTMLButtonElement>('[data-blonky-body-visibility]');
+	const emoteReleaseButton = root.querySelector<HTMLButtonElement>('[data-blonky-emote-release]');
+	const emoteStateOutput = root.querySelector<HTMLOutputElement>('[data-blonky-emote-state]');
 	const speedDropdown = root.querySelector<HTMLElement>('#blonky-speed');
 	const stateOutput = root.querySelector<HTMLOutputElement>('[data-blonky-state]');
 	const timeOutput = root.querySelector<HTMLOutputElement>('[data-blonky-time]');
@@ -40,6 +46,8 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		|| !resetButton
 		|| !headVisibilityButton
 		|| !bodyVisibilityButton
+		|| !emoteReleaseButton
+		|| !emoteStateOutput
 		|| !speedDropdown
 		|| !stateOutput
 		|| !timeOutput
@@ -47,11 +55,23 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		|| !status
 	) return;
 
+	const emoteRows = [...root.querySelectorAll<HTMLButtonElement>('[data-blonky-emote]')];
 	const listeners = new AbortController();
+	let activeRow: HTMLButtonElement | null = null;
+	let activeUntil = 0;
+
+	const clearActiveRow = (): void => {
+		activeRow?.removeAttribute('data-active');
+		activeRow?.setAttribute('aria-pressed', 'false');
+		activeRow = null;
+		emoteStateOutput.value = 'idle';
+		emoteReleaseButton.disabled = true;
+	};
 
 	const syncFrame = (time: number): void => {
-		timeOutput.value = `${time.toFixed(3)} s`;
+		timeOutput.value = `${time.toFixed(3)}\u00a0s`;
 		frameOutput.value = String(Math.floor(time * BLONKY_FPS)).padStart(4, '0');
+		if (activeRow && time >= activeUntil) clearActiveRow();
 	};
 	const syncPlayback = (playing: boolean): void => {
 		playIcon.hidden = playing;
@@ -77,18 +97,38 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	const reset = (): void => {
 		animator.pause();
 		animator.reset();
+		clearActiveRow();
 	};
 	// Firing is unconditional: pressing the same emote again replays it from the
 	// top, which is the usual way to judge a tweak.
-	const fireEmote = (emote: string | undefined): void => {
+	const fireEmote = (row: HTMLButtonElement): void => {
+		const emote = row.dataset.blonkyEmote;
 		if (!isBlonkyEmote(emote)) return;
 		animator.playEmote(emote);
 		animator.play();
+		clearActiveRow();
+		activeRow = row;
+		row.setAttribute('data-active', '');
+		row.setAttribute('aria-pressed', 'true');
+		emoteStateOutput.value = BLONKY_EMOTES[emote].label;
+		emoteReleaseButton.disabled = false;
+		const emoteInfo: BlonkyEmoteInfo = BLONKY_EMOTES[emote];
+		activeUntil = emoteInfo.holds
+			? Number.POSITIVE_INFINITY
+			: animator.getTime() + emoteInfo.duration;
 		status.textContent = `Blonky ${BLONKY_EMOTES[emote].label}`;
+	};
+	const releaseEmote = (): void => {
+		if (!activeRow) return;
+		animator.releaseEmote();
+		animator.play();
+		clearActiveRow();
+		status.textContent = 'Blonky emote released';
 	};
 
 	playbackButton.addEventListener('click', togglePlayback, { signal: listeners.signal });
 	resetButton.addEventListener('click', reset, { signal: listeners.signal });
+	emoteReleaseButton.addEventListener('click', releaseEmote, { signal: listeners.signal });
 	headVisibilityButton.addEventListener('click', () => {
 		const visible = !animator.isHeadVisible();
 		animator.setHeadVisible(visible);
@@ -107,15 +147,16 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		animator.setPlaybackRate(Number(event.detail.value));
 	}) as EventListener, { signal: listeners.signal });
 
-	for (const button of root.querySelectorAll<HTMLButtonElement>('[data-blonky-emote]')) {
+	for (const button of emoteRows) {
 		button.addEventListener('click', () => {
-			fireEmote(button.dataset.blonkyEmote);
+			fireEmote(button);
 		}, { signal: listeners.signal });
 	}
 
 	for (const button of root.querySelectorAll<HTMLButtonElement>('[data-blonky-step]')) {
 		button.addEventListener('click', () => {
 			animator.step(Number(button.dataset.blonkyStep));
+			clearActiveRow();
 		}, { signal: listeners.signal });
 	}
 
