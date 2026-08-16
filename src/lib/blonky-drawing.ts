@@ -137,6 +137,27 @@ function lerp(a: Pt, b: Pt, t: number): Pt {
 	return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
 
+function segmentIntersection(aStart: Pt, aEnd: Pt, bStart: Pt, bEnd: Pt): Pt | undefined {
+	const a = sub(aEnd, aStart);
+	const b = sub(bEnd, bStart);
+	const denominator = a.x * b.y - a.y * b.x;
+	if (Math.abs(denominator) < 0.0001) return undefined;
+
+	const offset = sub(bStart, aStart);
+	const aProgress = (offset.x * b.y - offset.y * b.x) / denominator;
+	const bProgress = (offset.x * a.y - offset.y * a.x) / denominator;
+	if (aProgress < 0 || aProgress > 1 || bProgress < 0 || bProgress > 1) return undefined;
+	return add(aStart, mul(a, aProgress));
+}
+
+function endPolylineAtSegment(points: Pt[], segmentStart: Pt, segmentEnd: Pt): Pt[] {
+	for (let index = points.length - 2; index >= 0; index--) {
+		const intersection = segmentIntersection(points[index], points[index + 1], segmentStart, segmentEnd);
+		if (intersection) return points.slice(0, index + 1).concat(intersection);
+	}
+	return points;
+}
+
 function pointInPolygon(point: Pt, polygon: Pt[]): boolean {
 	let inside = false;
 	for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -848,10 +869,10 @@ function drawCuffBand(
 
 interface CollarGeometry {
 	chestSkin: Pt[];
-	chestTop: Pt[];
 	edge: Pt[];
 	leftContact: Pt;
 	rightContact: Pt;
+	seam: Pt[];
 }
 
 function collarGeometry(pose: Pose): CollarGeometry {
@@ -883,9 +904,17 @@ function collarGeometry(pose: Pose): CollarGeometry {
 		14,
 	).slice(1));
 	const edge = leftHalf.concat(rightHalf.slice(1));
+	const fullSeam = edge.map((point, index) => {
+		const before = edge[Math.max(0, index - 1)];
+		const after = edge[Math.min(edge.length - 1, index + 1)];
+		return add(point, mul(normal(norm(sub(after, before))), 14));
+	});
+	fullSeam[0] = lerp(fullSeam[0], fullSeam[1], 0.2);
+	const rightShoulder = { x: pose.centerX + 292, y: pose.rightShoulderY + 24 };
+	const seam = endPolylineAtSegment(fullSeam, rightContact, rightShoulder);
 	const leftChestTop = { x: pose.centerX - 150, y: pose.shoulderY - 18 };
 	const rightChestTop = { x: pose.centerX + 150, y: pose.shoulderY - 18 };
-	const chestTop = quadratic(
+	const skinTop = quadratic(
 		leftContact,
 		{ x: pose.centerX - 184, y: pose.shoulderY - 17 },
 		leftChestTop,
@@ -904,8 +933,8 @@ function collarGeometry(pose: Pose): CollarGeometry {
 			5,
 		).slice(1),
 	);
-	const chestSkin = chestTop.concat(edge.slice(1, -1).reverse());
-	return { chestSkin, chestTop, edge, leftContact, rightContact };
+	const chestSkin = skinTop.concat(edge.slice(1, -1).reverse());
+	return { chestSkin, edge, leftContact, rightContact, seam };
 }
 
 function drawBody(ctx: CanvasRenderingContext2D, pose: Pose, palette: BlonkyPalette): void {
@@ -980,7 +1009,7 @@ function drawBody(ctx: CanvasRenderingContext2D, pose: Pose, palette: BlonkyPale
 	stroke(ctx, [rightBodyBottom, rightBodySide], 766, { width: 3.45, boil: 0.46, color: palette.outlineInk });
 	stroke(ctx, rightSleeveOuter, 765, { width: 3.45, boil: 0.46, color: palette.outlineInk });
 	stroke(ctx, collar.edge, 753, { width: 3.25, alpha: 0.95, boil: 0.46, color: palette.outlineInk });
-	stroke(ctx, collar.chestTop, 764, { width: 1.82, boil: 0.46, color: palette.outlineInk });
+	stroke(ctx, collar.seam, 764, { width: 2.65, alpha: 0.9, boil: 0.42, color: palette.outlineInk });
 
 	drawCuffBand(
 		ctx,
