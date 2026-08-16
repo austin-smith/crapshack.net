@@ -1,8 +1,20 @@
 import { createAphorismController } from './aphorism';
-import { playBlonkyEmote } from './blonky';
+import { playBlonkyEmote, type BlonkyEmote } from './blonky';
 
 const HOME_BLONKY_ID = 'home-blonky';
 const POST_WRITE_NOTICE_HOLD_MS = 900;
+const ALTERNATE_BLONKY_REACTIONS = [
+	'skeptical',
+	'shrug',
+	'shudder',
+	'smh',
+] as const;
+
+function pickBlonkyReaction(): BlonkyEmote {
+	if (Math.random() < 0.5) return 'confirm';
+	const index = Math.floor(Math.random() * ALTERNATE_BLONKY_REACTIONS.length);
+	return ALTERNATE_BLONKY_REACTIONS[index];
+}
 
 let lifecycleRegistered = false;
 let mountedRoot: HTMLElement | null = null;
@@ -20,24 +32,24 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 	const listeners = new AbortController();
 	let requestSequence = 0;
 
-	const requestAnotherAphorism = async (): Promise<void> => {
+	const cycleAphorism = async (erase: boolean): Promise<void> => {
 		const request = ++requestSequence;
 		playBlonkyEmote(HOME_BLONKY_ID, 'notice');
-		const completed = await aphorism.cycle({ erase: true });
+		const completed = await aphorism.cycle({ erase });
 		if (!completed || request !== requestSequence) return;
 		await new Promise<void>((resolve) => window.setTimeout(resolve, POST_WRITE_NOTICE_HOLD_MS));
 		if (request !== requestSequence) return;
-		playBlonkyEmote(HOME_BLONKY_ID, 'confirm');
+		playBlonkyEmote(HOME_BLONKY_ID, pickBlonkyReaction());
 	};
 
 	aphorismButton.addEventListener('click', () => {
-		void requestAnotherAphorism();
+		void cycleAphorism(true);
 	}, { signal: listeners.signal });
 	characterButton.addEventListener('click', () => {
-		void requestAnotherAphorism();
+		void cycleAphorism(true);
 	}, { signal: listeners.signal });
 
-	void aphorism.cycle();
+	void cycleAphorism(false);
 
 	return () => {
 		requestSequence += 1;
