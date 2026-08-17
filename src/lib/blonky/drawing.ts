@@ -359,6 +359,7 @@ function stipple(
 
 interface Pose {
 	centerX: number;
+	armTension: number;
 	shoulderY: number;
 	torsoY: number;
 	leftShoulderY: number;
@@ -454,6 +455,7 @@ function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 
 	return {
 		centerX,
+		armTension: emoteOffset.armTension ?? 0,
 		shoulderY,
 		torsoY,
 		leftShoulderY,
@@ -789,6 +791,30 @@ interface ArmGeometry {
 	sleeveOuter: Pt[];
 	sleeveSurface: Pt[];
 	startRadius: number;
+}
+
+function tensionArmGeometry(arm: ArmGeometry, tension: number): ArmGeometry {
+	if (tension === 0) return arm;
+	const shiftX = -arm.side * tension * 220;
+	const translate = (point: Pt): Pt => ({ x: point.x + shiftX, y: point.y });
+	const translatePair = (points: [Pt, Pt]): [Pt, Pt] => (
+		[translate(points[0]), translate(points[1])]
+	);
+	const translateChain = (points: [Pt, Pt, Pt]): [Pt, Pt, Pt] => (
+		[translate(points[0]), translate(points[1]), translate(points[2])]
+	);
+
+	return {
+		...arm,
+		attachmentEdge: arm.attachmentEdge.map(translate),
+		chain: translateChain(arm.chain),
+		cuffLower: translatePair(arm.cuffLower),
+		cuffUpper: translatePair(arm.cuffUpper),
+		innerContour: arm.innerContour.map(translate),
+		skinInnerBoundary: arm.skinInnerBoundary.map(translate),
+		sleeveOuter: arm.sleeveOuter.map(translate),
+		sleeveSurface: arm.sleeveSurface.map(translate),
+	};
 }
 
 interface TorsoGeometry {
@@ -1140,8 +1166,8 @@ function drawUpperBody(
 	showBody: boolean,
 ): void {
 	const collar = collarGeometry(pose);
-	const leftArm = armGeometry(pose, -1);
-	const rightArm = armGeometry(pose, 1);
+	const leftArm = tensionArmGeometry(armGeometry(pose, -1), pose.armTension);
+	const rightArm = tensionArmGeometry(armGeometry(pose, 1), pose.armTension);
 	const torso = torsoGeometry(pose, collar, leftArm, rightArm);
 	// These are literal component layers: combined rendering executes the exact
 	// same torso and arm draw calls as the standalone views, in a fixed order.

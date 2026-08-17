@@ -21,6 +21,7 @@ export interface BlonkyEmoteInfo {
 
 export interface BlonkyEmoteOffset {
 	presence: number;
+	armTension?: number;
 	headX: number;
 	headY: number;
 	headAngle: number;

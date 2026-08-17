@@ -20,7 +20,7 @@ export const BLONKY_EMOTES: Record<BlonkyEmote, BlonkyEmoteInfo> = {
 	'nod-off': { label: 'nod off', duration: 3 },
 	notice: { label: 'notice', duration: 0.625, holds: true },
 	shrug: { label: 'shrug', duration: 1.5 },
-	shudder: { label: 'shudder', duration: 1.625 },
+	shudder: { label: 'shudder', duration: 2.125 },
 	sigh: { label: 'sigh', duration: 2.75 },
 	skeptical: { label: 'skeptical', duration: 1.375 },
 	smh: { label: 'smh', duration: 2.125 },
@@ -28,6 +28,7 @@ export const BLONKY_EMOTES: Record<BlonkyEmote, BlonkyEmoteInfo> = {
 
 const NO_EMOTE_OFFSET: BlonkyEmoteOffset = {
 	presence: 0,
+	armTension: 0,
 	headX: 0,
 	headY: 0,
 	headAngle: 0,
@@ -58,6 +59,7 @@ function blendEmoteOffsets(
 	const blend = (start: number, end: number): number => start + (end - start) * amount;
 	return {
 		presence: blend(from.presence, to.presence),
+		armTension: blend(from.armTension ?? 0, to.armTension ?? 0),
 		headX: blend(from.headX, to.headX),
 		headY: blend(from.headY, to.headY),
 		headAngle: blend(from.headAngle, to.headAngle),
