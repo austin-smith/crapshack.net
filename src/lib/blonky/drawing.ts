@@ -477,6 +477,9 @@ function tube(chain: [Pt, Pt, Pt], startRadius: number, endRadius: number): { le
 function drawLimb(
 	ctx: CanvasRenderingContext2D,
 	chain: [Pt, Pt, Pt],
+	side: -1 | 1,
+	innerBoundary: Pt[],
+	innerBoundaryId: number,
 	id: number,
 	startRadius: number,
 	endRadius: number,
@@ -484,9 +487,6 @@ function drawLimb(
 	cuffEdge: [Pt, Pt],
 ): void {
 	const shape = tube(chain, startRadius, endRadius);
-	const polygon = shape.left.concat(shape.right.slice().reverse());
-	fill(ctx, polygon, SKIN, 1);
-	fill(ctx, polygon, WASH, 0.12);
 	const trimAtCuff = (points: Pt[]): Pt[] => {
 		const [a, b] = cuffEdge;
 		const signedDistance = (point: Pt): number => {
@@ -503,8 +503,16 @@ function drawLimb(
 		}
 		return [];
 	};
-	stroke(ctx, trimAtCuff(shape.left), id, { width: 2.2, boil: 0.42, color: outlineInk });
-	stroke(ctx, trimAtCuff(shape.right), id + 1, { width: 2.2, boil: 0.42, color: outlineInk });
+	const outer = trimAtCuff(side === -1 ? shape.left : shape.right);
+	const polygon = outer.concat(innerBoundary.slice().reverse());
+	fill(ctx, polygon, SKIN, 1);
+	fill(ctx, polygon, WASH, 0.12);
+	stroke(ctx, outer, id, { width: 2.2, boil: 0.42, color: outlineInk });
+	stroke(ctx, innerBoundary.slice(1), innerBoundaryId, {
+		width: 3.45,
+		boil: 0.46,
+		color: outlineInk,
+	});
 }
 
 function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string): void {
@@ -740,111 +748,308 @@ function collarGeometry(pose: Pose): CollarGeometry {
 	return { chestSkin, edge, leftContact, rightContact, seam };
 }
 
-function drawBody(ctx: CanvasRenderingContext2D, pose: Pose, palette: BlonkyPalette): void {
-	const leftY = pose.leftShoulderY;
-	const rightY = pose.rightShoulderY;
-	const leftCuffLower: [Pt, Pt] = [
-		{ x: pose.centerX - 450, y: leftY + 331 },
-		{ x: pose.centerX - 230, y: leftY + 367 },
-	];
-	const rightCuffLower: [Pt, Pt] = [
-		{ x: pose.centerX + 230, y: rightY + 365 },
-		{ x: pose.centerX + 450, y: rightY + 316 },
-	];
-	// Skin overlaps beneath the cuffs; arm outlines begin at the cuff edges.
-	drawLimb(ctx, pose.leftArm, 740, 98, 82, palette.outlineInk, leftCuffLower);
-	drawLimb(ctx, pose.rightArm, 745, 94, 84, palette.outlineInk, rightCuffLower);
+interface ArmGeometry {
+	attachmentEdge: Pt[];
+	chain: [Pt, Pt, Pt];
+	cuffId: number;
+	cuffLower: [Pt, Pt];
+	cuffUpper: [Pt, Pt];
+	endRadius: number;
+	innerContour: Pt[];
+	limbId: number;
+	outlineId: number;
+	side: -1 | 1;
+	skinInnerBoundaryId: number;
+	skinInnerBoundary: Pt[];
+	sleeveOuter: Pt[];
+	sleeveSurface: Pt[];
+	startRadius: number;
+}
+
+interface TorsoGeometry {
+	collar: CollarGeometry;
+	outline: Pt[];
+	surface: Pt[];
+}
+
+function armGeometry(
+	pose: Pose,
+	side: -1 | 1,
+): ArmGeometry {
+	const shoulderY = side === -1 ? pose.leftShoulderY : pose.rightShoulderY;
+	const armpit = {
+		x: pose.centerX + side * 215,
+		y: shoulderY + 215,
+	};
+	const chain = side === -1 ? pose.leftArm : pose.rightArm;
 	const belly = pose.bellySpread;
-	const collar = collarGeometry(pose);
-	const leftSleeveOuter: Pt[] = [
-		collar.leftContact,
-		{ x: pose.centerX - 292, y: leftY + 22 },
-		{ x: pose.centerX - 370, y: leftY + 105 },
-		{ x: pose.centerX - 424, y: leftY + 216 },
-		{ x: pose.centerX - 450, y: leftY + 301 },
-		{ x: pose.centerX - 450, y: leftY + 331 },
-		{ x: pose.centerX - 230, y: leftY + 367 },
+
+	if (side === -1) {
+		const cuffUpper: [Pt, Pt] = [
+			{ x: pose.centerX - 450, y: shoulderY + 305 },
+			{ x: pose.centerX - 225, y: shoulderY + 346 },
+		];
+		const cuffLower: [Pt, Pt] = [
+			{ x: pose.centerX - 450, y: shoulderY + 331 },
+			{ x: pose.centerX - 230, y: shoulderY + 367 },
+		];
+		const attachment = { x: pose.centerX - 292, y: shoulderY + 22 };
+		const sleeveOuter: Pt[] = [
+			attachment,
+			{ x: pose.centerX - 370, y: shoulderY + 105 },
+			{ x: pose.centerX - 424, y: shoulderY + 216 },
+			{ x: pose.centerX - 450, y: shoulderY + 301 },
+			cuffLower[0],
+			cuffLower[1],
+		];
+		const innerContour = quadratic(
+			armpit,
+			{ x: pose.centerX - 222, y: shoulderY + 286 },
+			cuffLower[1],
+			14,
+		);
+		const attachmentEdge = quadratic(
+			attachment,
+			{ x: pose.centerX - 235, y: shoulderY + 95 },
+			armpit,
+			12,
+		);
+		const bodyFillTop = { x: pose.centerX - 232, y: shoulderY + 282 };
+		const bodySide = {
+			x: pose.centerX - 278 - belly * 0.72,
+			y: pose.torsoY + 395,
+		};
+		const bodyBottom = { x: pose.centerX - 286 - belly, y: H + 18 };
+		const skinTop = segmentIntersection(
+			cuffLower[0],
+			cuffLower[1],
+			bodyFillTop,
+			bodySide,
+		) ?? bodyFillTop;
+		return {
+			attachmentEdge,
+			chain,
+			cuffLower,
+			cuffUpper,
+			endRadius: 82,
+			innerContour,
+			limbId: 740,
+			outlineId: 752,
+			side,
+			skinInnerBoundaryId: 754,
+			skinInnerBoundary: [skinTop, bodySide, bodyBottom],
+			sleeveOuter,
+			sleeveSurface: sleeveOuter.concat(
+				innerContour.slice(0, -1).reverse(),
+				attachmentEdge.slice(0, -1).reverse(),
+			),
+			startRadius: 98,
+			cuffId: 755,
+		};
+	}
+
+	const cuffUpper: [Pt, Pt] = [
+		{ x: pose.centerX + 225, y: shoulderY + 344 },
+		{ x: pose.centerX + 446, y: shoulderY + 291 },
 	];
-	const leftArmpit = { x: pose.centerX - 215, y: leftY + 215 };
-	const leftBodyFillTop = { x: pose.centerX - 232, y: leftY + 282 };
-	const leftBodySide = { x: pose.centerX - 278 - belly * 0.72, y: pose.torsoY + 395 };
-	const leftBodyBottom = { x: pose.centerX - 286 - belly, y: H + 18 };
-	const rightBodyBottom = { x: pose.centerX + 288 + belly * 0.86, y: H + 18 };
-	const rightBodySide = { x: pose.centerX + 280 + belly * 0.64, y: pose.torsoY + 395 };
-	const rightBodyFillTop = { x: pose.centerX + 232, y: rightY + 282 };
-	const bodyOuter: Pt[] = [
-		leftBodyFillTop,
-		leftBodySide,
-		leftBodyBottom,
-		rightBodyBottom,
-		rightBodySide,
-		rightBodyFillTop,
+	const cuffLower: [Pt, Pt] = [
+		{ x: pose.centerX + 230, y: shoulderY + 365 },
+		{ x: pose.centerX + 450, y: shoulderY + 316 },
 	];
-	const rightArmpit = { x: pose.centerX + 215, y: rightY + 215 };
-	const rightSleeveOuter: Pt[] = [
-		{ x: pose.centerX + 230, y: rightY + 365 },
-		{ x: pose.centerX + 450, y: rightY + 316 },
-		{ x: pose.centerX + 438, y: rightY + 226 },
-		{ x: pose.centerX + 384, y: rightY + 112 },
-		{ x: pose.centerX + 292, y: rightY + 24 },
-		collar.rightContact,
+	const attachment = { x: pose.centerX + 292, y: shoulderY + 24 };
+	const sleeveOuter: Pt[] = [
+		cuffLower[0],
+		cuffLower[1],
+		{ x: pose.centerX + 438, y: shoulderY + 226 },
+		{ x: pose.centerX + 384, y: shoulderY + 112 },
+		attachment,
 	];
-	// Use one closed path to prevent seams between the torso and sleeves.
-	const torsoOuter = leftSleeveOuter
-		.concat(leftArmpit, bodyOuter, rightArmpit, rightSleeveOuter);
-	// Close the shirt around a shallow chest opening. Skin begins at the shoulder
-	// line; no separate neck geometry is drawn behind the head.
-	const shirt = torsoOuter.concat(collar.edge.slice(1, -1).reverse());
-	fill(ctx, collar.chestSkin, SKIN, 1);
-	fill(ctx, collar.chestSkin, WASH, 0.11);
-	fill(ctx, shirt, palette.shirt, 1);
-	stipple(ctx, shirt, 750, 1320, palette.shirtTextureInk, palette.shirtTextureAlpha);
-	hatch(ctx, shirt, 751, {
+	const innerContour = quadratic(
+		armpit,
+		{ x: pose.centerX + 222, y: shoulderY + 284 },
+		cuffLower[0],
+		14,
+	);
+	const attachmentEdge = quadratic(
+		attachment,
+		{ x: pose.centerX + 238, y: shoulderY + 94 },
+		armpit,
+		12,
+	);
+	const bodyFillTop = { x: pose.centerX + 232, y: shoulderY + 282 };
+	const bodySide = {
+		x: pose.centerX + 280 + belly * 0.64,
+		y: pose.torsoY + 395,
+	};
+	const bodyBottom = { x: pose.centerX + 288 + belly * 0.86, y: H + 18 };
+	const skinTop = segmentIntersection(
+		cuffLower[0],
+		cuffLower[1],
+		bodyFillTop,
+		bodySide,
+	) ?? bodyFillTop;
+	return {
+		attachmentEdge,
+		chain,
+		cuffLower,
+		cuffUpper,
+		endRadius: 84,
+		innerContour,
+		limbId: 745,
+		outlineId: 765,
+		side,
+		skinInnerBoundaryId: 766,
+		skinInnerBoundary: [skinTop, bodySide, bodyBottom],
+		sleeveOuter,
+		sleeveSurface: sleeveOuter.concat(
+			attachmentEdge.slice(0, -1),
+			innerContour.slice(0, -1),
+		),
+		startRadius: 94,
+		cuffId: 758,
+	};
+}
+
+function torsoGeometry(
+	pose: Pose,
+	collar: CollarGeometry,
+	leftArm: ArmGeometry,
+	rightArm: ArmGeometry,
+): TorsoGeometry {
+	const belly = pose.bellySpread;
+	const leftAttachment = leftArm.attachmentEdge[0];
+	const rightAttachment = rightArm.attachmentEdge[0];
+	const leftShoulder = {
+		x: pose.centerX - 330 - belly * 0.25,
+		y: pose.torsoY + 95,
+	};
+	const leftChest = {
+		x: pose.centerX - 350 - belly * 0.55,
+		y: pose.torsoY + 300,
+	};
+	const leftHem = {
+		x: pose.centerX - 365 - belly * 0.8,
+		y: H + 18,
+	};
+	const rightHem = {
+		x: pose.centerX + 368 + belly * 0.76,
+		y: H + 18,
+	};
+	const rightChest = {
+		x: pose.centerX + 354 + belly * 0.5,
+		y: pose.torsoY + 300,
+	};
+	const rightShoulder = {
+		x: pose.centerX + 334 + belly * 0.22,
+		y: pose.torsoY + 93,
+	};
+	const leftUpperSide = quadratic(
+		leftAttachment,
+		{ x: pose.centerX - 318, y: pose.torsoY + 50 },
+		leftShoulder,
+		8,
+	);
+	const leftLowerSide = quadratic(
+		leftShoulder,
+		{ x: pose.centerX - 348 - belly * 0.45, y: pose.torsoY + 260 },
+		leftChest,
+		12,
+	).concat(quadratic(
+		leftChest,
+		{ x: pose.centerX - 366 - belly * 0.7, y: pose.torsoY + 390 },
+		leftHem,
+		12,
+	).slice(1));
+	const rightLowerSide = quadratic(
+		rightHem,
+		{ x: pose.centerX + 369 + belly * 0.66, y: pose.torsoY + 390 },
+		rightChest,
+		12,
+	).concat(quadratic(
+		rightChest,
+		{ x: pose.centerX + 350 + belly * 0.4, y: pose.torsoY + 258 },
+		rightShoulder,
+		12,
+	).slice(1));
+	const rightUpperSide = quadratic(
+		rightShoulder,
+		{ x: pose.centerX + 320, y: pose.torsoY + 49 },
+		rightAttachment,
+		8,
+	);
+	const outer = [collar.leftContact, leftAttachment]
+		.concat(
+			leftUpperSide.slice(1),
+			leftLowerSide.slice(1),
+			rightHem,
+			rightLowerSide.slice(1),
+			rightUpperSide.slice(1),
+			collar.rightContact,
+		);
+	return {
+		collar,
+		outline: outer,
+		surface: outer.concat(collar.edge.slice(1, -1).reverse()),
+	};
+}
+
+function drawShirtSurface(
+	ctx: CanvasRenderingContext2D,
+	surface: Pt[],
+	palette: BlonkyPalette,
+	textureId: number,
+	textureCount: number,
+): void {
+	fill(ctx, surface, palette.shirt, 1);
+	stipple(
+		ctx,
+		surface,
+		textureId,
+		textureCount,
+		palette.shirtTextureInk,
+		palette.shirtTextureAlpha,
+	);
+	hatch(ctx, surface, textureId + 1, {
 		spacing: 38,
 		angle: -0.78,
 		alpha: 0.045,
 		width: 0.68,
 		color: palette.shirtTextureInk,
 	});
-	// Visible contours omit the internal fill edges between sleeves and torso.
-	stroke(ctx, leftSleeveOuter, 752, { width: 3.45, boil: 0.46, color: palette.outlineInk });
-	stroke(ctx, [leftBodySide, leftBodyBottom], 754, { width: 3.45, boil: 0.46, color: palette.outlineInk });
-	stroke(ctx, [rightBodyBottom, rightBodySide], 766, { width: 3.45, boil: 0.46, color: palette.outlineInk });
-	stroke(ctx, rightSleeveOuter, 765, { width: 3.45, boil: 0.46, color: palette.outlineInk });
-	stroke(ctx, collar.edge, 753, { width: 3.25, alpha: 0.95, boil: 0.46, color: palette.outlineInk });
-	stroke(ctx, collar.seam, 764, { width: 2.65, alpha: 0.9, boil: 0.42, color: palette.outlineInk });
+}
 
-	drawCuffBand(
-		ctx,
-		{ x: pose.centerX - 450, y: leftY + 305 },
-		{ x: pose.centerX - 225, y: leftY + 346 },
-		leftCuffLower[0],
-		leftCuffLower[1],
-		755,
-		palette.outlineInk,
-	);
-	drawCuffBand(
-		ctx,
-		{ x: pose.centerX + 225, y: rightY + 344 },
-		{ x: pose.centerX + 446, y: rightY + 291 },
-		rightCuffLower[0],
-		rightCuffLower[1],
-		758,
-		palette.outlineInk,
-	);
-	stroke(ctx, quadratic(
-		leftArmpit,
-		{ x: pose.centerX - 222, y: leftY + 286 },
-		leftCuffLower[1],
-		14,
-	), 767, { width: 2.85, boil: 0.42, color: palette.outlineInk });
-	stroke(ctx, quadratic(
-		rightArmpit,
-		{ x: pose.centerX + 222, y: rightY + 284 },
-		rightCuffLower[0],
-		14,
-	), 768, { width: 2.85, boil: 0.42, color: palette.outlineInk });
+function drawTorso(
+	ctx: CanvasRenderingContext2D,
+	pose: Pose,
+	geometry: TorsoGeometry,
+	palette: BlonkyPalette,
+	drawOutline = true,
+): void {
+	const { collar } = geometry;
+	fill(ctx, collar.chestSkin, SKIN, 1);
+	fill(ctx, collar.chestSkin, WASH, 0.11);
+	drawShirtSurface(ctx, geometry.surface, palette, 750, 1320);
+	if (drawOutline) {
+		stroke(ctx, geometry.outline, 754, {
+			width: 3.45,
+			boil: 0.46,
+			color: palette.outlineInk,
+		});
+	}
+	stroke(ctx, collar.edge, 753, {
+		width: 3.25,
+		alpha: 0.95,
+		boil: 0.46,
+		color: palette.outlineInk,
+	});
+	stroke(ctx, collar.seam, 764, {
+		width: 2.65,
+		alpha: 0.9,
+		boil: 0.42,
+		color: palette.outlineInk,
+	});
 
+	const belly = pose.bellySpread;
 	stroke(ctx, quadratic(
 		{ x: pose.centerX - 72 - belly * 0.3, y: pose.torsoY + 296 - pose.breath * 1.1 },
 		{ x: pose.centerX - 18, y: pose.torsoY + 284 - pose.breath * 1.45 },
@@ -857,6 +1062,81 @@ function drawBody(ctx: CanvasRenderingContext2D, pose: Pose, palette: BlonkyPale
 		{ x: pose.centerX + 138 + belly * 0.55, y: pose.torsoY + 360 + pose.breath * 0.8 },
 		18,
 	), 763, { width: 1.9, alpha: 0.6, boil: 0.26, color: palette.outlineInk });
+}
+
+function drawArm(
+	ctx: CanvasRenderingContext2D,
+	arm: ArmGeometry,
+	palette: BlonkyPalette,
+	textureId: number,
+	drawOuterOutline = true,
+): void {
+	drawLimb(
+		ctx,
+		arm.chain,
+		arm.side,
+		arm.skinInnerBoundary,
+		arm.skinInnerBoundaryId,
+		arm.limbId,
+		arm.startRadius,
+		arm.endRadius,
+		palette.outlineInk,
+		arm.cuffLower,
+	);
+	drawShirtSurface(ctx, arm.sleeveSurface, palette, textureId, 360);
+	if (drawOuterOutline) {
+		stroke(ctx, arm.sleeveOuter, arm.outlineId, {
+			width: 3.45,
+			boil: 0.46,
+			color: palette.outlineInk,
+		});
+	}
+	drawCuffBand(
+		ctx,
+		arm.cuffUpper[0],
+		arm.cuffUpper[1],
+		arm.cuffLower[0],
+		arm.cuffLower[1],
+		arm.cuffId,
+		palette.outlineInk,
+	);
+	stroke(ctx, arm.innerContour, arm.outlineId + 15, {
+		width: 2.85,
+		boil: 0.42,
+		color: palette.outlineInk,
+	});
+}
+
+function drawUpperBody(
+	ctx: CanvasRenderingContext2D,
+	pose: Pose,
+	palette: BlonkyPalette,
+	showArms: boolean,
+	showBody: boolean,
+): void {
+	const collar = collarGeometry(pose);
+	const leftArm = armGeometry(pose, -1);
+	const rightArm = armGeometry(pose, 1);
+	const torso = torsoGeometry(pose, collar, leftArm, rightArm);
+	// These are literal component layers: combined rendering executes the exact
+	// same torso and arm draw calls as the standalone views, in a fixed order.
+	if (showBody) drawTorso(ctx, pose, torso, palette, !showArms);
+	if (showArms) {
+		drawArm(ctx, leftArm, palette, 770, !showBody);
+		drawArm(ctx, rightArm, palette, 780, !showBody);
+	}
+	if (showBody && showArms) {
+		stroke(ctx, [collar.leftContact, ...leftArm.sleeveOuter], leftArm.outlineId, {
+			width: 3.45,
+			boil: 0.46,
+			color: palette.outlineInk,
+		});
+		stroke(ctx, [...rightArm.sleeveOuter, collar.rightContact], rightArm.outlineId, {
+			width: 3.45,
+			boil: 0.46,
+			color: palette.outlineInk,
+		});
+	}
 }
 
 export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options: BlonkyDrawOptions = {}): void {
@@ -874,7 +1154,9 @@ export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options:
 		ctx.translate(8, -5);
 		ctx.scale(0.56, 0.56);
 	}
-	if (options.showBody !== false) drawBody(ctx, pose, palette);
+	const showBody = options.showBody !== false;
+	const showArms = options.showArms ?? showBody;
+	if (showArms || showBody) drawUpperBody(ctx, pose, palette, showArms, showBody);
 	if (options.showHead !== false) drawHead(ctx, pose, palette.outlineInk);
 	ctx.restore();
 }

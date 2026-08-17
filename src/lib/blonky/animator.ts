@@ -23,6 +23,7 @@ interface BlonkyAnimatorOptions {
 	initiallyPaused?: boolean;
 	onFrame?: (time: number) => void;
 	onPlaybackChange?: (playing: boolean) => void;
+	showArms?: boolean;
 	showBody?: boolean;
 	showHead?: boolean;
 	view?: BlonkyView;
@@ -32,6 +33,7 @@ export interface BlonkyAnimator {
 	destroy: () => void;
 	getPlaybackRate: () => number;
 	getTime: () => number;
+	isArmsVisible: () => boolean;
 	isBodyVisible: () => boolean;
 	isHeadVisible: () => boolean;
 	isPlaying: () => boolean;
@@ -41,6 +43,7 @@ export interface BlonkyAnimator {
 	releaseEmote: () => void;
 	reset: () => void;
 	seek: (time: number) => void;
+	setArmsVisible: (visible: boolean) => void;
 	setBodyVisible: (visible: boolean) => void;
 	setHeadVisible: (visible: boolean) => void;
 	setPlaybackRate: (rate: number) => void;
@@ -105,6 +108,8 @@ export function createBlonkyAnimator(
 	let reportedPlayback: boolean | undefined;
 	let palette = resolveBlonkyPalette(canvas);
 	let bodyVisible = options.showBody ?? true;
+	let armsVisible = options.showArms ?? bodyVisible;
+	let armsVisibilityOverridden = options.showArms !== undefined;
 	let headVisible = options.showHead ?? true;
 
 	const reportPlayback = (): void => {
@@ -161,6 +166,7 @@ export function createBlonkyAnimator(
 		drawBlonky(context, time, {
 			palette,
 			emote: emotePose,
+			showArms: armsVisible,
 			showBody: bodyVisible,
 			showHead: headVisible,
 			view,
@@ -249,8 +255,19 @@ export function createBlonkyAnimator(
 	};
 
 	const setBodyVisible = (visible: boolean): void => {
-		if (bodyVisible === visible) return;
+		const bodyChanged = bodyVisible !== visible;
+		const armsChanged = !armsVisibilityOverridden && armsVisible !== visible;
+		if (!bodyChanged && !armsChanged) return;
 		bodyVisible = visible;
+		if (!armsVisibilityOverridden) armsVisible = visible;
+		lastFrame = -1;
+		draw(animationTime(), true);
+	};
+
+	const setArmsVisible = (visible: boolean): void => {
+		armsVisibilityOverridden = true;
+		if (armsVisible === visible) return;
+		armsVisible = visible;
 		lastFrame = -1;
 		draw(animationTime(), true);
 	};
@@ -355,6 +372,7 @@ export function createBlonkyAnimator(
 		destroy,
 		getPlaybackRate: () => playbackRate,
 		getTime: () => animationTime(),
+		isArmsVisible: () => armsVisible,
 		isBodyVisible: () => bodyVisible,
 		isHeadVisible: () => headVisible,
 		isPlaying: () => running,
@@ -364,6 +382,7 @@ export function createBlonkyAnimator(
 		releaseEmote,
 		reset,
 		seek,
+		setArmsVisible,
 		setBodyVisible,
 		setHeadVisible,
 		setPlaybackRate,

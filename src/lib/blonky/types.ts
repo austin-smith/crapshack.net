@@ -61,6 +61,7 @@ export interface BlonkyPalette {
 export interface BlonkyDrawOptions {
 	palette?: BlonkyPalette;
 	emote?: BlonkyEmotePose;
+	showArms?: boolean;
 	showBody?: boolean;
 	showHead?: boolean;
 	view?: BlonkyView;

@@ -31,6 +31,7 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	const resetButton = root.querySelector<HTMLButtonElement>('[data-blonky-reset]');
 	const headVisibilityButton = root.querySelector<HTMLButtonElement>('[data-blonky-head-visibility]');
 	const bodyVisibilityButton = root.querySelector<HTMLButtonElement>('[data-blonky-body-visibility]');
+	const armsVisibilityButton = root.querySelector<HTMLButtonElement>('[data-blonky-arms-visibility]');
 	const emoteReleaseButton = root.querySelector<HTMLButtonElement>('[data-blonky-emote-release]');
 	const emoteStateOutput = root.querySelector<HTMLOutputElement>('[data-blonky-emote-state]');
 	const speedDropdown = root.querySelector<HTMLElement>('#blonky-speed');
@@ -46,6 +47,7 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		|| !resetButton
 		|| !headVisibilityButton
 		|| !bodyVisibilityButton
+		|| !armsVisibilityButton
 		|| !emoteReleaseButton
 		|| !emoteStateOutput
 		|| !speedDropdown
@@ -86,6 +88,7 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		autoPauseOffscreen: false,
 		onFrame: syncFrame,
 		onPlaybackChange: syncPlayback,
+		showArms: true,
 		view: 'debug',
 	});
 	if (!animator) return;
@@ -142,6 +145,13 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		bodyVisibilityButton.toggleAttribute('data-active', visible);
 		bodyVisibilityButton.setAttribute('aria-pressed', String(visible));
 		status.textContent = `Blonky body ${visible ? 'shown' : 'hidden'}`;
+	}, { signal: listeners.signal });
+	armsVisibilityButton.addEventListener('click', () => {
+		const visible = !animator.isArmsVisible();
+		animator.setArmsVisible(visible);
+		armsVisibilityButton.toggleAttribute('data-active', visible);
+		armsVisibilityButton.setAttribute('aria-pressed', String(visible));
+		status.textContent = `Blonky arms ${visible ? 'shown' : 'hidden'}`;
 	}, { signal: listeners.signal });
 	speedDropdown.addEventListener('dropdown-change', ((event: CustomEvent<{ value: string }>) => {
 		animator.setPlaybackRate(Number(event.detail.value));
