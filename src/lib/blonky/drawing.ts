@@ -166,6 +166,7 @@ function throughJoint(chain: [Pt, Pt, Pt]): Pt[] {
 
 interface StrokeOptions {
 	closed?: boolean;
+	seamlessClosed?: boolean;
 	width?: number;
 	alpha?: number;
 	passes?: number;
@@ -177,10 +178,17 @@ interface StrokeOptions {
 function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, options: StrokeOptions = {}): void {
 	if (anchors.length < 2) return;
 	const closed = options.closed ?? false;
+	const seamlessClosed = closed && (options.seamlessClosed ?? false);
 	const width = options.width ?? 2.25;
 	const passes = options.passes ?? 2;
 	const points = densify(anchors, closed, 4.5);
-	const length = points.slice(1).reduce((total, point, index) => total + Math.hypot(point.x - points[index].x, point.y - points[index].y), 0);
+	if (seamlessClosed) points.pop();
+	const length = points.slice(1).reduce(
+		(total, point, index) => total + Math.hypot(point.x - points[index].x, point.y - points[index].y),
+		seamlessClosed
+			? Math.hypot(points[0].x - points.at(-1)!.x, points[0].y - points.at(-1)!.y)
+			: 0,
+	);
 	const contourScale = Math.min(1, length / 180);
 	ctx.save();
 	ctx.fillStyle = options.color ?? FACE_INK;
@@ -188,8 +196,12 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 		const primaryPass = pass === 0;
 		ctx.globalAlpha = (options.alpha ?? 0.92) * (primaryPass ? 0.82 : 0.14);
 		const moved = points.map((point, index) => {
-			const before = points[Math.max(0, index - 1)];
-			const after = points[Math.min(points.length - 1, index + 1)];
+			const before = seamlessClosed
+				? points[(index - 1 + points.length) % points.length]
+				: points[Math.max(0, index - 1)];
+			const after = seamlessClosed
+				? points[(index + 1) % points.length]
+				: points[Math.min(points.length - 1, index + 1)];
 			const n = normal(norm(sub(after, before)));
 			const u = index * 0.34;
 			const staticWobble = (valueNoise(u, pass * 7.3, id + 101) - 0.5) * 2.35;
@@ -204,8 +216,12 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 			return { x: point.x + n.x * displacement, y: point.y + n.y * displacement };
 		});
 		const bandNormals = moved.map((_, index) => {
-			const before = moved[Math.max(0, index - 1)];
-			const after = moved[Math.min(moved.length - 1, index + 1)];
+			const before = seamlessClosed
+				? moved[(index - 1 + moved.length) % moved.length]
+				: moved[Math.max(0, index - 1)];
+			const after = seamlessClosed
+				? moved[(index + 1) % moved.length]
+				: moved[Math.min(moved.length - 1, index + 1)];
 			return normal(norm(sub(after, before)));
 		});
 		const radii = moved.map((_, index) => {
@@ -228,8 +244,15 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 		ctx.beginPath();
 		ctx.moveTo(left[0].x, left[0].y);
 		for (let index = 1; index < left.length; index++) ctx.lineTo(left[index].x, left[index].y);
-		for (let index = right.length - 1; index >= 0; index--) ctx.lineTo(right[index].x, right[index].y);
-		ctx.closePath();
+		if (seamlessClosed) {
+			ctx.closePath();
+			ctx.moveTo(right.at(-1)!.x, right.at(-1)!.y);
+			for (let index = right.length - 2; index >= 0; index--) ctx.lineTo(right[index].x, right[index].y);
+			ctx.closePath();
+		} else {
+			for (let index = right.length - 1; index >= 0; index--) ctx.lineTo(right[index].x, right[index].y);
+			ctx.closePath();
+		}
 		ctx.fill(options.fillRule ?? 'evenodd');
 		if (!closed) {
 			for (const index of [0, moved.length - 1]) {
@@ -573,27 +596,27 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		y: center.y + (point.y - center.y) * openness,
 	}));
 	const leftEye = blink([
-		{ x: leftEyeCenter.x - 12, y: leftEyeCenter.y - 1 },
-		{ x: leftEyeCenter.x - 10, y: leftEyeCenter.y - 8 },
-		{ x: leftEyeCenter.x - 4, y: leftEyeCenter.y - 12 },
-		{ x: leftEyeCenter.x + 4, y: leftEyeCenter.y - 12 },
-		{ x: leftEyeCenter.x + 11, y: leftEyeCenter.y - 7 },
-		{ x: leftEyeCenter.x + 12, y: leftEyeCenter.y + 1 },
-		{ x: leftEyeCenter.x + 8, y: leftEyeCenter.y + 9 },
-		{ x: leftEyeCenter.x + 1, y: leftEyeCenter.y + 12 },
-		{ x: leftEyeCenter.x - 8, y: leftEyeCenter.y + 9 },
-		{ x: leftEyeCenter.x - 12, y: leftEyeCenter.y + 3 },
+		{ x: leftEyeCenter.x - 12, y: leftEyeCenter.y - 2 },
+		{ x: leftEyeCenter.x - 9, y: leftEyeCenter.y - 8 },
+		{ x: leftEyeCenter.x - 3, y: leftEyeCenter.y - 12 },
+		{ x: leftEyeCenter.x + 5, y: leftEyeCenter.y - 11 },
+		{ x: leftEyeCenter.x + 11, y: leftEyeCenter.y - 6 },
+		{ x: leftEyeCenter.x + 12, y: leftEyeCenter.y + 2 },
+		{ x: leftEyeCenter.x + 7, y: leftEyeCenter.y + 10 },
+		{ x: leftEyeCenter.x, y: leftEyeCenter.y + 12 },
+		{ x: leftEyeCenter.x - 7, y: leftEyeCenter.y + 9 },
+		{ x: leftEyeCenter.x - 12, y: leftEyeCenter.y + 4 },
 	], leftEyeCenter, pose.leftEyeOpen);
 	const rightEye = blink([
-		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y - 2 },
-		{ x: rightEyeCenter.x - 7, y: rightEyeCenter.y - 10 },
-		{ x: rightEyeCenter.x, y: rightEyeCenter.y - 12 },
-		{ x: rightEyeCenter.x + 7, y: rightEyeCenter.y - 9 },
-		{ x: rightEyeCenter.x + 10, y: rightEyeCenter.y - 2 },
-		{ x: rightEyeCenter.x + 8, y: rightEyeCenter.y + 7 },
-		{ x: rightEyeCenter.x + 2, y: rightEyeCenter.y + 11 },
-		{ x: rightEyeCenter.x - 5, y: rightEyeCenter.y + 9 },
-		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y + 3 },
+		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y - 3 },
+		{ x: rightEyeCenter.x - 6, y: rightEyeCenter.y - 9 },
+		{ x: rightEyeCenter.x + 1, y: rightEyeCenter.y - 11 },
+		{ x: rightEyeCenter.x + 8, y: rightEyeCenter.y - 7 },
+		{ x: rightEyeCenter.x + 10, y: rightEyeCenter.y - 1 },
+		{ x: rightEyeCenter.x + 7, y: rightEyeCenter.y + 7 },
+		{ x: rightEyeCenter.x + 1, y: rightEyeCenter.y + 10 },
+		{ x: rightEyeCenter.x - 6, y: rightEyeCenter.y + 8 },
+		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y + 2 },
 	], rightEyeCenter, pose.rightEyeOpen);
 	const leftEyeClosed = pose.leftEyeOpen <= 0.2;
 	const rightEyeClosed = pose.rightEyeOpen <= 0.2;
@@ -601,6 +624,7 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 	if (!rightEyeClosed) fill(ctx, rightEye, EYE_WHITE, 1);
 	stroke(ctx, leftEye, 630, {
 		closed: true,
+		seamlessClosed: !leftEyeClosed,
 		width: 1.95,
 		passes: 2,
 		boil: 0.34,
@@ -608,6 +632,7 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 	});
 	stroke(ctx, rightEye, 631, {
 		closed: true,
+		seamlessClosed: !rightEyeClosed,
 		width: 1.86,
 		passes: 2,
 		boil: 0.34,
