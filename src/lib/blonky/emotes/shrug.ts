@@ -2,13 +2,14 @@ import { heldEnvelope, INK_FRAME_SECONDS } from '../motion';
 import type { BlonkyEmoteOffset } from '../types';
 
 export function sampleShrugEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
-	// Brace, glance, and shoulder motion begin on separate ink frames. The torso
-	// follows both shoulders; a late half-blink softens the transition to rest.
+	// Brace and glance begin together, then the inhale builds through the staggered
+	// shoulders and torso. Its lead-in starts one ink frame earlier while the peak,
+	// hold, and release timings stay fixed so the exhale remains unchanged.
 	const brace = heldEnvelope(elapsed, 0, INK_FRAME_SECONDS, INK_FRAME_SECONDS, INK_FRAME_SECONDS);
 	const glance = heldEnvelope(elapsed, 0, INK_FRAME_SECONDS, 0.75, 0.25);
-	const firstShoulder = heldEnvelope(elapsed, INK_FRAME_SECONDS * 2, 0.25, 0.375, 0.25);
-	const secondShoulder = heldEnvelope(elapsed, INK_FRAME_SECONDS * 3, 0.25, 0.375, 0.25);
-	const torsoFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS * 4, 0.25, 0.25, 0.375);
+	const firstShoulder = heldEnvelope(elapsed, INK_FRAME_SECONDS, 0.375, 0.375, 0.25);
+	const secondShoulder = heldEnvelope(elapsed, INK_FRAME_SECONDS * 2, 0.375, 0.375, 0.25);
+	const torsoFollow = heldEnvelope(elapsed, INK_FRAME_SECONDS * 3, 0.375, 0.25, 0.375);
 	const settle = heldEnvelope(elapsed, 1.125, INK_FRAME_SECONDS, 0, INK_FRAME_SECONDS * 2);
 	const leftShoulder = direction < 0 ? firstShoulder : secondShoulder;
 	const rightShoulder = direction > 0 ? firstShoulder : secondShoulder;
