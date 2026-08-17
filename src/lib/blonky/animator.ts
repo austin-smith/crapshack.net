@@ -59,6 +59,8 @@ interface ActiveEmote {
 
 const mountedCanvases = new Map<HTMLElement, BlonkyAnimator>();
 const BLONKY_EMOTE_EVENT = 'blonky:emote';
+const MAX_CANVAS_DIMENSION = 4096;
+const MAX_CANVAS_PIXELS = MAX_CANVAS_DIMENSION ** 2;
 let lifecycleRegistered = false;
 
 function resolveBlonkyPalette(canvas: HTMLCanvasElement): BlonkyPalette {
@@ -104,6 +106,7 @@ export function createBlonkyAnimator(
 	let emote: ActiveEmote | undefined;
 	let emoteDirection: -1 | 1 = -1;
 	let observer: IntersectionObserver | undefined;
+	let resizeObserver: ResizeObserver | undefined;
 	let themeObserver: MutationObserver | undefined;
 	let reportedPlayback: boolean | undefined;
 	let palette = resolveBlonkyPalette(canvas);
@@ -148,11 +151,29 @@ export function createBlonkyAnimator(
 		};
 	};
 
-	const configureCanvas = (): void => {
-		const ratio = Math.min(2, devicePixelRatio || 1);
-		canvas.width = Math.round(viewport.width * ratio);
-		canvas.height = Math.round(viewport.height * ratio);
+	const configureCanvas = (): boolean => {
+		const bounds = canvas.getBoundingClientRect();
+		const displayWidth = bounds.width || viewport.width;
+		const displayHeight = bounds.height || viewport.height;
+		const preferredScale = Math.max(1, devicePixelRatio || 1);
+		const dimensionScale = Math.min(
+			MAX_CANVAS_DIMENSION / displayWidth,
+			MAX_CANVAS_DIMENSION / displayHeight,
+		);
+		const pixelScale = Math.sqrt(MAX_CANVAS_PIXELS / (displayWidth * displayHeight));
+		const renderScale = Math.min(preferredScale, dimensionScale, pixelScale);
+		const width = Math.max(1, Math.round(displayWidth * renderScale));
+		const height = Math.max(1, Math.round(displayHeight * renderScale));
+		if (canvas.width === width && canvas.height === height) return false;
+		canvas.width = width;
+		canvas.height = height;
 		lastFrame = -1;
+		return true;
+	};
+
+	const resizeCanvas = (): void => {
+		if (!configureCanvas()) return;
+		draw(animationTime(), true);
 	};
 
 	const draw = (time: number, force = false): void => {
@@ -320,6 +341,7 @@ export function createBlonkyAnimator(
 	const destroy = (): void => {
 		stopAnimation();
 		observer?.disconnect();
+		resizeObserver?.disconnect();
 		themeObserver?.disconnect();
 		listeners.abort();
 	};
@@ -344,6 +366,10 @@ export function createBlonkyAnimator(
 		pageVisible = true;
 		syncPlayback();
 	}, { signal: listeners.signal });
+
+	window.addEventListener('resize', resizeCanvas, { signal: listeners.signal });
+	resizeObserver = new ResizeObserver(resizeCanvas);
+	resizeObserver.observe(canvas);
 
 	if (options.autoPauseOffscreen ?? true) {
 		observer = new IntersectionObserver(([entry]) => {
