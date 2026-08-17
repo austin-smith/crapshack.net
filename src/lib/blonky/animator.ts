@@ -302,7 +302,11 @@ export function createBlonkyAnimator(
 
 	const step = (frames: number): void => {
 		pause();
-		seek(animationTime() + frames / BLONKY_FPS);
+		const nextTime = Math.max(0, animationTime() + frames / BLONKY_FPS);
+		elapsed = nextTime;
+		startedAt = performance.now();
+		lastFrame = -1;
+		draw(nextTime, true);
 	};
 
 	const playEmote = (kind: BlonkyEmote): void => {

@@ -166,7 +166,6 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	for (const button of root.querySelectorAll<HTMLButtonElement>('[data-blonky-step]')) {
 		button.addEventListener('click', () => {
 			animator.step(Number(button.dataset.blonkyStep));
-			clearActiveRow();
 		}, { signal: listeners.signal });
 	}
 
