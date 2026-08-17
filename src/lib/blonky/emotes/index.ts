@@ -1,10 +1,11 @@
 import { sampleConfirmEmote, sampleConfirmExit } from './confirm';
+import { sampleNodOffEmote } from './nod-off';
 import { sampleNoticeEmote } from './notice';
+import { sampleShrugEmote } from './shrug';
+import { sampleShudderEmote } from './shudder';
 import { sampleSighEmote } from './sigh';
 import { sampleSkepticalEmote } from './skeptical';
-import { sampleShudderEmote } from './shudder';
 import { sampleSmhEmote } from './smh';
-import { sampleShrugEmote } from './shrug';
 import {
 	BLONKY_EMOTE_TRANSITION_FRAMES,
 	BLONKY_FPS,
@@ -15,13 +16,14 @@ import {
 } from '../types';
 
 export const BLONKY_EMOTES: Record<BlonkyEmote, BlonkyEmoteInfo> = {
-	notice: { label: 'notice', duration: 0.625, holds: true },
 	confirm: { label: 'confirm', duration: 1 },
-	skeptical: { label: 'skeptical', duration: 1.375 },
+	'nod-off': { label: 'nod off', duration: 3 },
+	notice: { label: 'notice', duration: 0.625, holds: true },
 	shrug: { label: 'shrug', duration: 1.5 },
 	shudder: { label: 'shudder', duration: 1.625 },
-	smh: { label: 'smh', duration: 2.125 },
 	sigh: { label: 'sigh', duration: 2.75 },
+	skeptical: { label: 'skeptical', duration: 1.375 },
+	smh: { label: 'smh', duration: 2.125 },
 };
 
 const NO_EMOTE_OFFSET: BlonkyEmoteOffset = {
@@ -86,20 +88,22 @@ function rawEmoteOffsetAt(emote: BlonkyEmotePose): BlonkyEmoteOffset {
 	const elapsed = Math.max(0, Math.min(duration, emote.elapsed));
 
 	switch (emote.kind) {
-		case 'notice':
-			return sampleNoticeEmote(elapsed, emote.direction, emote.heldElapsed);
 		case 'confirm':
 			return sampleConfirmEmote(elapsed, emote.direction);
-		case 'skeptical':
-			return sampleSkepticalEmote(elapsed, emote.direction);
+		case 'nod-off':
+			return sampleNodOffEmote(elapsed, emote.direction);
+		case 'notice':
+			return sampleNoticeEmote(elapsed, emote.direction, emote.heldElapsed);
 		case 'shrug':
 			return sampleShrugEmote(elapsed, emote.direction);
 		case 'shudder':
 			return sampleShudderEmote(elapsed, emote.direction);
-		case 'smh':
-			return sampleSmhEmote(elapsed, emote.direction);
 		case 'sigh':
 			return sampleSighEmote(elapsed, emote.direction);
+		case 'skeptical':
+			return sampleSkepticalEmote(elapsed, emote.direction);
+		case 'smh':
+			return sampleSmhEmote(elapsed, emote.direction);
 	}
 }
 

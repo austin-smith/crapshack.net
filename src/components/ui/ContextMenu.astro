@@ -1,0 +1,93 @@
+---
+import { ArrowRight } from '@lucide/astro';
+
+interface ContextMenuItemBase {
+	label: string;
+	disabled?: boolean;
+}
+
+interface ContextMenuLinkItem extends ContextMenuItemBase {
+	href: string;
+}
+
+interface ContextMenuActionItem extends ContextMenuItemBase {
+	value: string;
+}
+
+interface ContextMenuGroup {
+	label?: string;
+	items: (ContextMenuLinkItem | ContextMenuActionItem)[];
+}
+
+interface Props {
+	id: string;
+	/** Accessible name for the menu content. */
+	ariaLabel: string;
+	groups: ContextMenuGroup[];
+	class?: string;
+}
+
+const { id, ariaLabel, groups, class: className } = Astro.props;
+---
+
+<div
+	class={`context-menu-root ${className ?? ''}`}
+	data-context-menu-root
+>
+	<div class="context-menu-trigger" data-context-menu-trigger>
+		<slot name="trigger" />
+	</div>
+
+	<div
+		id={id}
+		class="context-menu-content"
+		role="menu"
+		tabindex="-1"
+		aria-label={ariaLabel}
+		data-context-menu-content
+		hidden
+	>
+		{groups.map((group, index) => (
+			<>
+				{index > 0 && <div class="context-menu-separator" role="separator"></div>}
+				<div class="context-menu-group" role="group">
+					{group.label && <div class="context-menu-label">{group.label}</div>}
+					{group.items.map((item) => (
+						'href' in item ? (
+							<a
+								href={item.disabled ? undefined : item.href}
+								class="context-menu-item"
+								role="menuitem"
+								tabindex="-1"
+								aria-disabled={item.disabled ? 'true' : undefined}
+								data-context-menu-item
+							>
+								{item.label}
+								<ArrowRight class="context-menu-link-icon" aria-hidden="true" />
+							</a>
+						) : (
+							<button
+								type="button"
+								class="context-menu-item"
+								role="menuitem"
+								tabindex="-1"
+								disabled={item.disabled}
+								aria-disabled={item.disabled ? 'true' : undefined}
+								data-context-menu-item
+								data-context-menu-value={item.value}
+							>
+								{item.label}
+							</button>
+						)
+					))}
+				</div>
+			</>
+		))}
+	</div>
+</div>
+
+<script>
+	import { initContextMenus } from '../../lib/ui/context-menu';
+
+	initContextMenus();
+</script>

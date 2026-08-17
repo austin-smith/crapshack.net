@@ -227,6 +227,115 @@
 		font-weight: 500;
 	}
 
+	/* ContextMenu component */
+	.context-menu-root,
+	.context-menu-trigger {
+		display: contents;
+	}
+
+	.context-menu-trigger > * {
+		-webkit-touch-callout: none;
+	}
+
+	.context-menu-content {
+		position: fixed;
+		z-index: 150;
+		min-width: 10rem;
+		padding: 0.25rem;
+		border: 1px solid var(--app-line);
+		border-radius: 0.375rem;
+		background: color-mix(in srgb, var(--app-overlay) 95%, transparent);
+		box-shadow: 0 10px 24px rgb(0 0 0 / 0.4);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		color: var(--app-muted);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+		font-size: 0.875rem;
+		transform-origin: top left;
+		animation: context-menu-in 100ms ease-out;
+	}
+
+	.context-menu-content[hidden] {
+		display: none;
+	}
+
+	.context-menu-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	.context-menu-label {
+		padding: 0.375rem 0.5rem 0.25rem;
+		color: var(--app-faint);
+		font-size: 0.75rem;
+		line-height: 1;
+		text-align: left;
+		user-select: none;
+	}
+
+	.context-menu-separator {
+		height: 1px;
+		margin: 0.25rem -0.25rem;
+		background: var(--app-line-strong);
+	}
+
+	.context-menu-item {
+		display: flex;
+		min-height: 2rem;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.375rem 0.5rem;
+		border: 0;
+		border-radius: 0.25rem;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		text-decoration: none;
+		white-space: nowrap;
+		cursor: default;
+		user-select: none;
+	}
+
+	.context-menu-item:hover,
+	.context-menu-item:focus {
+		outline: none;
+		background: var(--app-fill);
+		color: var(--app-text);
+	}
+
+	.context-menu-link-icon {
+		width: 0.875rem;
+		height: 0.875rem;
+		flex: none;
+		margin-left: auto;
+		color: var(--app-faint);
+	}
+
+	.context-menu-item[aria-disabled="true"],
+	.context-menu-item:disabled {
+		color: var(--app-faint);
+		pointer-events: none;
+	}
+
+	@keyframes context-menu-in {
+		from {
+			opacity: 0;
+			transform: scale(0.96);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.context-menu-content {
+			animation: none;
+		}
+	}
+
 	/* Dialog component.
 	   The dialog is a dark panel over a 75% black backdrop in every theme, so it
 	   opts out of theming: everything inside renders with the light values. The

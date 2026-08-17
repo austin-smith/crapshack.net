@@ -2,8 +2,14 @@
 import BlonkyCanvas from '../components/BlonkyCanvas.astro';
 import Aphorism from '../components/Aphorism.astro';
 import Layout from '../layouts/Layout.astro';
+import ContextMenu from '../components/ui/ContextMenu.astro';
+import { BLONKY_EMOTES, type BlonkyEmote } from '../lib/blonky';
 
 const logo = '/images/crapshack.png';
+const contextMenuExcludedEmotes = new Set<BlonkyEmote>(['confirm', 'notice']);
+const contextMenuEmotes = Object.entries(BLONKY_EMOTES)
+	.filter(([emote]) => !contextMenuExcludedEmotes.has(emote as BlonkyEmote))
+	.map(([value, info]) => ({ label: info.label, value }));
 ---
 
 <Layout fullBleed>
@@ -13,18 +19,28 @@ const logo = '/images/crapshack.png';
 			<Aphorism />
 		</div>
 
-		<button
-			type="button"
-			class="home-hero__character"
-			data-home-hero-character
-			aria-label="Give Blonky another thought"
+		<ContextMenu
+			id="home-blonky-menu"
+			ariaLabel="Blonky actions"
+			groups={[
+				{ label: 'emotes', items: contextMenuEmotes },
+				{ items: [{ label: 'inspect', href: '/blonky' }] },
+			]}
 		>
-			<BlonkyCanvas
-				id="home-blonky"
-				label="Blonky, a large hand-drawn character leaning into the page"
-				view="portrait"
-			/>
-		</button>
+			<button
+				slot="trigger"
+				type="button"
+				class="home-hero__character"
+				data-home-hero-character
+				aria-label="Give Blonky another thought"
+			>
+				<BlonkyCanvas
+					id="home-blonky"
+					label="Blonky, a large hand-drawn character leaning into the page"
+					view="portrait"
+				/>
+			</button>
+		</ContextMenu>
 	</div>
 </Layout>
 

@@ -1,5 +1,5 @@
 import { createAphorismController } from './aphorism';
-import { playBlonkyEmote, type BlonkyEmote } from './blonky';
+import { isBlonkyEmote, playBlonkyEmote, type BlonkyEmote } from './blonky';
 
 const HOME_BLONKY_ID = 'home-blonky';
 const POST_WRITE_NOTICE_HOLD_MS = 900;
@@ -48,6 +48,11 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 	characterButton.addEventListener('click', () => {
 		void cycleAphorism(true);
 	}, { signal: listeners.signal });
+	root.addEventListener('context-menu-select', ((event: CustomEvent<{ value: string }>) => {
+		if (!isBlonkyEmote(event.detail.value)) return;
+		requestSequence += 1;
+		playBlonkyEmote(HOME_BLONKY_ID, event.detail.value);
+	}) as EventListener, { signal: listeners.signal });
 
 	void cycleAphorism(false);
 
