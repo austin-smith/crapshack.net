@@ -1,0 +1,34 @@
+---
+import { FlaskConical } from '@lucide/astro';
+import { BLONKY_EMOTES, type BlonkyEmote } from '../lib/blonky';
+import ContextMenu from './ui/ContextMenu.astro';
+
+const excludedEmotes = new Set<BlonkyEmote>(['confirm', 'notice']);
+const emoteIcons: Partial<Record<BlonkyEmote, string>> = {
+	'nod-off': '😴',
+	shrug: '🤷',
+	shudder: '😬',
+	sigh: '😮‍💨',
+	skeptical: '🤨',
+	smh: '🤦',
+};
+const emoteItems = Object.entries(BLONKY_EMOTES)
+	.filter(([emote]) => !excludedEmotes.has(emote as BlonkyEmote))
+	.map(([value, info]) => ({
+		icon: emoteIcons[value as BlonkyEmote],
+		label: info.label,
+		value,
+	}));
+---
+
+<ContextMenu
+	id="home-blonky-menu"
+	ariaLabel="Blonky actions"
+	heading="blonky"
+	groups={[
+		{ label: 'emotes', items: emoteItems },
+		{ items: [{ icon: FlaskConical, label: 'lab', href: '/blonky' }] },
+	]}
+>
+	<slot name="trigger" slot="trigger" />
+</ContextMenu>

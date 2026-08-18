@@ -1,8 +1,9 @@
 ---
-import { ArrowRight } from '@lucide/astro';
+import type { AstroComponent } from '@lucide/astro';
 
 interface ContextMenuItemBase {
 	label: string;
+	icon?: string | AstroComponent;
 	disabled?: boolean;
 }
 
@@ -23,11 +24,12 @@ interface Props {
 	id: string;
 	/** Accessible name for the menu content. */
 	ariaLabel: string;
+	heading?: string;
 	groups: ContextMenuGroup[];
 	class?: string;
 }
 
-const { id, ariaLabel, groups, class: className } = Astro.props;
+const { id, ariaLabel, heading, groups, class: className } = Astro.props;
 ---
 
 <div
@@ -47,13 +49,16 @@ const { id, ariaLabel, groups, class: className } = Astro.props;
 		data-context-menu-content
 		hidden
 	>
+		{heading && <div class="context-menu-heading">{heading}</div>}
 		{groups.map((group, index) => (
 			<>
 				{index > 0 && <div class="context-menu-separator" role="separator"></div>}
 				<div class="context-menu-group" role="group">
 					{group.label && <div class="context-menu-label">{group.label}</div>}
-					{group.items.map((item) => (
-						'href' in item ? (
+					{group.items.map((item) => {
+						const ItemIcon = typeof item.icon === 'string' ? undefined : item.icon;
+						const iconText = typeof item.icon === 'string' ? item.icon : undefined;
+						return 'href' in item ? (
 							<a
 								href={item.disabled ? undefined : item.href}
 								class="context-menu-item"
@@ -62,8 +67,12 @@ const { id, ariaLabel, groups, class: className } = Astro.props;
 								aria-disabled={item.disabled ? 'true' : undefined}
 								data-context-menu-item
 							>
+								{item.icon && (
+									<span class="context-menu-item-leading" aria-hidden="true">
+										{ItemIcon ? <ItemIcon /> : iconText}
+									</span>
+								)}
 								{item.label}
-								<ArrowRight class="context-menu-link-icon" aria-hidden="true" />
 							</a>
 						) : (
 							<button
@@ -76,10 +85,15 @@ const { id, ariaLabel, groups, class: className } = Astro.props;
 								data-context-menu-item
 								data-context-menu-value={item.value}
 							>
+								{item.icon && (
+									<span class="context-menu-item-leading" aria-hidden="true">
+										{ItemIcon ? <ItemIcon /> : iconText}
+									</span>
+								)}
 								{item.label}
 							</button>
-						)
-					))}
+						);
+					})}
 				</div>
 			</>
 		))}

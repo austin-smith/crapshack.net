@@ -265,6 +265,20 @@
 		gap: 0.125rem;
 	}
 
+	.context-menu-heading {
+		padding: 0.5625rem 0.5rem 0.4375rem;
+		margin: -0.25rem -0.25rem 0.25rem;
+		border-bottom: 1px solid var(--app-line-strong);
+		border-radius: 0.3125rem 0.3125rem 0 0;
+		background: var(--app-fill-subtle);
+		color: var(--app-text);
+		font-size: 0.875rem;
+		font-weight: 600;
+		line-height: 1.25;
+		text-align: left;
+		user-select: none;
+	}
+
 	.context-menu-label {
 		padding: 0.375rem 0.5rem 0.25rem;
 		color: var(--app-faint);
@@ -305,12 +319,19 @@
 		color: var(--app-text);
 	}
 
-	.context-menu-link-icon {
-		width: 0.875rem;
-		height: 0.875rem;
+	.context-menu-item-leading {
+		display: inline-flex;
+		width: 1.25rem;
+		height: 1.25rem;
 		flex: none;
-		margin-left: auto;
-		color: var(--app-faint);
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+	}
+
+	.context-menu-item-leading > svg {
+		width: 1rem;
+		height: 1rem;
 	}
 
 	.context-menu-item[aria-disabled="true"],
