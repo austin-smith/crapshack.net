@@ -459,6 +459,12 @@ export function playBlonkyEmote(id: string, kind: BlonkyEmote): void {
 	root?.dispatchEvent(new CustomEvent(BLONKY_EMOTE_EVENT, { detail: { kind } }));
 }
 
+export function setBlonkyPlaybackRate(id: string, rate: number): void {
+	const root = document.querySelector<HTMLElement>(`[data-blonky-id="${CSS.escape(id)}"]`);
+	if (!root) return;
+	mountedCanvases.get(root)?.setPlaybackRate(rate);
+}
+
 export function registerBlonkyCanvasLifecycle(): void {
 	mountBlonkyCanvases();
 	if (lifecycleRegistered) return;

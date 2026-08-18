@@ -3,6 +3,7 @@ export {
 	mountBlonkyCanvases,
 	playBlonkyEmote,
 	registerBlonkyCanvasLifecycle,
+	setBlonkyPlaybackRate,
 	unmountBlonkyCanvases,
 	type BlonkyAnimator,
 } from './animator';

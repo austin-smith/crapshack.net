@@ -1,5 +1,5 @@
 ---
-import { FlaskConical } from '@lucide/astro';
+import { FlaskConical, Gauge } from '@lucide/astro';
 import { BLONKY_EMOTES, type BlonkyEmote } from '../lib/blonky';
 import ContextMenu from './ui/ContextMenu.astro';
 
@@ -19,6 +19,12 @@ const emoteItems = Object.entries(BLONKY_EMOTES)
 		label: info.label,
 		value,
 	}));
+const speedItems = [
+	{ label: '0.25x', value: '0.25' },
+	{ label: '0.50x', value: '0.5' },
+	{ label: '1.00x', value: '1' },
+	{ label: '2.00x', value: '2' },
+];
 ---
 
 <ContextMenu
@@ -27,6 +33,15 @@ const emoteItems = Object.entries(BLONKY_EMOTES)
 	heading="blonky"
 	groups={[
 		{ label: 'emotes', items: emoteItems },
+		{
+			items: [
+				{
+					icon: Gauge,
+					label: 'speed',
+					radioGroup: { name: 'speed', value: '1', items: speedItems },
+				},
+			],
+		},
 		{ items: [{ icon: FlaskConical, label: 'lab', href: '/blonky' }] },
 	]}
 >

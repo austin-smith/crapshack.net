@@ -40,7 +40,58 @@ function getMenu(root: HTMLElement): HTMLElement | null {
 
 function getItems(menu: HTMLElement): HTMLElement[] {
 	return Array.from(menu.querySelectorAll<HTMLElement>('[data-context-menu-item]'))
-		.filter((item) => item.getAttribute('aria-disabled') !== 'true' && !item.hasAttribute('disabled'));
+		.filter((item) => (
+			item.closest<HTMLElement>('[role="menu"]') === menu
+			&& item.getAttribute('aria-disabled') !== 'true'
+			&& !item.hasAttribute('disabled')
+		));
+}
+
+function getOwningMenu(target: EventTarget | null): HTMLElement | null {
+	return target instanceof Element ? target.closest<HTMLElement>('[role="menu"]') : null;
+}
+
+function getSubmenu(trigger: HTMLElement): HTMLElement | null {
+	const id = trigger.getAttribute('aria-controls');
+	const menu = id ? document.getElementById(id) : null;
+	return menu instanceof HTMLElement ? menu : null;
+}
+
+function getSubmenuTrigger(menu: HTMLElement): HTMLElement | null {
+	return activeMenu?.menu.querySelector<HTMLElement>(
+		`[data-context-menu-sub-trigger][aria-controls="${CSS.escape(menu.id)}"]`,
+	) ?? null;
+}
+
+function closeSubmenu(trigger: HTMLElement, restoreFocus = false): void {
+	const menu = getSubmenu(trigger);
+	trigger.setAttribute('aria-expanded', 'false');
+	if (menu) menu.hidden = true;
+	if (restoreFocus) trigger.focus();
+}
+
+function closeSubmenus(menu: HTMLElement, except?: HTMLElement): void {
+	menu.querySelectorAll<HTMLElement>('[data-context-menu-sub-trigger][aria-expanded="true"]')
+		.forEach((trigger) => {
+			if (trigger !== except) closeSubmenu(trigger);
+		});
+}
+
+function openSubmenu(trigger: HTMLElement, focusItem = false): void {
+	const menu = getSubmenu(trigger);
+	if (!menu || !activeMenu?.menu.contains(menu)) return;
+
+	closeSubmenus(activeMenu.menu, trigger);
+	trigger.setAttribute('aria-expanded', 'true');
+	menu.hidden = false;
+	const triggerRect = trigger.getBoundingClientRect();
+	const roomRight = window.innerWidth - triggerRect.right;
+	const roomLeft = triggerRect.left;
+	menu.dataset.side = roomRight >= menu.offsetWidth + 6 || roomRight >= roomLeft ? 'right' : 'left';
+	if (focusItem) {
+		const selected = menu.querySelector<HTMLElement>('[role="menuitemradio"][aria-checked="true"]');
+		(selected ?? getItems(menu)[0])?.focus({ preventScroll: true });
+	}
 }
 
 function getRoot(target: EventTarget | null): HTMLElement | null {
@@ -82,6 +133,7 @@ function closeContextMenu(restoreFocus = false): void {
 	if (!activeMenu) return;
 
 	const { root, trigger, menu } = activeMenu;
+	closeSubmenus(menu);
 	root.removeAttribute('data-open');
 	trigger.setAttribute('aria-expanded', 'false');
 	menu.hidden = true;
@@ -236,14 +288,51 @@ export function initContextMenus(): void {
 			event.preventDefault();
 			return;
 		}
+		if (item.hasAttribute('data-context-menu-sub-trigger')) {
+			event.preventDefault();
+			openSubmenu(item, true);
+			return;
+		}
 		const value = item.dataset.contextMenuValue;
 		if (value !== undefined) {
+			const radioGroup = item.closest<HTMLElement>('[data-context-menu-radio-group]');
+			if (radioGroup) {
+				radioGroup.dataset.contextMenuValue = value;
+				radioGroup.querySelectorAll<HTMLElement>('[role="menuitemradio"]').forEach((radioItem) => {
+					radioItem.setAttribute('aria-checked', String(radioItem === item));
+				});
+				const submenu = radioGroup.closest<HTMLElement>('.context-menu-sub');
+				const triggerValue = submenu?.querySelector<HTMLElement>('[data-context-menu-sub-value]');
+				const selectedLabel = item.textContent?.trim() ?? value;
+				if (triggerValue) triggerValue.textContent = selectedLabel;
+				const submenuTrigger = submenu?.querySelector<HTMLElement>('[data-context-menu-sub-trigger]');
+				if (submenuTrigger?.dataset.contextMenuSubLabel) {
+					submenuTrigger.setAttribute(
+						'aria-label',
+						`${submenuTrigger.dataset.contextMenuSubLabel}, ${selectedLabel}`,
+					);
+				}
+			}
 			item.dispatchEvent(new CustomEvent('context-menu-select', {
 				bubbles: true,
-				detail: { value },
+				detail: { value, group: radioGroup?.dataset.contextMenuRadioGroup },
 			}));
 		}
 		closeContextMenu(value !== undefined);
+	});
+
+	document.addEventListener('pointerover', (event) => {
+		if (!activeMenu || event.pointerType === 'touch') return;
+		const item = event.target instanceof Element
+			? event.target.closest<HTMLElement>('[data-context-menu-item]')
+			: null;
+		if (!item || getOwningMenu(item) !== activeMenu.menu) return;
+		if (item.getAttribute('aria-disabled') === 'true' || item.hasAttribute('disabled')) {
+			closeSubmenus(activeMenu.menu);
+			return;
+		}
+		if (item.hasAttribute('data-context-menu-sub-trigger')) openSubmenu(item);
+		else closeSubmenus(activeMenu.menu);
 	});
 
 	document.addEventListener('pointerdown', (event) => {
@@ -263,25 +352,42 @@ export function initContextMenus(): void {
 		}
 
 		if (!activeMenu || !(event.target instanceof Node) || !activeMenu.menu.contains(event.target)) return;
+		const menu = getOwningMenu(event.target);
+		if (!menu) return;
 		if (event.key === 'ArrowDown') {
 			event.preventDefault();
-			moveFocus(activeMenu.menu, 'next');
+			moveFocus(menu, 'next');
 		}
 		if (event.key === 'ArrowUp') {
 			event.preventDefault();
-			moveFocus(activeMenu.menu, 'previous');
+			moveFocus(menu, 'previous');
 		}
 		if (event.key === 'Home') {
 			event.preventDefault();
-			moveFocus(activeMenu.menu, 'first');
+			moveFocus(menu, 'first');
 		}
 		if (event.key === 'End') {
 			event.preventDefault();
-			moveFocus(activeMenu.menu, 'last');
+			moveFocus(menu, 'last');
+		}
+		if (event.key === 'ArrowRight' && event.target instanceof HTMLElement
+			&& event.target.hasAttribute('data-context-menu-sub-trigger')) {
+			event.preventDefault();
+			openSubmenu(event.target, true);
+		}
+		if (event.key === 'ArrowLeft' && menu.hasAttribute('data-context-menu-sub-content')) {
+			event.preventDefault();
+			const trigger = getSubmenuTrigger(menu);
+			if (trigger) closeSubmenu(trigger, true);
 		}
 		if (event.key === 'Escape') {
 			event.preventDefault();
-			closeContextMenu(true);
+			if (menu.hasAttribute('data-context-menu-sub-content')) {
+				const trigger = getSubmenuTrigger(menu);
+				if (trigger) closeSubmenu(trigger, true);
+			} else {
+				closeContextMenu(true);
+			}
 		}
 		if (event.key === 'Tab') closeContextMenu();
 	});

@@ -237,8 +237,8 @@
 		-webkit-touch-callout: none;
 	}
 
-	.context-menu-content {
-		position: fixed;
+	.context-menu-content,
+	.context-menu-sub-content {
 		z-index: 150;
 		min-width: 10rem;
 		padding: 0.25rem;
@@ -255,8 +255,33 @@
 		animation: context-menu-in 100ms ease-out;
 	}
 
-	.context-menu-content[hidden] {
+	.context-menu-content {
+		position: fixed;
+	}
+
+	.context-menu-content[hidden],
+	.context-menu-sub-content[hidden] {
 		display: none;
+	}
+
+	.context-menu-sub {
+		position: relative;
+	}
+
+	.context-menu-sub .context-menu-item {
+		width: 100%;
+	}
+
+	.context-menu-sub-content {
+		position: absolute;
+		bottom: -0.25rem;
+		left: calc(100% + 0.375rem);
+		min-width: 7rem;
+	}
+
+	.context-menu-sub-content[data-side="left"] {
+		right: calc(100% + 0.375rem);
+		left: auto;
 	}
 
 	.context-menu-group {
@@ -313,7 +338,8 @@
 	}
 
 	.context-menu-item:hover,
-	.context-menu-item:focus {
+	.context-menu-item:focus,
+	.context-menu-item[aria-expanded="true"] {
 		outline: none;
 		background: var(--app-fill);
 		color: var(--app-text);
@@ -334,6 +360,39 @@
 		height: 1rem;
 	}
 
+	.context-menu-sub-chevron {
+		width: 0.875rem;
+		height: 0.875rem;
+		margin-left: auto;
+		flex: none;
+	}
+
+	.context-menu-radio-item {
+		position: relative;
+		padding-left: 2rem;
+	}
+
+	.context-menu-radio-indicator {
+		position: absolute;
+		left: 0.5rem;
+		display: inline-flex;
+		width: 0.875rem;
+		height: 0.875rem;
+		align-items: center;
+		justify-content: center;
+		opacity: 0;
+	}
+
+	.context-menu-radio-indicator > svg {
+		width: 0.5rem;
+		height: 0.5rem;
+		fill: currentColor;
+	}
+
+	.context-menu-radio-item[aria-checked="true"] .context-menu-radio-indicator {
+		opacity: 1;
+	}
+
 	.context-menu-item[aria-disabled="true"],
 	.context-menu-item:disabled {
 		color: var(--app-faint);
@@ -352,7 +411,8 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.context-menu-content {
+		.context-menu-content,
+		.context-menu-sub-content {
 			animation: none;
 		}
 	}
