@@ -1,4 +1,5 @@
 import { sampleConfirmEmote, sampleConfirmExit } from './confirm';
+import { CRY_DURATION_FRAMES, sampleCryEmote } from './cry';
 import { sampleNodOffEmote } from './nod-off';
 import { sampleNoticeEmote } from './notice';
 import { sampleShrugEmote } from './shrug';
@@ -17,6 +18,7 @@ import {
 
 export const BLONKY_EMOTES: Record<BlonkyEmote, BlonkyEmoteInfo> = {
 	confirm: { label: 'confirm', duration: 1 },
+	cry: { label: 'cry', duration: CRY_DURATION_FRAMES / BLONKY_FPS },
 	'nod-off': { label: 'nod off', duration: 3 },
 	notice: { label: 'notice', duration: 0.625, holds: true },
 	shrug: { label: 'shrug', duration: 1.5 },
@@ -42,6 +44,7 @@ const NO_EMOTE_OFFSET: BlonkyEmoteOffset = {
 	bellySpread: 0,
 	mouthPurse: 0,
 	mouthTension: 0,
+	mouthFrown: 0,
 	leftBrowLift: 0,
 	rightBrowLift: 0,
 	leftBrowArch: 0,
@@ -73,6 +76,7 @@ function blendEmoteOffsets(
 		bellySpread: blend(from.bellySpread, to.bellySpread),
 		mouthPurse: blend(from.mouthPurse, to.mouthPurse),
 		mouthTension: blend(from.mouthTension, to.mouthTension),
+		mouthFrown: blend(from.mouthFrown ?? 0, to.mouthFrown ?? 0),
 		leftBrowLift: blend(from.leftBrowLift, to.leftBrowLift),
 		rightBrowLift: blend(from.rightBrowLift, to.rightBrowLift),
 		leftBrowArch: blend(from.leftBrowArch, to.leftBrowArch),
@@ -92,6 +96,8 @@ function rawEmoteOffsetAt(emote: BlonkyEmotePose): BlonkyEmoteOffset {
 	switch (emote.kind) {
 		case 'confirm':
 			return sampleConfirmEmote(elapsed, emote.direction);
+		case 'cry':
+			return sampleCryEmote(elapsed, emote.direction);
 		case 'nod-off':
 			return sampleNodOffEmote(elapsed, emote.direction);
 		case 'notice':

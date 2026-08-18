@@ -1,4 +1,5 @@
 import { sampleBlonkyEmoteOffset } from './emotes';
+import { CRY_LINGER_FRAMES } from './emotes/cry';
 import {
 	blinkPoseAt,
 	hash,
@@ -30,6 +31,7 @@ const BREATH_EXHALE_SECONDS = 2.25;
 const SKIN = '#efede6';
 const EYE_WHITE = '#f4f0e6';
 const FACE_INK = '#252422';
+const TEAR_WASH = '#699ba8';
 const WASH = '#9a6f59';
 export const DEFAULT_BLONKY_PALETTE: Readonly<BlonkyPalette> = {
 	outlineInk: FACE_INK,
@@ -173,6 +175,7 @@ interface StrokeOptions {
 	boil?: number;
 	color?: string;
 	fillRule?: CanvasFillRule;
+	roundedClosedStroke?: boolean;
 }
 
 function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, options: StrokeOptions = {}): void {
@@ -192,6 +195,7 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 	const contourScale = Math.min(1, length / 180);
 	ctx.save();
 	ctx.fillStyle = options.color ?? FACE_INK;
+	ctx.strokeStyle = options.color ?? FACE_INK;
 	for (let pass = 0; pass < passes; pass++) {
 		const primaryPass = pass === 0;
 		ctx.globalAlpha = (options.alpha ?? 0.92) * (primaryPass ? 0.82 : 0.14);
@@ -215,6 +219,19 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 			const displacement = staticWobble + boilingWobble + restatement;
 			return { x: point.x + n.x * displacement, y: point.y + n.y * displacement };
 		});
+		if (closed && options.roundedClosedStroke) {
+			ctx.beginPath();
+			ctx.moveTo(moved[0].x, moved[0].y);
+			for (let index = 1; index < moved.length; index++) {
+				ctx.lineTo(moved[index].x, moved[index].y);
+			}
+			ctx.closePath();
+			ctx.lineJoin = 'round';
+			ctx.lineCap = 'round';
+			ctx.lineWidth = width * (primaryPass ? 0.86 : 0.33);
+			ctx.stroke();
+			continue;
+		}
 		const bandNormals = moved.map((_, index) => {
 			const before = seamlessClosed
 				? moved[(index - 1 + moved.length) % moved.length]
@@ -375,6 +392,7 @@ interface Pose {
 	bellySpread: number;
 	mouthPurse: number;
 	mouthTension: number;
+	mouthFrown: number;
 	leftBrowLift: number;
 	rightBrowLift: number;
 	leftBrowArch: number;
@@ -382,6 +400,8 @@ interface Pose {
 	mouthCurl: number;
 	leftEyeOpen: number;
 	rightEyeOpen: number;
+	cryElapsed?: number;
+	cryDirection?: -1 | 1;
 	leftArm: [Pt, Pt, Pt];
 	rightArm: [Pt, Pt, Pt];
 }
@@ -471,6 +491,7 @@ function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 		bellySpread: breath * 6.2 + emoteOffset.bellySpread,
 		mouthPurse: emoteOffset.mouthPurse,
 		mouthTension: behavior.mouthSet * idleBehaviorWeight + emoteOffset.mouthTension,
+		mouthFrown: emoteOffset.mouthFrown ?? 0,
 		leftBrowLift: emoteOffset.leftBrowLift,
 		rightBrowLift: emoteOffset.rightBrowLift,
 		leftBrowArch: emoteOffset.leftBrowArch,
@@ -478,6 +499,8 @@ function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 		mouthCurl: emoteOffset.mouthCurl,
 		leftEyeOpen: leftEyeOpen + (emoteOffset.leftEyeOpen - leftEyeOpen) * emoteOffset.presence,
 		rightEyeOpen: rightEyeOpen + (emoteOffset.rightEyeOpen - rightEyeOpen) * emoteOffset.presence,
+		cryElapsed: emote?.kind === 'cry' ? emote.elapsed : undefined,
+		cryDirection: emote?.kind === 'cry' ? emote.direction : undefined,
 		leftArm,
 		rightArm,
 	};
@@ -624,6 +647,64 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 	const rightEyeClosed = pose.rightEyeOpen <= 0.2;
 	if (!leftEyeClosed) fill(ctx, leftEye, EYE_WHITE, 1);
 	if (!rightEyeClosed) fill(ctx, rightEye, EYE_WHITE, 1);
+	const tearWellAt = (delayFrames: number, holdFrames: number): number => (
+		pose.cryElapsed === undefined
+			? 0
+			: heldEnvelope(
+				pose.cryElapsed,
+				INK_FRAME_SECONDS * delayFrames,
+				INK_FRAME_SECONDS * 4,
+				INK_FRAME_SECONDS * holdFrames,
+				INK_FRAME_SECONDS * 5,
+			)
+	);
+	const leftTearsLead = pose.cryDirection === -1;
+	const leftTearWell = tearWellAt(
+		leftTearsLead ? 1 : 2,
+		(leftTearsLead ? 16 : 15) + CRY_LINGER_FRAMES,
+	);
+	const rightTearWell = tearWellAt(
+		leftTearsLead ? 2 : 1,
+		(leftTearsLead ? 15 : 16) + CRY_LINGER_FRAMES,
+	);
+	const visibleRightTearWell = Math.min(1.1, rightTearWell * 1.1);
+	const drawTearWell = (
+		eye: Pt[],
+		center: Pt,
+		amount: number,
+		innerSide: -1 | 1,
+	): void => {
+		if (amount <= 0.01) return;
+		const bounds = polygonBounds(eye);
+		const lowerDepth = Math.max(0.8, bounds.maxY - center.y);
+		const waterlineY = bounds.maxY - 0.45 - lowerDepth * amount * 0.68;
+		const outerX = center.x - innerSide * 7.5;
+		const innerX = center.x + innerSide * 10.5;
+		ctx.save();
+		polygonPath(ctx, eye);
+		ctx.clip();
+		ctx.fillStyle = TEAR_WASH;
+		ctx.globalAlpha = amount * 0.5;
+		ctx.beginPath();
+		ctx.moveTo(outerX, bounds.maxY + 1);
+		ctx.lineTo(outerX, waterlineY + 0.65);
+		ctx.quadraticCurveTo(
+			center.x + innerSide * 2,
+			waterlineY + 0.15,
+			innerX,
+			waterlineY - 0.7,
+		);
+		ctx.lineTo(innerX + innerSide, bounds.maxY + 1);
+		ctx.closePath();
+		ctx.fill();
+		ctx.globalAlpha = amount * 0.58;
+		ctx.beginPath();
+		ctx.arc(innerX - innerSide * 0.7, waterlineY + 0.4, 1.65, 0, TAU);
+		ctx.fill();
+		ctx.restore();
+	};
+	if (!leftEyeClosed) drawTearWell(leftEye, leftEyeCenter, leftTearWell, 1);
+	if (!rightEyeClosed) drawTearWell(rightEye, rightEyeCenter, visibleRightTearWell, -1);
 	stroke(ctx, leftEye, 630, {
 		closed: true,
 		seamlessClosed: !leftEyeClosed,
@@ -631,6 +712,7 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		passes: 2,
 		boil: 0.34,
 		fillRule: leftEyeClosed ? 'nonzero' : 'evenodd',
+		roundedClosedStroke: pose.cryElapsed !== undefined && !leftEyeClosed,
 	});
 	stroke(ctx, rightEye, 631, {
 		closed: true,
@@ -639,7 +721,99 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		passes: 2,
 		boil: 0.34,
 		fillRule: rightEyeClosed ? 'nonzero' : 'evenodd',
+		roundedClosedStroke: pose.cryElapsed !== undefined && !rightEyeClosed,
 	});
+	const drawTearTrack = (
+		origin: Pt,
+		elapsed: number,
+		delayFrames: number,
+		durationFrames: number,
+		side: -1 | 1,
+		route: number,
+		id: number,
+	): void => {
+		const duration = INK_FRAME_SECONDS * durationFrames;
+		const age = elapsed - INK_FRAME_SECONDS * delayFrames;
+		if (age < 0 || age > duration) return;
+		const progress = Math.min(1, age / duration);
+		const travel = progress ** 1.25;
+		const path = quadratic(
+			origin,
+			{ x: origin.x + side * (1.8 + route * 1.5), y: origin.y + 52 },
+			{ x: origin.x + side * (9.5 + route * 4), y: origin.y + 108 },
+			32,
+		);
+		const frontIndex = Math.max(1, Math.round(travel * (path.length - 1)));
+		const backIndex = Math.max(0, frontIndex - 2);
+		const visibleTrack = path.slice(backIndex, frontIndex + 1);
+		const leftEdge: Pt[] = [];
+		const rightEdge: Pt[] = [];
+		visibleTrack.forEach((point, index) => {
+			const before = visibleTrack[Math.max(0, index - 1)];
+			const after = visibleTrack[Math.min(visibleTrack.length - 1, index + 1)];
+			const n = normal(norm(sub(after, before)));
+			const along = visibleTrack.length === 1 ? 1 : index / (visibleTrack.length - 1);
+			const liveWobble = (valueNoise(index * 0.7, frame * 0.38, id) - 0.5) * 0.32;
+			const radius = Math.max(0.22, 0.3 + along ** 1.5 * 1.15 + liveWobble);
+			leftEdge.push(add(point, mul(n, radius)));
+			rightEdge.push(add(point, mul(n, -radius)));
+		});
+		const wetMark = leftEdge.concat(rightEdge.reverse());
+		fill(ctx, wetMark, TEAR_WASH, 0.56);
+		const front = visibleTrack.at(-1)!;
+		ctx.save();
+		ctx.fillStyle = TEAR_WASH;
+		ctx.globalAlpha = 0.52;
+		ctx.beginPath();
+		ctx.arc(front.x, front.y, 1.15, 0, TAU);
+		ctx.fill();
+		ctx.restore();
+	};
+	if (pose.cryElapsed !== undefined) {
+		const cryElapsed = pose.cryElapsed;
+		const leftTearOrigin = {
+			x: leftEyeCenter.x + 3.2,
+			y: Math.max(...leftEye.map((point) => point.y)) - 0.35,
+		};
+		const rightTearOrigin = {
+			x: rightEyeCenter.x - 3.2,
+			y: Math.max(...rightEye.map((point) => point.y)) - 0.35,
+		};
+		const leadingTears = [
+			{ delay: 3, duration: 12, route: 0.45, id: 645 },
+			{ delay: 12, duration: 11, route: -0.65, id: 646 },
+		];
+		const followingTears = [
+			{ delay: 6, duration: 10, route: -0.2, id: 648 },
+		];
+		const drawTearSequence = (
+			origin: Pt,
+			side: -1 | 1,
+			sequence: typeof leadingTears,
+		): void => {
+			sequence.forEach((tear) => {
+				drawTearTrack(
+					origin,
+					cryElapsed,
+					tear.delay,
+					tear.duration,
+					side,
+					tear.route,
+					tear.id,
+				);
+			});
+		};
+		drawTearSequence(
+			leftTearOrigin,
+			-1,
+			leftTearsLead ? leadingTears : followingTears,
+		);
+		drawTearSequence(
+			rightTearOrigin,
+			1,
+			leftTearsLead ? followingTears : leadingTears,
+		);
+	}
 	stroke(ctx, [{ x: -47 + leftEyeTurn, y: -40 + underEyeFollow }, { x: -38 + leftEyeTurn, y: -35 + underEyeFollow }, { x: -28 + leftEyeTurn, y: -35 + underEyeFollow }, { x: -20 + leftEyeTurn, y: -40 + underEyeFollow }], 632, { width: 1.12, alpha: 0.82, passes: 1, boil: 0.28 });
 	stroke(ctx, [{ x: 21 + rightEyeTurn, y: -35 + underEyeFollow }, { x: 28 + rightEyeTurn, y: -32 + underEyeFollow }, { x: 36 + rightEyeTurn, y: -33 + underEyeFollow }, { x: 41 + rightEyeTurn, y: -37 + underEyeFollow }], 633, { width: 1.02, alpha: 0.76, passes: 1, boil: 0.28 });
 	stroke(ctx, [
@@ -664,13 +838,14 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: -25 + turn * 2.15, y: -2 },
 	], 636, { width: 1.7, boil: 0.4 });
 	const mouthPurse = pose.mouthPurse;
+	const mouthFrown = pose.mouthFrown;
 	const leftMouthCurl = Math.max(0, -pose.mouthCurl);
 	const rightMouthCurl = Math.max(0, pose.mouthCurl);
 	const mouthLine: Pt[] = [
-		{ x: -38 + turn * 0.65 + mouthPurse * 10 + leftMouthCurl * 4, y: 15 + pose.mouthTension * 0.8 - leftMouthCurl * 3.2 },
-		{ x: -17 + turn * 0.8 + mouthPurse * 2 + leftMouthCurl * 1.4, y: 13 - leftMouthCurl * 1.2 },
-		{ x: 1 + turn - mouthPurse * 2 - rightMouthCurl * 1.4, y: 12 - rightMouthCurl * 1.2 },
-		{ x: 17 + turn * 1.2 - mouthPurse * 8 - rightMouthCurl * 4, y: 14 - pose.mouthTension * 1.15 - rightMouthCurl * 3.2 },
+		{ x: -38 + turn * 0.65 + mouthPurse * 10 + leftMouthCurl * 4, y: 15 + pose.mouthTension * 0.8 + mouthFrown * 4.4 - leftMouthCurl * 3.2 },
+		{ x: -17 + turn * 0.8 + mouthPurse * 2 + leftMouthCurl * 1.4, y: 13 - mouthFrown * 1.2 - leftMouthCurl * 1.2 },
+		{ x: 1 + turn - mouthPurse * 2 - rightMouthCurl * 1.4, y: 12 - mouthFrown * 1.4 - rightMouthCurl * 1.2 },
+		{ x: 17 + turn * 1.2 - mouthPurse * 8 - rightMouthCurl * 4, y: 14 - pose.mouthTension * 1.15 + mouthFrown * 4.4 - rightMouthCurl * 3.2 },
 	];
 	stroke(ctx, mouthLine, 637, { width: 1.62, boil: 0.36 });
 	stroke(ctx, [{ x: -18, y: 22 }, { x: -5, y: 21 }], 638, { width: 1.08, alpha: 0.7, passes: 1 });
