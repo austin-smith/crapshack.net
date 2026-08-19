@@ -9,9 +9,12 @@ import {
 const HOME_BLONKY_ID = 'home-blonky';
 const POST_WRITE_NOTICE_HOLD_MS = 900;
 const ALTERNATE_BLONKY_REACTIONS = [
+	'cry',
+	'nod-off',
 	'skeptical',
 	'shrug',
 	'shudder',
+	'sigh',
 	'smh',
 ] as const;
 
