@@ -19,7 +19,7 @@ const ALTERNATE_BLONKY_REACTIONS = [
 ] as const;
 
 function pickBlonkyReaction(): BlonkyEmote {
-	if (Math.random() < 0.5) return 'confirm';
+	if (Math.random() < 0.35) return 'confirm';
 	const index = Math.floor(Math.random() * ALTERNATE_BLONKY_REACTIONS.length);
 	return ALTERNATE_BLONKY_REACTIONS[index];
 }
