@@ -1,5 +1,5 @@
 ---
-import { FlaskConical, Gauge } from '@lucide/astro';
+import { FlaskConical, Gauge, Smile } from '@lucide/astro';
 import { BLONKY_EMOTES, type BlonkyEmote } from '../lib/blonky';
 import ContextMenu from './ui/ContextMenu.astro';
 
@@ -34,9 +34,9 @@ const speedItems = [
 	ariaLabel="Blonky actions"
 	heading="blonky"
 	groups={[
-		{ label: 'emotes', items: emoteItems },
 		{
 			items: [
+				{ icon: Smile, label: 'emotes', items: emoteItems },
 				{
 					icon: Gauge,
 					label: 'speed',

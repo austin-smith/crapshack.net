@@ -88,6 +88,12 @@ function openSubmenu(trigger: HTMLElement, focusItem = false): void {
 	const roomRight = window.innerWidth - triggerRect.right;
 	const roomLeft = triggerRect.left;
 	menu.dataset.side = roomRight >= menu.offsetWidth + 6 || roomRight >= roomLeft ? 'right' : 'left';
+	// Submenus open downward from their trigger row; flip one upward when it
+	// would run past the bottom of the viewport.
+	delete menu.dataset.align;
+	if (menu.getBoundingClientRect().bottom > window.innerHeight - VIEWPORT_MARGIN_PX) {
+		menu.dataset.align = 'bottom';
+	}
 	if (focusItem) {
 		const selected = menu.querySelector<HTMLElement>('[role="menuitemradio"][aria-checked="true"]');
 		(selected ?? getItems(menu)[0])?.focus({ preventScroll: true });
