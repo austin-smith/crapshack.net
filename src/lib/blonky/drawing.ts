@@ -400,6 +400,8 @@ interface Pose {
 	mouthCurl: number;
 	leftEyeOpen: number;
 	rightEyeOpen: number;
+	leftUpperLid: number;
+	rightUpperLid: number;
 	cryElapsed?: number;
 	cryDirection?: -1 | 1;
 	leftArm: [Pt, Pt, Pt];
@@ -499,6 +501,8 @@ function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 		mouthCurl: emoteOffset.mouthCurl,
 		leftEyeOpen: leftEyeOpen + (emoteOffset.leftEyeOpen - leftEyeOpen) * emoteOffset.presence,
 		rightEyeOpen: rightEyeOpen + (emoteOffset.rightEyeOpen - rightEyeOpen) * emoteOffset.presence,
+		leftUpperLid: emoteOffset.leftUpperLid ?? 0,
+		rightUpperLid: emoteOffset.rightUpperLid ?? 0,
 		cryElapsed: emote?.kind === 'cry' ? emote.elapsed : undefined,
 		cryDirection: emote?.kind === 'cry' ? emote.direction : undefined,
 		leftArm,
@@ -616,10 +620,19 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 	const leftEyeCenter = { x: -34 + leftEyeTurn, y: -56.5 + turn * 0.18 + pose.eyeLookY };
 	const rightEyeCenter = { x: 30 + rightEyeTurn, y: -49 - turn * 0.12 + pose.eyeLookY };
 	const underEyeFollow = pose.eyeLookY * 0.1;
-	const blink = (points: Pt[], center: Pt, openness: number): Pt[] => points.map((point) => ({
-		x: point.x,
-		y: center.y + (point.y - center.y) * openness,
-	}));
+	const blink = (
+		points: Pt[],
+		center: Pt,
+		openness: number,
+		upperLid = 0,
+	): Pt[] => points.map((point) => {
+		const y = center.y + (point.y - center.y) * openness;
+		const upperDistance = Math.max(0, center.y - y);
+		return {
+			x: point.x,
+			y: y + upperDistance * upperLid,
+		};
+	});
 	const leftEye = blink([
 		{ x: leftEyeCenter.x - 12, y: leftEyeCenter.y - 2 },
 		{ x: leftEyeCenter.x - 9, y: leftEyeCenter.y - 8 },
@@ -631,7 +644,7 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: leftEyeCenter.x, y: leftEyeCenter.y + 12 },
 		{ x: leftEyeCenter.x - 7, y: leftEyeCenter.y + 9 },
 		{ x: leftEyeCenter.x - 12, y: leftEyeCenter.y + 4 },
-	], leftEyeCenter, pose.leftEyeOpen);
+	], leftEyeCenter, pose.leftEyeOpen, pose.leftUpperLid);
 	const rightEye = blink([
 		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y - 3 },
 		{ x: rightEyeCenter.x - 6, y: rightEyeCenter.y - 9 },
@@ -642,7 +655,7 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: rightEyeCenter.x + 1, y: rightEyeCenter.y + 10 },
 		{ x: rightEyeCenter.x - 6, y: rightEyeCenter.y + 8 },
 		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y + 2 },
-	], rightEyeCenter, pose.rightEyeOpen);
+	], rightEyeCenter, pose.rightEyeOpen, pose.rightUpperLid);
 	const leftEyeClosed = pose.leftEyeOpen <= 0.2;
 	const rightEyeClosed = pose.rightEyeOpen <= 0.2;
 	if (!leftEyeClosed) fill(ctx, leftEye, EYE_WHITE, 1);

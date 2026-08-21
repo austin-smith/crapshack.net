@@ -43,6 +43,8 @@ export interface BlonkyEmoteOffset {
 	mouthCurl: number;
 	leftEyeOpen: number;
 	rightEyeOpen: number;
+	leftUpperLid?: number;
+	rightUpperLid?: number;
 }
 
 export interface BlonkyEmotePose {
