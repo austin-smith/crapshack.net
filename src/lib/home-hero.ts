@@ -1,5 +1,6 @@
 import { createAphorismController } from './aphorism';
 import {
+	BLONKY_EMOTES,
 	isBlonkyEmote,
 	playBlonkyEmote,
 	setBlonkyPlaybackRate,
@@ -8,15 +9,10 @@ import {
 
 const HOME_BLONKY_ID = 'home-blonky';
 const POST_WRITE_NOTICE_HOLD_MS = 900;
-const ALTERNATE_BLONKY_REACTIONS = [
-	'cry',
-	'nod-off',
-	'skeptical',
-	'shrug',
-	'shudder',
-	'sigh',
-	'smh',
-] as const;
+// confirm is the weighted default reaction and notice accompanies the write.
+const NON_REACTION_EMOTES = new Set<BlonkyEmote>(['confirm', 'notice']);
+const ALTERNATE_BLONKY_REACTIONS = (Object.keys(BLONKY_EMOTES) as BlonkyEmote[])
+	.filter((emote) => !NON_REACTION_EMOTES.has(emote));
 
 function pickBlonkyReaction(): BlonkyEmote {
 	if (Math.random() < 0.35) return 'confirm';
