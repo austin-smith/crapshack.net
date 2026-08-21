@@ -257,6 +257,11 @@
 
 	.context-menu-content {
 		position: fixed;
+		pointer-events: auto;
+	}
+
+	html[data-context-menu-open] body {
+		pointer-events: none;
 	}
 
 	.context-menu-content[hidden],

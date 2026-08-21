@@ -141,6 +141,7 @@ function closeContextMenu(restoreFocus = false): void {
 	const { root, trigger, menu } = activeMenu;
 	closeSubmenus(menu);
 	root.removeAttribute('data-open');
+	delete document.documentElement.dataset.contextMenuOpen;
 	trigger.setAttribute('aria-expanded', 'false');
 	menu.hidden = true;
 	menu.style.removeProperty('left');
@@ -163,6 +164,9 @@ function openContextMenu(
 	closeContextMenu();
 	activeMenu = { root, trigger, menu };
 	root.setAttribute('data-open', '');
+	// While a menu is open the rest of the page is inert to the pointer, as with
+	// native menus: no hover states or pointer cursor on what sits underneath.
+	document.documentElement.dataset.contextMenuOpen = '';
 	trigger.setAttribute('aria-expanded', 'true');
 	menu.hidden = false;
 	positionMenu(menu, clientX, clientY);
@@ -189,7 +193,10 @@ function clearClickSuppression(): void {
 	activeClickSuppression = undefined;
 }
 
-function suppressTriggerClickThroughPointerRelease(trigger: HTMLElement, pointerId: number): void {
+// Swallow the click that the browser synthesizes when `pointerId` is released
+// on `target`. Used so a long-press that opens the menu and a press outside
+// that dismisses it are not also delivered as clicks to whatever is underneath.
+function suppressClickThroughPointerRelease(target: EventTarget, pointerId: number): void {
 	clearClickSuppression();
 	const controller = new AbortController();
 	activeClickSuppression = { controller };
@@ -198,7 +205,7 @@ function suppressTriggerClickThroughPointerRelease(trigger: HTMLElement, pointer
 		if (activeClickSuppression?.controller !== controller) return;
 		clearClickSuppression();
 	};
-	const suppressClick = (event: MouseEvent): void => {
+	const suppressClick = (event: Event): void => {
 		event.preventDefault();
 		event.stopImmediatePropagation();
 		clear();
@@ -208,7 +215,7 @@ function suppressTriggerClickThroughPointerRelease(trigger: HTMLElement, pointer
 		window.setTimeout(clear, 0);
 	};
 
-	trigger.addEventListener('click', suppressClick, { capture: true, signal: controller.signal });
+	target.addEventListener('click', suppressClick, { capture: true, signal: controller.signal });
 	document.addEventListener('pointerup', finishPointer, { capture: true, signal: controller.signal });
 	document.addEventListener('pointercancel', finishPointer, { capture: true, signal: controller.signal });
 }
@@ -267,7 +274,7 @@ export function initContextMenus(): void {
 			timerId: window.setTimeout(() => {
 				openContextMenu(root, event.clientX, event.clientY);
 				const trigger = getTrigger(root);
-				if (trigger) suppressTriggerClickThroughPointerRelease(trigger, event.pointerId);
+				if (trigger) suppressClickThroughPointerRelease(trigger, event.pointerId);
 				pendingLongPress = undefined;
 			}, LONG_PRESS_DELAY_MS),
 		};
@@ -345,6 +352,9 @@ export function initContextMenus(): void {
 		if (!activeMenu) return;
 		if (event.target instanceof Node && activeMenu.menu.contains(event.target)) return;
 		closeContextMenu();
+		// A press outside only dismisses the menu; it must not also click what
+		// is underneath (typically the trigger itself).
+		suppressClickThroughPointerRelease(document, event.pointerId);
 	}, true);
 
 	document.addEventListener('keydown', (event) => {
