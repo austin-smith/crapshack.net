@@ -1,0 +1,557 @@
+---
+import { Pause, Play, StepBack, StepForward } from '@lucide/astro';
+import Layout from '../layouts/Layout.astro';
+import ButtonGroup from '../components/ui/ButtonGroup.astro';
+import Dropdown from '../components/ui/Dropdown.astro';
+import { BLONKY_EMOTES } from '../lib/blonky';
+
+const emotes = Object.entries(BLONKY_EMOTES);
+---
+
+<Layout title="crapshack (blonky debug)" noIndex={true} fullBleed={true}>
+	<section class="blonky-debug" data-blonky-page-root>
+		<div class="console">
+			<figure class="console__stage">
+				<header class="console__header">
+					<h1>blonky</h1>
+
+					<p class="blonky-debug__readout" aria-label="Animation state">
+						<output data-blonky-state>playing</output>
+						<span aria-hidden="true">·</span>
+						<output data-blonky-time>0.000 s</output>
+						<span aria-hidden="true">·</span>
+						<span>f<output data-blonky-frame>0000</output></span>
+						<span aria-hidden="true">·</span>
+						<span>8&nbsp;fps</span>
+					</p>
+				</header>
+
+				<canvas
+					id="blonky-drawing"
+					data-blonky-page-canvas
+					width="940"
+					height="800"
+					role="img"
+					aria-label="Blonky, a large hand-drawn character"
+				>
+					Blonky, a large hand-drawn character.
+				</canvas>
+			</figure>
+
+			<fieldset class="console__emotes">
+				<legend class="sr-only">emotes</legend>
+				<div class="console__emotes-header">
+					<p class="console__emotes-title">
+						<span>emotes</span>
+						<output data-blonky-emote-state>idle</output>
+					</p>
+					<button class="emote-release" type="button" data-blonky-emote-release disabled>
+						release
+					</button>
+				</div>
+				<div class="console__emote-list">
+					{emotes.map(([key, info]) => (
+						<button
+							class="control emote"
+							type="button"
+							aria-pressed="false"
+							data-blonky-emote={key}
+						>
+							<span>{info.label}</span>
+							<span class="emote__meta">
+								{info.holds ? 'hold' : `${info.duration.toFixed(3)}s`}
+							</span>
+						</button>
+					))}
+				</div>
+			</fieldset>
+
+			<div class="console__strip">
+				<fieldset class="console__cluster">
+					<legend class="sr-only">playback</legend>
+					<div class="console__buttons">
+						<ButtonGroup ariaLabel="Transport">
+							<button
+								class="control control--icon"
+								type="button"
+								data-blonky-step="-1"
+								aria-label="Step backward one frame"
+							>
+								<StepBack aria-hidden="true" width={14} height={14} stroke-width={2} />
+							</button>
+							<button
+								class="control control--icon"
+								type="button"
+								data-blonky-playback
+								aria-label="Pause animation"
+								aria-pressed="true"
+							>
+								<span data-blonky-playback-icon="play" hidden>
+									<Play aria-hidden="true" width={14} height={14} stroke-width={2} />
+								</span>
+								<span data-blonky-playback-icon="pause">
+									<Pause aria-hidden="true" width={14} height={14} stroke-width={2} />
+								</span>
+							</button>
+							<button
+								class="control control--icon"
+								type="button"
+								data-blonky-step="1"
+								aria-label="Step forward one frame"
+							>
+								<StepForward aria-hidden="true" width={14} height={14} stroke-width={2} />
+							</button>
+						</ButtonGroup>
+						<button class="control" type="button" data-blonky-reset>reset</button>
+						<Dropdown
+							id="blonky-speed"
+							class="blonky-debug__speed"
+							ariaLabel="Playback speed"
+							defaultValue="1"
+							options={[
+								{ value: '0.25', label: '0.25x' },
+								{ value: '0.5', label: '0.50x' },
+								{ value: '1', label: '1.00x' },
+								{ value: '2', label: '2.00x' },
+							]}
+						/>
+					</div>
+				</fieldset>
+
+				<fieldset class="console__cluster console__cluster--components">
+					<legend class="sr-only">components</legend>
+					<ButtonGroup ariaLabel="Components">
+						<button
+							class="control component"
+							type="button"
+							aria-pressed="true"
+							data-active
+							data-blonky-head-visibility
+						>
+							head
+						</button>
+						<button
+							class="control component"
+							type="button"
+							aria-pressed="true"
+							data-active
+							data-blonky-body-visibility
+						>
+							body
+						</button>
+						<button
+							class="control component"
+							type="button"
+							aria-pressed="true"
+							data-active
+							data-blonky-arms-visibility
+						>
+							arms
+						</button>
+					</ButtonGroup>
+				</fieldset>
+			</div>
+		</div>
+
+		<p class="blonky-debug__shortcuts">
+			<kbd>space</kbd> play/pause
+			<span aria-hidden="true">·</span>
+			<kbd>←</kbd><kbd>→</kbd> step
+		</p>
+
+		<span class="sr-only" data-blonky-page-status role="status" aria-live="polite" aria-atomic="true">
+			Blonky animation playing
+		</span>
+	</section>
+</Layout>
+
+<script>
+	import { registerBlonkyDebugLifecycle } from '../lib/blonky/debug';
+
+	registerBlonkyDebugLifecycle();
+</script>
+
+<style>
+	:global(body.layout-full-bleed) {
+		background: var(--color-bg);
+		color: var(--color-text);
+	}
+
+	:global(.weather-container) {
+		display: none;
+	}
+
+	.blonky-debug {
+		--palette: 11rem;
+		--stage: min(
+			60rem,
+			calc(100svw - 6rem - var(--palette)),
+			calc((100svh - 13.5rem) * 1.175)
+		);
+		box-sizing: border-box;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.9rem;
+		min-height: 100svh;
+		/* Top padding clears the fixed env badge (left) and sidebar toggle (right). */
+		padding: 3.25rem clamp(1rem, 3vw, 2.5rem) 1.25rem;
+		background: var(--color-bg);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	}
+
+	.console {
+		box-sizing: border-box;
+		width: calc(var(--stage) + var(--palette));
+		max-width: 100%;
+	}
+
+	.console__header {
+		position: absolute;
+		z-index: 1;
+		inset: 0.85rem 1rem auto;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.5rem;
+		min-width: 0;
+		pointer-events: none;
+	}
+
+	h1 {
+		margin: 0;
+		font-size: 1.6rem;
+		font-weight: 650;
+		letter-spacing: -0.03em;
+		line-height: 1;
+	}
+
+	.blonky-debug__readout {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		margin: 0;
+		color: var(--color-subtle);
+		font-size: 0.7rem;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.console {
+		display: grid;
+		grid-template-columns: minmax(0, var(--stage)) var(--palette);
+		grid-template-rows: auto auto;
+		overflow: clip;
+		border: 1px solid var(--color-line-strong);
+		border-radius: 0.9rem;
+		background: var(--color-sidebar-bg);
+		box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.2);
+	}
+
+	.console__stage {
+		position: relative;
+		grid-column: 1;
+		grid-row: 1;
+		margin: 0;
+		background: var(--color-bg);
+	}
+
+	canvas {
+		display: block;
+		width: 100%;
+		height: auto;
+		aspect-ratio: 47 / 40;
+	}
+
+	.console__strip {
+		grid-column: 1;
+		grid-row: 2;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 0.5rem 1.5rem;
+		padding: 0.65rem 0.75rem;
+		border-top: 1px solid var(--color-line);
+	}
+
+	fieldset {
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.console__emotes {
+		grid-column: 2;
+		grid-row: 1 / -1;
+		display: flex;
+		min-width: 0;
+		min-height: 0;
+		flex-direction: column;
+		border-left: 1px solid var(--color-line);
+		background: var(--color-sidebar-bg);
+	}
+
+	.console__emotes-header {
+		display: flex;
+		min-height: 2.65rem;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0 0.65rem;
+		border-bottom: 1px solid var(--color-line);
+	}
+
+	.console__emotes-title {
+		display: flex;
+		min-width: 0;
+		align-items: baseline;
+		gap: 0.45rem;
+		margin: 0;
+		font-size: 0.64rem;
+		font-weight: 650;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.console__emotes-title output {
+		overflow: hidden;
+		color: var(--color-faint);
+		font-size: 0.58rem;
+		font-weight: 400;
+		letter-spacing: 0;
+		text-overflow: ellipsis;
+		text-transform: none;
+		white-space: nowrap;
+	}
+
+	.emote-release {
+		padding: 0.25rem 0;
+		border: 0;
+		background: transparent;
+		color: var(--color-subtle);
+		font: inherit;
+		font-size: 0.58rem;
+		cursor: pointer;
+	}
+
+	.emote-release:hover:not(:disabled) {
+		color: var(--color-text);
+	}
+
+	.emote-release:focus-visible {
+		outline: 2px solid var(--color-brand);
+		outline-offset: 2px;
+	}
+
+	.emote-release:disabled {
+		color: var(--color-faint);
+		cursor: default;
+		opacity: 0.45;
+	}
+
+	.console__emote-list {
+		display: flex;
+		min-height: 0;
+		flex: 1;
+		flex-direction: column;
+		gap: 0.22rem;
+		overflow-y: auto;
+		padding: 0.42rem;
+		scrollbar-color: var(--color-line-strong) transparent;
+		scrollbar-width: thin;
+	}
+
+	.console__buttons {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+
+	.console__cluster--components {
+		margin-left: auto;
+	}
+
+	.control {
+		box-sizing: border-box;
+		height: 2.2rem;
+		padding: 0 0.7rem;
+		border: 1px solid var(--color-line-strong);
+		border-radius: 0.42rem;
+		background: var(--color-sunken);
+		color: var(--color-text);
+		font: inherit;
+		font-size: 0.72rem;
+		line-height: 1;
+		cursor: pointer;
+	}
+
+	.control:hover {
+		background: var(--color-sunken-strong);
+	}
+
+	.control:focus-visible {
+		outline: 2px solid var(--color-brand);
+		outline-offset: 2px;
+	}
+
+	.control--icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 0.55rem;
+	}
+
+	/* Match the strip's control height; the component defaults to 10rem wide. */
+	:global(.blonky-debug__speed) {
+		--control-height: 2.2rem;
+		width: 6rem;
+	}
+
+	.emote {
+		display: flex;
+		width: 100%;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.65rem;
+		border-color: transparent;
+		background: transparent;
+		text-align: left;
+		touch-action: manipulation;
+	}
+
+	.emote:hover {
+		background: var(--color-sunken);
+	}
+
+	.emote__meta {
+		color: var(--color-faint);
+		font-size: 0.58rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.emote[data-active] {
+		border-color: transparent;
+		background: var(--color-brand);
+		color: var(--color-on-brand);
+	}
+
+	.emote[data-active] .emote__meta {
+		color: currentColor;
+		opacity: 0.7;
+	}
+
+	.component[data-active] {
+		background: var(--color-sunken-strong);
+	}
+
+	.component:not([data-active]) {
+		background: transparent;
+		color: var(--color-faint);
+	}
+
+	.blonky-debug__shortcuts {
+		margin: 0;
+		color: var(--color-faint);
+		font-size: 0.6rem;
+		line-height: 1.9;
+		text-align: center;
+	}
+
+	kbd {
+		padding: 0.1rem 0.28rem;
+		border: 1px solid var(--color-line-strong);
+		border-radius: 0.25rem;
+		background: var(--color-sunken);
+		color: var(--color-subtle);
+		font: inherit;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	@media (max-width: 920px) {
+		.blonky-debug {
+			--palette: 0rem;
+			--stage: min(calc(100svw - 6rem), calc((100svh - 15.5rem) * 1.175));
+		}
+
+		.console {
+			width: var(--stage);
+		}
+
+		.console {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.console__stage {
+			order: 1;
+		}
+
+		.console__emotes {
+			order: 2;
+			border-top: 1px solid var(--color-line);
+			border-left: 0;
+		}
+
+		.console__emotes-header {
+			min-height: 2.2rem;
+		}
+
+		.console__emote-list {
+			flex-direction: row;
+			overflow-x: auto;
+			overflow-y: hidden;
+		}
+
+		.emote {
+			width: auto;
+			min-width: 7.25rem;
+		}
+
+		.console__strip {
+			order: 3;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.blonky-debug {
+			--stage: 100%;
+			justify-content: flex-start;
+			gap: 0.75rem;
+			padding: 3.5rem 0.75rem 1rem;
+		}
+
+		.console__header {
+			gap: 0.75rem;
+			inset: 0.65rem 0.7rem auto;
+		}
+
+		h1 {
+			font-size: 1.3rem;
+		}
+
+		.blonky-debug__readout {
+			gap: 0.3rem;
+			font-size: 0.58rem;
+		}
+
+		.control:not(.emote) {
+			flex: 1 1 auto;
+		}
+	}
+</style>

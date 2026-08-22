@@ -1,0 +1,51 @@
+---
+import { FlaskConical, Gauge, Smile } from '@lucide/astro';
+import { BLONKY_EMOTES, type BlonkyEmote } from '../lib/blonky';
+import ContextMenu from './ui/ContextMenu.astro';
+
+const excludedEmotes = new Set<BlonkyEmote>(['confirm', 'notice']);
+const emoteIcons: Partial<Record<BlonkyEmote, string>> = {
+	cry: '😢',
+	deny: '🙅',
+	'nod-off': '😴',
+	shrug: '🤷',
+	shudder: '😬',
+	sigh: '😮‍💨',
+	skeptical: '🤨',
+	smh: '🤦',
+};
+const emoteItems = Object.entries(BLONKY_EMOTES)
+	.filter(([emote]) => !excludedEmotes.has(emote as BlonkyEmote))
+	.map(([value, info]) => ({
+		icon: emoteIcons[value as BlonkyEmote],
+		label: info.label,
+		value,
+	}));
+const speedItems = [
+	{ label: '0.25x', value: '0.25' },
+	{ label: '0.50x', value: '0.5' },
+	{ label: '1.00x', value: '1' },
+	{ label: '2.00x', value: '2' },
+];
+---
+
+<ContextMenu
+	id="home-blonky-menu"
+	ariaLabel="Blonky actions"
+	heading="blonky"
+	groups={[
+		{
+			items: [
+				{ icon: Smile, label: 'emotes', items: emoteItems },
+				{
+					icon: Gauge,
+					label: 'speed',
+					radioGroup: { name: 'speed', value: '1', items: speedItems },
+				},
+			],
+		},
+		{ items: [{ icon: FlaskConical, label: 'lab', href: '/blonky' }] },
+	]}
+>
+	<slot name="trigger" slot="trigger" />
+</ContextMenu>

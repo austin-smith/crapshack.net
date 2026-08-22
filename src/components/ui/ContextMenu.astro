@@ -1,0 +1,158 @@
+---
+import { ChevronRight, Circle } from '@lucide/astro';
+import ContextMenuEntry, {
+	type ContextMenuActionItem,
+	type ContextMenuEntryItem,
+	type ContextMenuItemBase,
+} from './ContextMenuEntry.astro';
+
+interface ContextMenuRadioGroup {
+	name: string;
+	value: string;
+	items: ContextMenuActionItem[];
+}
+
+interface ContextMenuRadioSubItem extends ContextMenuItemBase {
+	radioGroup: ContextMenuRadioGroup;
+}
+
+interface ContextMenuListSubItem extends ContextMenuItemBase {
+	items: ContextMenuEntryItem[];
+}
+
+type ContextMenuSubItem = ContextMenuRadioSubItem | ContextMenuListSubItem;
+
+interface ContextMenuGroup {
+	label?: string;
+	items: (ContextMenuEntryItem | ContextMenuSubItem)[];
+}
+
+interface Props {
+	id: string;
+	/** Accessible name for the menu content. */
+	ariaLabel: string;
+	heading?: string;
+	groups: ContextMenuGroup[];
+	class?: string;
+}
+
+const { id, ariaLabel, heading, groups, class: className } = Astro.props;
+
+const isSubItem = (item: ContextMenuEntryItem | ContextMenuSubItem): item is ContextMenuSubItem => (
+	'radioGroup' in item || 'items' in item
+);
+---
+
+<div
+	class={`context-menu-root ${className ?? ''}`}
+	data-context-menu-root
+>
+	<div class="context-menu-trigger" data-context-menu-trigger>
+		<slot name="trigger" />
+	</div>
+
+	<div
+		id={id}
+		class="context-menu-content"
+		role="menu"
+		tabindex="-1"
+		aria-label={ariaLabel}
+		data-context-menu-content
+		hidden
+	>
+		{heading && <div class="context-menu-heading">{heading}</div>}
+		{groups.map((group, index) => (
+			<>
+				{index > 0 && <div class="context-menu-separator" role="separator"></div>}
+				<div class="context-menu-group" role="group">
+					{group.label && <div class="context-menu-label">{group.label}</div>}
+					{group.items.map((item, itemIndex) => {
+						if (!isSubItem(item)) return <ContextMenuEntry item={item} />;
+
+						const ItemIcon = typeof item.icon === 'string' ? undefined : item.icon;
+						const iconText = typeof item.icon === 'string' ? item.icon : undefined;
+						const submenuId = `${id}-submenu-${index}-${itemIndex}`;
+						const selectedRadioItem = 'radioGroup' in item
+							? item.radioGroup.items.find((radioItem) => radioItem.value === item.radioGroup.value)
+							: undefined;
+						return (
+							<div class="context-menu-sub">
+								<button
+									type="button"
+									class="context-menu-item"
+									role="menuitem"
+									tabindex="-1"
+									disabled={item.disabled}
+									aria-disabled={item.disabled ? 'true' : undefined}
+									aria-haspopup="menu"
+									aria-expanded="false"
+									aria-controls={submenuId}
+									aria-label={selectedRadioItem ? `${item.label}, ${selectedRadioItem.label}` : undefined}
+									data-context-menu-item
+									data-context-menu-sub-label={item.label}
+									data-context-menu-sub-trigger
+								>
+									{item.icon && (
+										<span class="context-menu-item-leading" aria-hidden="true">
+											{ItemIcon ? <ItemIcon /> : iconText}
+										</span>
+									)}
+									<span data-context-menu-sub-value>{selectedRadioItem?.label ?? item.label}</span>
+									<ChevronRight class="context-menu-sub-chevron" aria-hidden="true" />
+								</button>
+								<div
+									id={submenuId}
+									class="context-menu-sub-content"
+									role="menu"
+									tabindex="-1"
+									aria-label={item.label}
+									data-context-menu-sub-content
+									hidden
+								>
+									{'radioGroup' in item ? (
+										<div
+											role="group"
+											data-context-menu-radio-group={item.radioGroup.name}
+											data-context-menu-value={item.radioGroup.value}
+										>
+											<div class="context-menu-label">{item.label}</div>
+											{item.radioGroup.items.map((radioItem) => (
+												<button
+													type="button"
+													class="context-menu-item context-menu-radio-item"
+													role="menuitemradio"
+													tabindex="-1"
+													disabled={radioItem.disabled}
+													aria-disabled={radioItem.disabled ? 'true' : undefined}
+													aria-checked={radioItem.value === item.radioGroup.value}
+													data-context-menu-item
+													data-context-menu-value={radioItem.value}
+												>
+													<span class="context-menu-radio-indicator" aria-hidden="true">
+														<Circle />
+													</span>
+													{radioItem.label}
+												</button>
+											))}
+										</div>
+									) : (
+										<div class="context-menu-group" role="group">
+											<div class="context-menu-label">{item.label}</div>
+											{item.items.map((subItem) => <ContextMenuEntry item={subItem} />)}
+										</div>
+									)}
+								</div>
+							</div>
+						);
+					})}
+				</div>
+			</>
+		))}
+	</div>
+</div>
+
+<script>
+	import { initContextMenus } from '../../lib/ui/context-menu';
+
+	initContextMenus();
+</script>

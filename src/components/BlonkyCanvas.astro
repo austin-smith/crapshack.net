@@ -1,0 +1,56 @@
+---
+import {
+	BLONKY_VIEWPORTS,
+	type BlonkyView,
+} from '../lib/blonky';
+
+interface Props {
+	class?: string;
+	id: string;
+	label?: string;
+	showHead?: boolean;
+	view?: BlonkyView;
+}
+
+const {
+	class: className,
+	id,
+	label = 'Blonky, a hand-drawn character at rest',
+	showHead = true,
+	view = 'portrait',
+} = Astro.props;
+const viewport = BLONKY_VIEWPORTS[view];
+---
+
+<div class:list={['blonky', className]} data-blonky-root data-blonky-id={id}>
+	<canvas
+		class="blonky__canvas"
+		data-blonky-canvas
+		data-blonky-show-head={String(showHead)}
+		data-blonky-view={view}
+		width={viewport.width}
+		height={viewport.height}
+		role="img"
+		aria-label={label}
+	>
+		{label}
+	</canvas>
+</div>
+
+<script>
+	import { registerBlonkyCanvasLifecycle } from '../lib/blonky';
+
+	registerBlonkyCanvasLifecycle();
+</script>
+
+<style>
+	.blonky,
+	.blonky__canvas {
+		display: block;
+	}
+
+	.blonky__canvas {
+		width: 100%;
+		height: auto;
+	}
+</style>
