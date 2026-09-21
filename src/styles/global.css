@@ -30,7 +30,7 @@
 		padding: 24px 16px;
 	}
 
-	body.layout-full-bleed {
+	body.layout-scroll-locked {
 		overflow: hidden;
 	}
 
