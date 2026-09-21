@@ -1,33 +1,43 @@
 ---
 import { ChevronDown } from '@lucide/astro';
+import type { HTMLAttributes } from 'astro/types';
 
 interface Option {
 	value: string;
 	label: string;
 }
 
-interface Props {
+interface Props extends HTMLAttributes<'div'> {
 	/** Unique id used to target the dropdown and its change event. */
 	id: string;
 	options: Option[];
 	defaultValue?: string;
 	/** Accessible label for the dropdown. */
 	ariaLabel: string;
-	size?: 'default' | 'compact';
+	variant?: 'default' | 'outline';
+	/**
+	 * Root class for layout and optional CSS styling hooks:
+	 * --dropdown-color, -background, -hover-background,
+	 * -border (trigger and menu), -chevron-color, -menu-background,
+	 * -option-hover-background, -option-selected-background,
+	 * -focus-outline, -focus-offset, -focus-shadow.
+	 * Unset hooks retain the shared theme defaults.
+	 */
 	class?: string;
 }
 
-const { id, options, defaultValue, ariaLabel, size = 'default', class: className } = Astro.props;
+const { id, options, defaultValue, ariaLabel, variant = 'default', class: className, ...attributes } = Astro.props;
 const selectedValue = defaultValue ?? options[0]?.value;
 const selectedOption = options.find((option) => option.value === selectedValue) ?? options[0];
 ---
 
 <div
+	{...attributes}
 	id={id}
 	class={`dropdown ${className ?? ''}`}
 	data-dropdown
 	data-dropdown-value={selectedOption?.value}
-	data-size={size}
+	data-variant={variant}
 >
 	<button
 		id={`${id}-trigger`}
@@ -71,3 +81,125 @@ const selectedOption = options.find((option) => option.value === selectedValue) 
 
 	initDropdowns();
 </script>
+
+<style>
+	@layer components {
+		/* Dropdown component */
+		.dropdown {
+			position: relative;
+			width: 10rem;
+		}
+
+		.dropdown[data-variant='outline'] {
+			--dropdown-color: var(--ui-control-color, var(--app-text));
+			--dropdown-background: transparent;
+			--dropdown-hover-background: var(--ui-control-hover, var(--app-fill));
+			--dropdown-border: 1px solid var(--ui-control-border, var(--app-line-strong));
+			--dropdown-chevron-color: var(--ui-control-muted, var(--app-subtle));
+			--dropdown-menu-background: var(--ui-control-surface, var(--app-overlay));
+			--dropdown-option-hover-background: var(--ui-control-selected, var(--app-fill-strong));
+			--dropdown-option-selected-background: var(--ui-control-selected, var(--app-fill-strong));
+			--dropdown-focus-outline: 2px solid var(--ui-control-focus, var(--app-brand));
+			--dropdown-focus-offset: 3px;
+			--dropdown-focus-shadow: none;
+		}
+
+		.dropdown-trigger {
+			display: flex;
+			width: 100%;
+			height: 2.25rem;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.75rem;
+			padding: 0 0.75rem;
+			border: var(--dropdown-border, 0 solid currentColor);
+			border-radius: 0.375rem;
+			background: var(--dropdown-background, var(--app-sunken));
+			color: var(--dropdown-color, var(--app-muted));
+			font-size: 0.875rem;
+			font-weight: 500;
+			transition: background 150ms ease, color 150ms ease;
+		}
+
+		.dropdown-trigger:hover {
+			background: var(--dropdown-hover-background, rgb(0 0 0 / var(--app-track-a)));
+			color: var(--dropdown-color, var(--app-text));
+		}
+
+		.dropdown-trigger:focus-visible {
+			outline: var(--dropdown-focus-outline, none);
+			outline-offset: var(--dropdown-focus-offset, 0px);
+			box-shadow: var(--dropdown-focus-shadow, 0 0 0 2px color-mix(in srgb, var(--color-brand) 70%, transparent));
+		}
+
+		.dropdown-chevron {
+			flex-shrink: 0;
+			color: var(--dropdown-chevron-color, rgb(var(--app-fg-rgb) / 0.45));
+			transition: transform 150ms ease;
+		}
+
+		.dropdown-trigger[aria-expanded="true"] .dropdown-chevron {
+			transform: rotate(180deg);
+		}
+
+		.dropdown-menu {
+			position: absolute;
+			left: 0;
+			z-index: 30;
+			width: 100%;
+			margin-top: 0.375rem;
+			padding: 0.25rem;
+			border: var(--dropdown-border, 1px solid var(--app-line));
+			border-radius: 0.375rem;
+			background: var(--dropdown-menu-background, color-mix(in srgb, var(--app-overlay) 95%, transparent));
+			box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+		}
+
+		/* Set by lib/ui/dropdown.ts when the menu would clip the viewport bottom. */
+		.dropdown[data-direction="up"] .dropdown-menu {
+			bottom: 100%;
+			margin-top: 0;
+			margin-bottom: 0.375rem;
+		}
+
+		.dropdown-options {
+			display: flex;
+			flex-direction: column;
+			gap: 0.25rem;
+		}
+
+		.dropdown-option {
+			display: flex;
+			width: 100%;
+			height: 2.25rem;
+			align-items: center;
+			padding: 0 0.75rem;
+			border-radius: 0.25rem;
+			background: transparent;
+			color: var(--dropdown-color, rgb(var(--app-fg-rgb) / 0.65));
+			font-size: 0.875rem;
+			text-align: left;
+			transition: background 150ms ease, color 150ms ease;
+		}
+
+		.dropdown-option:hover,
+		.dropdown-option:focus-visible {
+			outline: none;
+			background: rgb(var(--app-fill-rgb) / 0.06);
+			color: var(--dropdown-color, var(--app-text));
+		}
+
+		.dropdown-option:hover {
+			background: var(--dropdown-option-hover-background, rgb(var(--app-fill-rgb) / 0.06));
+		}
+
+		.dropdown-option[aria-selected="true"] {
+			background: var(--dropdown-option-selected-background, var(--app-fill));
+			color: var(--dropdown-color, var(--app-text));
+			font-weight: 500;
+		}
+
+	}
+</style>

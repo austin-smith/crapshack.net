@@ -1,0 +1,52 @@
+---
+import type { ComponentProps } from 'astro/types';
+import Button from './Button.astro';
+
+interface Props extends Omit<ComponentProps<typeof Button>, 'variant' | 'aria-pressed' | 'type'> {
+	variant?: 'default' | 'outline' | 'dashed';
+	/** When provided, the caller owns aria-pressed and handles toggle-change. */
+	pressed?: boolean;
+	/** Initial state for a standalone toggle. Ignored when pressed is provided. */
+	defaultPressed?: boolean;
+}
+
+const { variant = 'default', pressed, defaultPressed = false, class: className, ...attributes } = Astro.props;
+---
+
+<Button
+	{...attributes}
+	class:list={['ui-toggle', className]}
+	variant={variant === 'default' ? 'ghost' : variant}
+	data-ui-toggle
+	data-controlled={pressed !== undefined ? '' : undefined}
+	aria-pressed={pressed ?? defaultPressed}
+>
+	<slot />
+</Button>
+
+<script>
+	import { initToggles } from '../../lib/ui/toggle';
+
+	initToggles();
+</script>
+
+<style>
+	@layer components {
+		.ui-toggle[aria-pressed='true'] {
+			background: var(--ui-control-selected, var(--app-fill-strong));
+			color: var(--ui-control-color, var(--app-text));
+		}
+
+		.ui-toggle[aria-pressed='true']:where(:enabled:hover) {
+			background: var(--ui-control-selected-hover, color-mix(in srgb, var(--app-fill-strong) 90%, var(--app-text)));
+		}
+
+		.ui-toggle[data-variant='dashed'][aria-pressed='true'] {
+			border-style: solid;
+		}
+
+		.ui-toggle[data-variant='dashed'][aria-pressed='false'] {
+			color: var(--ui-control-muted, var(--app-subtle));
+		}
+	}
+</style>

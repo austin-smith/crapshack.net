@@ -1,5 +1,6 @@
 ---
 import { X } from '@lucide/astro';
+import Button from './Button.astro';
 
 interface Props {
 	id: string;
@@ -24,14 +25,15 @@ const { id, class: className, maxWidth = 'max-w-2xl', ariaLabel } = Astro.props;
 >
 	<div class="dialog-backdrop" data-dialog-backdrop></div>
 	<div class={`dialog-container ${maxWidth} ${className ?? ''}`} tabindex="-1" data-dialog-container>
-		<button
-			type="button"
+		<Button
+			variant="secondary"
+			size="icon"
 			class="dialog-close"
 			data-dialog-close
 			aria-label="Close dialog"
 		>
-			<X width={20} height={20} stroke-width={2.5} />
-		</button>
+			<X aria-hidden="true" />
+		</Button>
 		<div class="dialog-content">
 			<slot />
 		</div>
@@ -60,3 +62,115 @@ const { id, class: className, maxWidth = 'max-w-2xl', ariaLabel } = Astro.props;
 		}
 	}
 </script>
+
+<style>
+	@layer components {
+		/* Dialog component.
+		   The dialog is a dark panel over a 75% black backdrop in every theme, so it
+		   opts out of theming: everything inside renders with the light values. The
+		   derived tokens are repeated because they are substituted at :root, so
+		   overriding the rgb pair alone would not reach them. */
+		.dialog-root {
+			--app-fg-rgb: 255 255 255;
+			--app-fill-rgb: 255 255 255;
+			--app-overlay: #101827;
+			--app-track-a: 0.3;
+
+			--app-text: rgb(var(--app-fg-rgb));
+			--app-strong: rgb(var(--app-fg-rgb) / 0.95);
+			--app-muted: rgb(var(--app-fg-rgb) / 0.9);
+			--app-subtle: rgb(var(--app-fg-rgb) / 0.8);
+			--app-dim: rgb(var(--app-fg-rgb) / 0.6);
+			--app-faint: rgb(var(--app-fg-rgb) / 0.4);
+
+			--app-raised: rgb(var(--app-fill-rgb) / 0.04);
+			--app-sunken-subtle: rgb(0 0 0 / 0.1);
+			--app-sunken: rgb(0 0 0 / 0.2);
+			--app-sunken-strong: rgb(0 0 0 / 0.4);
+
+			--app-line-subtle: rgb(var(--app-fill-rgb) / 0.05);
+			--app-line: rgb(var(--app-fill-rgb) / 0.1);
+			--app-line-strong: rgb(var(--app-fill-rgb) / 0.2);
+
+			--app-fill-subtle: rgb(var(--app-fill-rgb) / 0.05);
+			--app-fill: rgb(var(--app-fill-rgb) / 0.1);
+			--app-fill-strong: rgb(var(--app-fill-rgb) / 0.2);
+
+			position: fixed;
+			inset: 0;
+			z-index: 200;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 1.5rem;
+			margin: 0 !important; /* prevent parent margins (e.g., space-y-*) from shifting the overlay */
+			pointer-events: none;
+			visibility: hidden;
+		}
+
+		.dialog-root[data-open="true"] {
+			pointer-events: auto;
+			visibility: visible;
+		}
+
+		.dialog-backdrop {
+			position: absolute;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.75);
+			backdrop-filter: blur(8px);
+			-webkit-backdrop-filter: blur(8px);
+			opacity: 0;
+			transition: opacity 200ms ease-out;
+		}
+
+		.dialog-root[data-open="true"] .dialog-backdrop {
+			opacity: 1;
+		}
+
+		.dialog-container {
+			position: relative;
+			width: 100%;
+			background: linear-gradient(
+				145deg,
+				color-mix(in srgb, var(--app-overlay-from) 95%, transparent) 0%,
+				color-mix(in srgb, var(--app-overlay-to) 98%, transparent) 100%
+			);
+			border: 1px solid var(--app-line);
+			border-radius: 1rem;
+			box-shadow:
+				0 25px 50px -12px rgba(0, 0, 0, 0.5),
+				0 0 0 1px rgb(var(--app-fill-rgb) / 0.05) inset;
+			outline: none;
+			opacity: 0;
+			transform: scale(0.95) translateY(10px);
+			transition:
+				opacity 200ms ease-out,
+				transform 200ms ease-out;
+		}
+
+		.dialog-root[data-open="true"] .dialog-container {
+			opacity: 1;
+			transform: scale(1) translateY(0);
+		}
+
+		.dialog-close {
+			position: absolute;
+			top: 0.75rem;
+			right: 0.75rem;
+			z-index: 10;
+		}
+
+		.dialog-content {
+			padding: 1.5rem;
+			overflow: auto;
+			max-height: calc(100vh - 6rem);
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.dialog-backdrop,
+			.dialog-container {
+				transition: none;
+			}
+		}
+	}
+</style>

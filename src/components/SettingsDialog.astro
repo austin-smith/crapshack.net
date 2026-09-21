@@ -79,3 +79,12 @@ const dialogId = 'settings-dialog';
 		}).observe(dialog, { attributes: true, attributeFilter: ['data-open'] });
 	}
 </script>
+
+<style>
+	@layer utilities {
+		/* Nothing to act on in light, but still settable — a "system" user can pre-opt-in. */
+		:global(html[data-theme="light"]) [data-true-black-row] {
+			opacity: 0.55;
+		}
+	}
+</style>

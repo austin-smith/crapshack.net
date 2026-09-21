@@ -1,4 +1,6 @@
 ---
+import './preference-preview.css';
+
 interface Props {
 	/** Id of a visible label that names this group. Falls back to an aria-label. */
 	labelledBy?: string;
@@ -49,3 +51,43 @@ const options = [
 		</button>
 	))}
 </div>
+
+<style>
+	@layer utilities {
+		/* The "system" swatch shows both palettes, split on the diagonal. */
+		.theme-preview-layer {
+			position: absolute;
+			inset: 0;
+			background: var(--app-canvas);
+			/* Keyed on the class, not [data-theme='dark'] — that flips to 'black'. */
+			clip-path: polygon(100% 0, 100% 100%, 0 100%);
+		}
+
+		.theme-preview-panel {
+			position: absolute;
+			inset-block: 0;
+			right: 0;
+			width: 34%;
+			background: var(--app-panel);
+		}
+
+		.theme-preview-mark {
+			position: absolute;
+			left: 12%;
+			height: 0.3125rem;
+			border-radius: 999px;
+		}
+
+		.theme-preview-mark:nth-of-type(1) {
+			top: 34%;
+			width: 30%;
+			background: var(--app-brand);
+		}
+
+		.theme-preview-mark:nth-of-type(2) {
+			top: 54%;
+			width: 20%;
+			background: rgb(var(--app-fg-rgb) / 0.45);
+		}
+	}
+</style>

@@ -8,23 +8,36 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
         // fall through to fallback
     }
 
-    // Fallback approach using a temporary textarea element
+    // Keep the fallback from stealing focus or discarding a text selection.
+    const activeElement = document.activeElement;
+    const selection = window.getSelection();
+    const ranges = selection
+        ? Array.from({ length: selection.rangeCount }, (_, index) => selection.getRangeAt(index).cloneRange())
+        : [];
+    const textarea = document.createElement('textarea');
     try {
-        const textarea = document.createElement('textarea');
         textarea.value = text;
+        textarea.readOnly = true;
         // Avoid scrolling to bottom
         textarea.style.position = 'fixed';
         textarea.style.top = '0';
         textarea.style.left = '0';
         textarea.style.opacity = '0';
         document.body.appendChild(textarea);
-        textarea.focus();
+        textarea.focus({ preventScroll: true });
         textarea.select();
-        const successful = document.execCommand('copy');
-        document.body.removeChild(textarea);
-        return successful;
+        return document.execCommand('copy');
     } catch {
         return false;
+    } finally {
+        textarea.remove();
+        if (activeElement instanceof HTMLElement && activeElement.isConnected) {
+            activeElement.focus({ preventScroll: true });
+        }
+        if (selection && ranges.length > 0) {
+            selection.removeAllRanges();
+            ranges.forEach((range) => selection.addRange(range));
+        }
     }
 }
 

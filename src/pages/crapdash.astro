@@ -2,9 +2,9 @@
 import Layout from '../layouts/Layout.astro';
 import { crapdash } from '../data/apps';
 import AppLinks from '../components/AppLinks.astro';
+import CopyButton from '../components/ui/CopyButton.astro';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import ToggleGroup from '../components/ui/ToggleGroup.astro';
-import { Copy, Check } from '@lucide/astro';
 
 const { repoUrl, icon: iconUrl, description } = crapdash;
 const releasesUrl = `${repoUrl}/releases`;
@@ -72,22 +72,14 @@ const screenshots = [
 				ariaLabel="Switch deployment method"
 			/>
 		</div>
-		<div class="relative group">
-			<pre class="bg-sunken-strong rounded-lg p-4 pr-12 overflow-x-auto text-sm"><code id="docker-command" class="text-muted">docker run -d \
+		<div class="flex items-start gap-3 rounded-lg bg-sunken-strong p-4">
+			<pre class="min-w-0 flex-1 overflow-x-auto text-sm"><code id="docker-command" class="text-muted">docker run -d \
   --name crapdash \
   -p 2727:2727 \
   --mount type=bind,source=/path/to/data,target=/app/data \
   --restart=unless-stopped \
   ghcr.io/austin-smith/crapdash:latest</code></pre>
-			<button
-				id="copy-btn"
-				type="button"
-				class="absolute top-3 right-3 p-1.5 rounded-md bg-fill text-dim hover:text-[var(--color-text)] hover:bg-fill-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-				aria-label="Copy to clipboard"
-			>
-				<Copy id="copy-icon" width={16} height={16} stroke-width={2} />
-				<Check id="check-icon" class="hidden" width={16} height={16} stroke-width={2} />
-			</button>
+			<CopyButton targetId="docker-command" label="Copy deployment command" />
 		</div>
 		<p class="text-strong pt-2">
 			Or download a <a class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]" href={releasesUrl} target="_blank" rel="noopener noreferrer">prebuilt bundle</a> for standalone Node.js deployment.
@@ -97,8 +89,6 @@ const screenshots = [
 </Layout>
 
 <script>
-	import { copyTextToClipboard } from '../lib/clipboard';
-
 	// Docker method toggle
 	const dockerMethodToggle = document.querySelector<HTMLElement>('[data-toggle-group="docker-method"]');
 	const codeEl = document.getElementById('docker-command');
@@ -132,24 +122,4 @@ const screenshots = [
 	dockerMethodToggle?.addEventListener('toggle-change', ((e: CustomEvent<{ value: string }>) => {
 		setDeploymentMethod(e.detail.value);
 	}) as EventListener);
-
-	// Copy button
-	const copyBtn = document.getElementById('copy-btn');
-	const copyIcon = document.getElementById('copy-icon');
-	const checkIcon = document.getElementById('check-icon');
-
-	copyBtn?.addEventListener('click', async () => {
-		const text = codeEl?.textContent ?? '';
-		const success = await copyTextToClipboard(text);
-		
-		if (success && copyIcon && checkIcon) {
-			copyIcon.classList.add('hidden');
-			checkIcon.classList.remove('hidden');
-			
-			setTimeout(() => {
-				copyIcon.classList.remove('hidden');
-				checkIcon.classList.add('hidden');
-			}, 2000);
-		}
-	});
 </script>

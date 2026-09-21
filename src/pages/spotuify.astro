@@ -2,12 +2,11 @@
 import Layout from '../layouts/Layout.astro';
 import { spotuify } from '../data/apps';
 import AppLinks from '../components/AppLinks.astro';
+import CopyButton from '../components/ui/CopyButton.astro';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import ToggleGroup from '../components/ui/ToggleGroup.astro';
 import {
 	AudioLines,
-	Check,
-	Copy,
 	Image,
 	MicVocal,
 	MonitorSpeaker,
@@ -147,30 +146,14 @@ const features = [
 							<p class="font-mono text-sm text-subtle">Install spotuify</p>
 							<div class="flex items-center justify-between gap-3 rounded-lg bg-sunken-strong px-4 py-2.5">
 								<pre class="overflow-x-auto text-sm"><code class="text-muted">{command}</code></pre>
-								<button
-									type="button"
-									data-copy-command={command}
-									class="shrink-0 rounded-md bg-fill p-1.5 text-dim transition-colors hover:bg-fill-strong hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-									aria-label={`Copy ${command}`}
-								>
-									<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
-									<Check class="check-icon hidden" width={16} height={16} stroke-width={2} />
-								</button>
+								<CopyButton text={command} label={`Copy ${command}`} />
 							</div>
 						</div>
 						<div class="space-y-1">
 							<p class="font-mono text-sm text-subtle">Update spotuify</p>
 							<div class="flex items-center justify-between gap-3 rounded-lg bg-sunken-strong px-4 py-2.5">
 								<pre class="overflow-x-auto text-sm"><code class="text-muted">spotuify update</code></pre>
-								<button
-									type="button"
-									data-copy-command="spotuify update"
-									class="shrink-0 rounded-md bg-fill p-1.5 text-dim transition-colors hover:bg-fill-strong hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-									aria-label="Copy spotuify update"
-								>
-									<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
-									<Check class="check-icon hidden" width={16} height={16} stroke-width={2} />
-								</button>
+								<CopyButton text="spotuify update" label="Copy spotuify update" />
 							</div>
 						</div>
 					</div>
@@ -212,15 +195,7 @@ const features = [
 				<p class="font-mono text-sm text-subtle">Follow the guided setup</p>
 				<div class="flex items-center justify-between gap-3 rounded-lg bg-sunken-strong px-4 py-2.5">
 					<pre class="overflow-x-auto text-sm"><code class="text-muted">spotuify auth</code></pre>
-					<button
-						type="button"
-						data-copy-command="spotuify auth"
-						class="shrink-0 rounded-md bg-fill p-1.5 text-dim transition-colors hover:bg-fill-strong hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-						aria-label="Copy spotuify auth"
-					>
-						<Copy class="copy-icon" width={16} height={16} stroke-width={2} />
-						<Check class="check-icon hidden" width={16} height={16} stroke-width={2} />
-					</button>
+					<CopyButton text="spotuify auth" label="Copy spotuify auth" />
 				</div>
 			</div>
 		</section>
@@ -229,8 +204,6 @@ const features = [
 </Layout>
 
 <script>
-	import { copyTextToClipboard } from '../lib/clipboard';
-
 	const installPanes = document.querySelectorAll<HTMLElement>('[data-install-pane]');
 	const installToggle = document.querySelector('[data-toggle-group="spotuify-install-method"]');
 
@@ -239,23 +212,4 @@ const features = [
 			pane.classList.toggle('hidden', pane.dataset.installPane !== e.detail.value);
 		});
 	}) as EventListener);
-
-	document.querySelectorAll<HTMLButtonElement>('button[data-copy-command]').forEach((button) => {
-		const copyIcon = button.querySelector('.copy-icon');
-		const checkIcon = button.querySelector('.check-icon');
-
-		button.addEventListener('click', async () => {
-			const success = await copyTextToClipboard(button.dataset.copyCommand ?? '');
-
-			if (success && copyIcon && checkIcon) {
-				copyIcon.classList.add('hidden');
-				checkIcon.classList.remove('hidden');
-
-				setTimeout(() => {
-					copyIcon.classList.remove('hidden');
-					checkIcon.classList.add('hidden');
-				}, 2000);
-			}
-		});
-	});
 </script>

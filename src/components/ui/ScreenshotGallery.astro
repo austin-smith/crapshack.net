@@ -30,7 +30,7 @@ const toggleName = `${name}-screenshot-view`;
 
 <div data-screenshot-gallery data-dialog-id={dialogId} data-toggle-name={toggleName}>
 	<div class="screenshots-frame relative -mr-4">
-		<div class="screenshots screenshots-scroll -mb-5 flex items-start gap-4 overflow-x-auto pb-5 pr-4 overscroll-x-contain">
+		<div class="screenshots scrollbar-none -mb-5 flex items-start gap-4 overflow-x-auto pb-5 pr-4 overscroll-x-contain">
 			{screenshots.map((screenshot) => (
 				<button
 					type="button"
@@ -92,3 +92,19 @@ const toggleName = `${name}-screenshot-view`;
 		}
 	}
 </script>
+
+<style>
+	@layer components {
+		/* ScreenshotGallery component */
+		.screenshots-frame::after {
+			content: "";
+			position: absolute;
+			top: 0;
+			right: 0;
+			bottom: 1.25rem;
+			width: 0.75rem;
+			background: linear-gradient(to right, transparent, color-mix(in srgb, var(--color-bg) 70%, transparent));
+			pointer-events: none;
+		}
+	}
+</style>

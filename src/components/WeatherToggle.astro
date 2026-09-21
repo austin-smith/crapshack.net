@@ -1,4 +1,6 @@
 ---
+import './preference-preview.css';
+
 interface Props {
 	/** Id of a visible label that names this group. Falls back to an aria-label. */
 	labelledBy?: string;
@@ -49,3 +51,25 @@ const options = [
 	if (rain) initRainyDay(rain, { count: 20, scale: 0.34, speed: 0.5 });
 	if (snow) initSnowyDay(snow, { count: 12, scale: 0.4, speed: 0.3 });
 </script>
+
+<style>
+	@layer utilities {
+		/* The effects assume a viewport-sized container: they park particles tens of px
+		   above it and fall 100vh. Rescaled to the tile; container-type gives cqh
+		   something to measure. */
+		.weather-preview {
+			container-type: size;
+			--weather-fall: 130cqh;
+		}
+
+		.weather-preview :global(.raindrop) {
+			top: -20%;
+			width: 1.5px;
+		}
+
+		.weather-preview :global(.snowflake) {
+			top: -10%;
+			box-shadow: none;
+		}
+	}
+</style>
