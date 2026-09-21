@@ -1,0 +1,68 @@
+---
+interface Props {
+	appName: string;
+	icons: { src: string; name: string }[];
+}
+
+const { appName, icons } = Astro.props;
+if (icons.length < 2) {
+	throw new Error('AppIconCycler requires at least two icons.');
+}
+---
+
+<button
+	type="button"
+	data-app-icon-cycler
+	data-app-name={appName}
+	aria-label={`Change ${appName} app icon. Current icon: ${icons[0].name}`}
+	title="Try another app icon"
+	class="h-24 w-24 shrink-0 cursor-pointer rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] focus-visible:ring-offset-4 focus-visible:ring-offset-[var(--color-bg)]"
+>
+	<span data-icon-stack class="relative block h-24 w-24">
+		{icons.map((icon, index) => (
+			<img src={icon.src} alt={icon.name} width="96" height="96" class="absolute inset-0 h-24 w-24 object-contain drop-shadow-md" hidden={index !== 0} />
+		))}
+	</span>
+</button>
+
+<script>
+	document.querySelectorAll<HTMLButtonElement>('[data-app-icon-cycler]').forEach((iconButton) => {
+		const iconStack = iconButton.querySelector('[data-icon-stack]');
+		if (!iconStack) return;
+		const icons = Array.from(iconButton.querySelectorAll<HTMLImageElement>('img'));
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+		let current = 0;
+		let spinning = false;
+		iconButton.addEventListener('click', async () => {
+			if (spinning) return;
+			spinning = true;
+			const outgoing = icons[current];
+			current = (current + 1) % icons.length;
+			const incoming = icons[current];
+			const animations: Animation[] = [];
+			incoming.hidden = false;
+			try {
+				if (!reducedMotion.matches) {
+					const timing = { duration: 420, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'both' } as const;
+					animations.push(
+						iconStack.animate({ transform: ['rotate(0deg)', 'rotate(360deg)'] }, timing),
+						outgoing.animate([
+							{ opacity: 1 }, { opacity: 1, offset: 0.3 },
+							{ opacity: 0, offset: 0.7 }, { opacity: 0 },
+						], timing),
+						incoming.animate([
+							{ opacity: 0 }, { opacity: 0, offset: 0.3 },
+							{ opacity: 1, offset: 0.7 }, { opacity: 1 },
+						], timing),
+					);
+					await Promise.all(animations.map((animation) => animation.finished));
+				}
+			} finally {
+				outgoing.hidden = true;
+				animations.forEach((animation) => animation.cancel());
+				iconButton.setAttribute('aria-label', `Change ${iconButton.dataset.appName} app icon. Current icon: ${incoming.alt}`);
+				spinning = false;
+			}
+		});
+	});
+</script>

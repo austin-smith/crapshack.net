@@ -2,11 +2,17 @@
 import Layout from '../layouts/Layout.astro';
 import { bitdream } from '../data/apps';
 import AppLinks from '../components/AppLinks.astro';
+import AppIconCycler from '../components/AppIconCycler.astro';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 
 const { icon: iconUrl, description } = bitdream;
 const rpcSpecUrl = 'https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md';
 const transmissionUrl = 'https://transmissionbt.com/';
+const icons = [
+	{ src: iconUrl, name: 'Byte-sized Dreams' },
+	{ src: '/images/bitdream/bitdream-blue.png', name: 'Blue Clouds' },
+	{ src: '/images/bitdream/bitdream-pixely-clouds.png', name: 'Cloudy Day' },
+];
 const screenshots = [
 	{
 		id: 'light',
@@ -30,7 +36,7 @@ const screenshots = [
 >
 	<section class="mx-auto max-w-3xl space-y-8 mt-10">
 		<header class="flex items-center gap-4">
-			<img src={iconUrl} alt="BitDream icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
+			<AppIconCycler appName={bitdream.name} icons={icons} />
 			<div>
 				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">BitDream</h1>
 				<p class="text-muted">{description}</p>

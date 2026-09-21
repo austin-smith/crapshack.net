@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { computerSolitaire } from '../data/apps';
 import AppLinks from '../components/AppLinks.astro';
+import AppIconCycler from '../components/AppIconCycler.astro';
 import Button from '../components/ui/Button.astro';
 import Dialog from '../components/ui/Dialog.astro';
 import Dropdown from '../components/ui/Dropdown.astro';
@@ -11,6 +12,12 @@ import { computerSolitaireVariants as variants } from '../lib/computer-solitaire
 import { BookText } from '@lucide/astro';
 
 const { icon: iconUrl, description } = computerSolitaire;
+const icons = [
+	{ src: iconUrl, name: 'Default' },
+	{ src: '/images/computer-solitaire/computer-solitaire-blue.png', name: 'Blue' },
+	{ src: '/images/computer-solitaire/computer-solitaire-pink.png', name: 'Pink' },
+	{ src: '/images/computer-solitaire/computer-solitaire-queen-of-hearts.png', name: 'Queen of Hearts' },
+];
 const screenshots = [
 	{
 		id: 'ios',
@@ -34,7 +41,7 @@ const screenshots = [
 >
 	<section class="mx-auto max-w-3xl space-y-8 mt-10">
 		<header class="flex items-center gap-4">
-			<img src={iconUrl} alt="Computer Solitaire icon" width="96" height="96" class="h-24 w-24 shrink-0 object-contain drop-shadow-md" loading="lazy" />
+			<AppIconCycler appName={computerSolitaire.name} icons={icons} />
 			<div>
 				<h1 class="text-3xl font-mono font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">Computer Solitaire</h1>
 				<p class="text-muted">{description}</p>
