@@ -10,8 +10,6 @@
 		padding: 0 1rem;
 		border: 1px solid transparent;
 		border-radius: 0.375rem;
-		background: var(--app-brand);
-		color: var(--app-on-brand);
 		font: inherit;
 		font-size: 0.875rem;
 		font-weight: 500;
@@ -20,8 +18,15 @@
 		touch-action: manipulation;
 	}
 
-	.ui-button:where(:is(button:enabled, a[href]):hover) {
-		background: color-mix(in srgb, var(--app-brand) 90%, var(--app-on-brand));
+	.ui-button:where(.ui-button--default) {
+		background-color: color-mix(in srgb, var(--app-brand) 80%, transparent);
+		background-image: linear-gradient(rgb(var(--app-fill-rgb) / 0.12), transparent);
+		border-color: color-mix(in srgb, var(--app-brand) 82%, var(--app-on-brand));
+		color: var(--app-on-brand);
+	}
+
+	.ui-button:where(.ui-button--default):where(:is(button:enabled, a[href]):hover) {
+		background-color: color-mix(in srgb, var(--app-brand) 90%, transparent);
 	}
 
 	.ui-button:where(.ui-button--secondary) {
