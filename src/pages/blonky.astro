@@ -1,0 +1,483 @@
+---
+import { Infinity, Pause, Play, Repeat2, Shuffle, StepBack, StepForward } from '@lucide/astro';
+import Layout from '../layouts/Layout.astro';
+import Button from '../components/ui/Button.astro';
+import Toggle from '../components/ui/Toggle.astro';
+import Slider from '../components/ui/Slider.astro';
+import ButtonGroup from '../components/ui/ButtonGroup.astro';
+import Dropdown from '../components/ui/Dropdown.astro';
+import Tooltip from '../components/ui/Tooltip.astro';
+import { BLONKY_EMOTES } from '../lib/blonky';
+
+const emotes = Object.entries(BLONKY_EMOTES);
+---
+
+<Layout title="crapshack (blonky)" noIndex={true} fullBleed={true}>
+	<section class="blonky-debug" data-blonky-page-root>
+		<div class="lab-workspace">
+			<div class="console">
+				<figure class="console__stage">
+					<header class="console__header">
+						<h1>blonky</h1>
+						<p class="blonky-debug__readout" aria-label="Animation state">
+							<output aria-live="off" data-blonky-state>playing</output>
+							<span aria-hidden="true">·</span>
+							<output aria-live="off" data-blonky-time>0.000 s</output>
+							<span aria-hidden="true">·</span>
+							<span>f<output aria-live="off" data-blonky-frame>0000</output></span>
+							<span aria-hidden="true">·</span>
+							<span>8&nbsp;fps</span>
+						</p>
+					</header>
+
+					<canvas
+						id="blonky-drawing"
+						data-blonky-page-canvas
+						width="940"
+						height="800"
+						role="img"
+						aria-label="Blonky, a large hand-drawn character"
+					>
+						Blonky, a large hand-drawn character.
+					</canvas>
+				</figure>
+
+				<fieldset class="console__emotes">
+					<legend class="sr-only">emotes</legend>
+					<div class="console__emotes-header">
+						<p class="console__emotes-title">emotes</p>
+						<output aria-live="off" data-blonky-emote-state>idle</output>
+					</div>
+					<div class="console__emote-list">
+						{emotes.map(([key, info]) => (
+							<Toggle
+								variant="outline"
+								size="xl"
+								pressed={false}
+								data-blonky-emote={key}
+							>
+								{info.label}
+							</Toggle>
+						))}
+					</div>
+					<Button class="surprise" variant="dashed" size="lg" data-blonky-surprise>
+						<Shuffle data-icon="inline-start" aria-hidden="true" /> random
+					</Button>
+				</fieldset>
+
+				<div class="console__strip">
+					<div class="timeline">
+						<Slider id="blonky-timeline" class="timeline__slider" min="0" max="40" step="1" value="0" data-blonky-timeline aria-label="Animation frame" disabled />
+						<div class="timeline__duration">
+							<span class="timeline__idle">
+								<Infinity width={14} height={14} aria-hidden="true" />
+								<span class="sr-only">Infinite duration</span>
+							</span>
+							<output aria-live="off" data-blonky-duration></output>
+						</div>
+					</div>
+					<fieldset class="console__cluster">
+						<legend class="sr-only">playback</legend>
+						<div class="console__buttons">
+							<ButtonGroup ariaLabel="Transport">
+								<Button
+									variant="outline"
+									size="icon"
+									data-blonky-step="-1"
+									aria-label="Step backward one frame"
+								>
+									<StepBack aria-hidden="true" />
+								</Button>
+								<Button
+									variant="outline"
+									size="icon"
+									data-blonky-playback
+									aria-label="Pause animation"
+								>
+									<span data-blonky-playback-icon="play" hidden>
+										<Play aria-hidden="true" />
+									</span>
+									<span data-blonky-playback-icon="pause">
+										<Pause aria-hidden="true" />
+									</span>
+								</Button>
+								<Button
+									variant="outline"
+									size="icon"
+									data-blonky-step="1"
+									aria-label="Step forward one frame"
+								>
+									<StepForward aria-hidden="true" />
+								</Button>
+							</ButtonGroup>
+							<Button variant="outline" data-blonky-reset>reset</Button>
+							<div class="relative inline-flex">
+								<Toggle variant="outline" size="icon" pressed={false} data-blonky-loop aria-label="Loop selected animation" data-tooltip="blonky-loop-tooltip" data-tooltip-body="Loop selected animation">
+									<Repeat2 aria-hidden="true" />
+								</Toggle>
+								<Tooltip id="blonky-loop-tooltip" class="right-0 w-max" placement="above" />
+							</div>
+							<Dropdown
+								id="blonky-speed"
+								class="w-max"
+								variant="outline"
+								ariaLabel="Playback speed"
+								defaultValue="1"
+								options={[
+									{ value: '0.25', label: '0.25x' },
+									{ value: '0.5', label: '0.50x' },
+									{ value: '1', label: '1.00x' },
+									{ value: '2', label: '2.00x' },
+								]}
+							/>
+						</div>
+					</fieldset>
+
+					<fieldset class="console__cluster console__cluster--components">
+						<legend class="sr-only">components</legend>
+						<ButtonGroup ariaLabel="Components">
+							<Toggle
+								variant="dashed"
+								pressed={true}
+								data-blonky-head-visibility
+							>
+								head
+							</Toggle>
+							<Toggle
+								variant="dashed"
+								pressed={true}
+								data-blonky-body-visibility
+							>
+								body
+							</Toggle>
+							<Toggle
+								variant="dashed"
+								pressed={true}
+								data-blonky-arms-visibility
+							>
+								arms
+							</Toggle>
+						</ButtonGroup>
+					</fieldset>
+				</div>
+			</div>
+		</div>
+
+		<p class="blonky-debug__shortcuts">
+			<kbd>space</kbd> play/pause
+			<span aria-hidden="true">·</span>
+			<kbd>←</kbd><kbd>→</kbd> step
+			<span aria-hidden="true">·</span>
+			<kbd>r</kbd> random
+		</p>
+
+		<span class="sr-only" data-blonky-page-status role="status" aria-live="polite" aria-atomic="true">
+			Blonky animation playing
+		</span>
+	</section>
+</Layout>
+
+<script>
+	import { registerBlonkyDebugLifecycle } from '../lib/blonky/debug';
+
+	registerBlonkyDebugLifecycle();
+</script>
+
+<style>
+	:global(.weather-container) {
+		display: none;
+	}
+
+	.blonky-debug {
+		--lab-panel: #f8f5ef;
+		--lab-stage: #dce3e1;
+		--lab-ink: #303c3e;
+		--lab-muted: #626d6c;
+		--lab-line: #c8cfcb;
+		--ui-control-color: var(--lab-ink);
+		--ui-control-muted: var(--lab-muted);
+		--ui-control-border: var(--lab-line);
+		--ui-control-surface: var(--lab-panel);
+		--ui-control-hover: color-mix(in srgb, var(--lab-line) 32%, transparent);
+		--ui-control-selected: var(--lab-stage);
+		--ui-control-selected-hover: color-mix(in srgb, var(--lab-stage) 90%, var(--lab-ink));
+		--ui-control-focus: var(--lab-ink);
+		--palette: 17rem;
+		--stage: min(60rem, calc(100svw - 5rem - var(--palette)), max(34rem, calc((100svh - 15rem) * 1.175)));
+		min-height: 100svh;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		padding: 3.5rem 2rem 1.5rem;
+		background: var(--app-canvas);
+		color: var(--lab-ink);
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	}
+
+	:global(html[data-theme='dark']) .blonky-debug,
+	:global(html[data-theme='black']) .blonky-debug {
+		--lab-panel: var(--app-panel);
+		--lab-stage: var(--app-canvas);
+		--lab-ink: var(--app-text);
+		--lab-muted: var(--app-subtle);
+		--lab-line: var(--app-line-strong);
+	}
+
+	.lab-workspace, .blonky-debug__shortcuts {
+		width: calc(var(--stage) + var(--palette));
+		max-width: 100%;
+	}
+
+	.lab-workspace {
+		border: 1px solid var(--lab-line);
+		border-radius: 1rem;
+		background: var(--lab-panel);
+		box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.2);
+	}
+
+	h1 {
+		margin: 0.1rem 0 0;
+		font-family: Georgia, 'Times New Roman', serif;
+		font-size: clamp(2rem, 4vw, 3rem);
+		font-weight: 400;
+		letter-spacing: -0.07em;
+		line-height: 1;
+	}
+
+	:global(html[data-theme='light']) h1 {
+		color: var(--app-overlay);
+	}
+
+	.console {
+		display: grid;
+		grid-template-columns: minmax(0, var(--stage)) var(--palette);
+		grid-template-rows: auto auto;
+	}
+
+	.console__stage {
+		position: relative;
+		grid-column: 1;
+		grid-row: 1;
+		overflow: hidden;
+		margin: 0;
+		border-radius: calc(1rem - 1px) 0 0 0;
+		background: var(--lab-stage);
+		background-image: radial-gradient(color-mix(in srgb, var(--lab-line) 80%, var(--lab-muted)) 0.6px, transparent 0.6px);
+		background-size: 12px 12px;
+	}
+
+	.console__header {
+		position: absolute;
+		z-index: 1;
+		inset: 0.9rem 1.1rem auto;
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		pointer-events: none;
+	}
+
+	.blonky-debug__readout {
+		display: flex;
+		align-items: baseline;
+		gap: 0.4rem;
+		margin: 0;
+		color: var(--lab-muted);
+		font-size: 0.625rem;
+		padding-top: 0.25rem;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	canvas {
+		display: block;
+		width: 100%;
+		height: auto;
+		aspect-ratio: 47 / 40;
+	}
+
+	fieldset {
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.console__emotes {
+		grid-column: 2;
+		grid-row: 1 / -1;
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+		border-left: 1px solid var(--lab-line);
+		padding: 0.8rem;
+	}
+
+	.console__emotes-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.4rem;
+		min-height: 2rem;
+		padding: 0 0.15rem 0.55rem;
+	}
+
+	.console__emotes-title {
+		margin: 0;
+		font-size: 0.65rem;
+		font-weight: 600;
+	}
+
+	.console__emotes-header output {
+		color: var(--lab-muted);
+		font-size: 0.58rem;
+		font-weight: 400;
+		text-align: right;
+	}
+
+	.console__emote-list {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		align-content: start;
+		gap: 0.4rem;
+		overflow-y: auto;
+		min-height: 0;
+		padding: 0.1rem;
+		scrollbar-width: thin;
+	}
+
+	.surprise {
+		width: 100%;
+		margin-top: 0.75rem;
+	}
+
+	.console__strip {
+		grid-column: 1;
+		grid-row: 2;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		gap: 0.6rem 1rem;
+		padding: 0.75rem;
+		border-top: 1px solid var(--lab-line);
+	}
+
+	.timeline {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		width: 100%;
+		padding-bottom: 0.3rem;
+	}
+
+	.timeline__slider {
+		flex: 1;
+	}
+
+	.timeline__duration {
+		flex-shrink: 0;
+		color: var(--lab-muted);
+		font-size: 0.56rem;
+		text-align: right;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
+	.timeline__idle {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+	}
+
+	.timeline input:disabled + .timeline__duration output,
+	.timeline input:enabled + .timeline__duration .timeline__idle {
+		display: none;
+	}
+
+	.console__buttons {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.35rem;
+	}
+
+	.console__cluster--components {
+		margin-left: auto;
+	}
+
+	.blonky-debug__shortcuts {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+		margin: 0;
+		color: var(--app-muted);
+		font-size: 0.57rem;
+		line-height: 1.9;
+	}
+
+	kbd {
+		padding: 0.02rem 0.23rem;
+		border: 1px solid var(--app-line-strong);
+		border-radius: 0.2rem;
+		font: inherit;
+	}
+
+	@media (max-width: 1000px) {
+		.blonky-debug {
+			--stage: min(100%, 42rem);
+			justify-content: flex-start;
+		}
+		.lab-workspace, .blonky-debug__shortcuts {
+			width: min(100%, 42rem);
+		}
+		.console {
+			display: flex;
+			flex-direction: column;
+		}
+		.console__stage {
+			border-top-right-radius: calc(1rem - 1px);
+		}
+		.console__emotes {
+			border-left: 0;
+			border-top: 1px solid var(--lab-line);
+		}
+		.console__emote-list {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+		.console__strip {
+			order: 1;
+		}
+		.console__emotes {
+			order: 2;
+		}
+	}
+
+	@media (max-width: 540px) {
+		.blonky-debug {
+			padding: 3.25rem 0.8rem 1.5rem;
+			gap: 0.8rem;
+		}
+		.console__header {
+			inset: 0.65rem 0.7rem auto;
+		}
+		.blonky-debug__readout {
+			font-size: 0.5rem;
+			gap: 0.25rem;
+			padding-top: 0;
+		}
+		.console__emote-list {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+		.console__strip {
+			padding: 0.65rem;
+		}
+		.console__cluster--components {
+			margin-left: 0;
+		}
+	}
+</style>

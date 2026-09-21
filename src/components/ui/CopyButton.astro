@@ -1,0 +1,64 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import { Check, Copy } from '@lucide/astro';
+import Button from './Button.astro';
+
+type CopySource = { text: string; targetId?: never } | { text?: never; targetId: string };
+type Props = Omit<HTMLAttributes<'button'>, 'type' | 'aria-label' | 'aria-busy'> & CopySource & {
+	label: string;
+};
+
+const { text, targetId, label, class: className, ...attributes } = Astro.props;
+// Layout classes belong to the wrapper, including a consumer's scoped CSS.
+const scopeAttributes = Object.fromEntries(
+	Object.entries(attributes).filter(([key]) => key.startsWith('data-astro-cid-')),
+);
+---
+
+<span {...scopeAttributes} class:list={['copy-control', className]} data-copy-control data-state="idle">
+	<Button
+		{...attributes}
+		variant="secondary"
+		size="icon-sm"
+		aria-label={label}
+		data-copy-button
+		data-copy-text={text}
+		data-copy-target={targetId}
+	>
+		<Copy data-copy-icon aria-hidden="true" />
+		<Check data-copy-check class="hidden" aria-hidden="true" />
+	</Button>
+	<span class="copy-status sr-only" role="status" aria-atomic="true" data-copy-status></span>
+</span>
+
+<script>
+	import { initCopyButtons } from '../../lib/ui/copy-button';
+
+	initCopyButtons();
+</script>
+
+<style>
+	@layer components {
+		.copy-control {
+			position: relative;
+			display: inline-flex;
+			flex-shrink: 0;
+		}
+
+		.copy-control[data-state='error'] .copy-status {
+			position: absolute;
+			inset-block-start: calc(100% + 0.375rem);
+			inset-inline-end: 0;
+			z-index: 1;
+			width: max-content;
+			max-width: 15rem;
+			padding: 0.5rem 0.75rem;
+			border: 1px solid var(--app-line-strong);
+			border-radius: 0.375rem;
+			background: var(--app-tooltip);
+			color: var(--app-text);
+			font-size: 0.75rem;
+			line-height: 1.5;
+		}
+	}
+</style>

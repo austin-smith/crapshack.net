@@ -64,6 +64,14 @@ export function initDropdowns(): void {
 	if (initialized) return;
 	initialized = true;
 
+	document.addEventListener('focusout', (event) => {
+		if (!(event.target instanceof Element)) return;
+		const dropdown = event.target.closest<HTMLElement>('[data-dropdown]');
+		if (!dropdown) return;
+		if (event.relatedTarget instanceof Node && dropdown.contains(event.relatedTarget)) return;
+		setOpen(dropdown, false);
+	});
+
 	document.addEventListener('click', (event) => {
 		const target = event.target;
 		if (!(target instanceof Element)) return;

@@ -136,14 +136,14 @@ const screenshots = [
 		if (!(label instanceof HTMLElement)) continue;
 		const stickerName = tile.getAttribute('data-name') || '';
 		let feedbackTimer: number | null = null;
+		let copying = false;
 		const defaultLabel = stickerName;
-		const feedbackLabel = 'Copied!';
 
-		const setMode = (mode: 'feedback' | 'default') => {
-			if (mode === 'feedback') {
+		const setMode = (mode: 'feedback' | 'error' | 'default') => {
+			if (mode !== 'default') {
 				tile.setAttribute('data-active', 'true');
-				tile.setAttribute('data-mode', 'feedback');
-				label.textContent = feedbackLabel;
+				tile.setAttribute('data-mode', mode);
+				label.textContent = mode === 'feedback' ? 'Copied!' : 'Copy failed';
 			} else {
 				tile.removeAttribute('data-mode');
 				tile.removeAttribute('data-active');
@@ -153,11 +153,18 @@ const screenshots = [
 
 		button.addEventListener('click', async (ev) => {
 			ev.preventDefault();
+			if (copying) return;
+			copying = true;
+			button.setAttribute('aria-busy', 'true');
+			if (feedbackTimer !== null) window.clearTimeout(feedbackTimer);
+			feedbackTimer = null;
+			setMode('default');
 			const url = toAbsoluteUrl(button.getAttribute('data-copy-url') || '');
-			await copyTextToClipboard(url);
-			setMode('feedback');
-			if (feedbackTimer) window.clearTimeout(feedbackTimer);
-			feedbackTimer = window.setTimeout(() => setMode('default'), 1200);
+			const success = await copyTextToClipboard(url);
+			copying = false;
+			button.removeAttribute('aria-busy');
+			setMode(success ? 'feedback' : 'error');
+			if (success) feedbackTimer = window.setTimeout(() => setMode('default'), 1200);
 		});
 
 		// Touch: keep overlay visible on first tap via feedback path

@@ -17,14 +17,17 @@ interface Props {
   ogImage?: string;
   noIndex?: boolean;
   fullBleed?: boolean;
+  lockScroll?: boolean;
 }
 
-const { title, ogImage, noIndex, fullBleed = false } = Astro.props as Props;
+const { title, ogImage, noIndex, fullBleed = false, lockScroll = false } = Astro.props as Props;
 ---
 <!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
+		{/* Fix cascade order before Astro emits component styles or Tailwind's reset. */}
+		<style is:inline>@layer properties, theme, base, components, utilities;</style>
 		<meta name="viewport" content="width=device-width" />
 		<meta name="color-scheme" content="light dark" />
 		<meta name="theme-color" content="#67a3d9" media="(prefers-color-scheme: light)" data-theme-color="light" />
@@ -78,7 +81,7 @@ const { title, ogImage, noIndex, fullBleed = false } = Astro.props as Props;
 		<Seo title={title} ogImage={ogImage} noIndex={noIndex} />
 		<slot name="head" />
 	</head>
-	<body class:list={{ 'layout-full-bleed': fullBleed }}>
+	<body class:list={{ 'layout-scroll-locked': lockScroll }}>
 		<header>
 			<div class="header-inner">
 				<button

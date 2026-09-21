@@ -1,5 +1,6 @@
 ---
 import SettingsGear from './icons/animated/SettingsGear.astro';
+import Button from './ui/Button.astro';
 import Tooltip from './ui/Tooltip.astro';
 import { LayoutGrid } from '@lucide/astro';
 import packageJson from '../../package.json';
@@ -53,16 +54,17 @@ const appLinks = apps
 	</nav>
 	<div class="mt-auto px-4 sm:px-5 pb-3 sm:pb-4">
 		{/* No aria-describedby: the tooltip only repeats the aria-label. */}
-		<button
-			type="button"
+		<Button
+			variant="ghost"
+			size="icon"
 			data-settings-open
 			aria-label="knobs"
 			data-tooltip="sidebar-knobs-tooltip"
 			data-tooltip-body="knobs"
-			class="group flex size-8 items-center justify-center rounded-md text-dim transition-colors hover:bg-fill hover:text-[var(--color-brand)]"
+			class="group"
 		>
-			<SettingsGear size={16} />
-		</button>
+			<SettingsGear />
+		</Button>
 		<div
 			id="sidebar-info"
 			class="hidden text-xs border-t border-line mt-3 pt-3"
@@ -89,3 +91,48 @@ const appLinks = apps
 	*/}
 	<Tooltip id="sidebar-knobs-tooltip" class="left-1 sm:left-2 w-max max-w-[calc(100%-1rem)]" />
 </aside>
+
+<style>
+	@layer utilities {
+		/* Sidebar overlay scrim: fades in with the panel, click-through when closed */
+		#sidebar-overlay {
+			opacity: 0;
+			pointer-events: none;
+			backdrop-filter: blur(0px);
+			-webkit-backdrop-filter: blur(0px);
+			transition: opacity 300ms ease-out, backdrop-filter 300ms ease-out, -webkit-backdrop-filter 300ms ease-out;
+		}
+
+		:global(html[data-sidebar-open="true"]) #sidebar-overlay {
+			opacity: 1;
+			pointer-events: auto;
+			backdrop-filter: blur(2px);
+			-webkit-backdrop-filter: blur(2px);
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			#sidebar-overlay {
+				transition: none;
+			}
+		}
+
+		/* Sidebar shadow only when expanded. Dark canvases swallow soft shadows, so the
+		   dark theme casts a deeper one — see --app-panel-shadow in tokens.css. */
+		:global(html[data-sidebar-open="true"]) #site-sidebar {
+			box-shadow: var(--app-panel-shadow);
+		}
+
+		/* Legacy controls suppress focus rings; shared buttons own their focus style. */
+		#site-sidebar :global(:is(a, button, [tabindex], input, select, textarea):not(.ui-button):focus),
+		#site-sidebar :global(:is(a, button, [tabindex], input, select, textarea):not(.ui-button):focus-visible) {
+			outline: none !important;
+			box-shadow: none !important;
+		}
+
+		/* Remove focus outline on the sidebar container itself */
+		#site-sidebar:focus,
+		#site-sidebar:focus-visible {
+			outline: none !important;
+		}
+	}
+</style>

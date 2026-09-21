@@ -2,11 +2,10 @@
 import Layout from '../layouts/Layout.astro';
 import { webhooks } from '../data/apps';
 import AppLinks from '../components/AppLinks.astro';
+import CopyButton from '../components/ui/CopyButton.astro';
 import ScreenshotGallery from '../components/ui/ScreenshotGallery.astro';
 import {
 	Braces,
-	Check,
-	Copy,
 	Forward,
 	Repeat2,
 	SlidersHorizontal,
@@ -123,17 +122,9 @@ const features = [
 		<section class="space-y-3">
 			<h2 class="text-2xl font-mono font-semibold text-[var(--color-text)]"># Use</h2>
 			<p class="text-strong">Copy the receive URL, set it as the webhook target, then send a test request.</p>
-			<div class="relative group">
-				<pre class="overflow-x-auto rounded-lg bg-sunken-strong p-4 pr-12 text-sm"><code id="webhooks-lol-curl-command" class="text-muted">{curlExample}</code></pre>
-				<button
-					id="webhooks-lol-copy-btn"
-					type="button"
-					class="absolute top-3 right-3 rounded-md bg-fill p-1.5 text-dim transition-colors hover:bg-fill-strong hover:text-[var(--color-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
-					aria-label="Copy curl example"
-				>
-					<Copy id="webhooks-lol-copy-icon" width={16} height={16} stroke-width={2} />
-					<Check id="webhooks-lol-check-icon" class="hidden" width={16} height={16} stroke-width={2} />
-				</button>
+			<div class="flex items-start gap-3 rounded-lg bg-sunken-strong p-4">
+				<pre class="min-w-0 flex-1 overflow-x-auto text-sm"><code id="webhooks-lol-curl-command" class="text-muted">{curlExample}</code></pre>
+				<CopyButton text={curlExample} label="Copy curl example" />
 			</div>
 			<p class="text-strong">
 				Requests appear live in the inspector, with body, headers, query, and raw views in the detail pane.
@@ -141,27 +132,3 @@ const features = [
 		</section>
 	</section>
 </Layout>
-
-<script>
-	import { copyTextToClipboard } from '../lib/clipboard';
-
-	const copyBtn = document.getElementById('webhooks-lol-copy-btn');
-	const copyIcon = document.getElementById('webhooks-lol-copy-icon');
-	const checkIcon = document.getElementById('webhooks-lol-check-icon');
-	const codeEl = document.getElementById('webhooks-lol-curl-command');
-
-	copyBtn?.addEventListener('click', async () => {
-		const text = codeEl?.textContent ?? '';
-		const success = await copyTextToClipboard(text);
-
-		if (success && copyIcon && checkIcon) {
-			copyIcon.classList.add('hidden');
-			checkIcon.classList.remove('hidden');
-
-			setTimeout(() => {
-				copyIcon.classList.remove('hidden');
-				checkIcon.classList.add('hidden');
-			}, 2000);
-		}
-	});
-</script>

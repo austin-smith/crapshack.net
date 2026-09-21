@@ -8,7 +8,8 @@
  * - Panel: `[data-tooltip-panel]` with an id, absolutely positioned inside its
  *   offset parent, which is also treated as the scroll container. Optional
  *   children: `[data-tooltip-caret]`, `[data-tooltip-slot="title"]`,
- *   `[data-tooltip-slot="body"]`.
+ *   `[data-tooltip-slot="body"]`. Optional `data-tooltip-placement="above"`
+ *   or `"below"` fixes the side; the default is automatic placement.
  * - Targets: `[data-tooltip="<panel-id>"]` sharing the panel's offset parent,
  *   with content in `data-tooltip-title` / `data-tooltip-body`. Both are
  *   optional; a panel may instead carry static slotted content, which this
@@ -19,7 +20,7 @@
  *
  * JS only positions and toggles state: it sets `top` and caret `left`, and
  * reflects state as `data-open` and `data-placement="below" | "above"` on the
- * panel. All visuals live in the .tooltip-* rules in global.css.
+ * panel. Visuals live in the scoped styles in Tooltip.astro.
  */
 
 const SHOW_DELAY_MS = 600;
@@ -62,7 +63,8 @@ function initTooltip(panel: HTMLElement): void {
 		// above actually fits. Containers that don't scroll simply overflow.
 		const fitsBelow = belowTop + height <= container.scrollTop + container.clientHeight;
 		const fitsAbove = aboveTop >= container.scrollTop;
-		const below = fitsBelow || !fitsAbove;
+		const placement = panel.dataset.tooltipPlacement;
+		const below = placement === 'below' || (placement !== 'above' && (fitsBelow || !fitsAbove));
 
 		const glide = visible && !prefersReducedMotion.matches;
 		panel.style.transitionProperty = prefersReducedMotion.matches

@@ -1,0 +1,63 @@
+---
+import type { AstroComponent } from '@lucide/astro';
+
+export interface ContextMenuItemBase {
+	label: string;
+	icon?: string | AstroComponent;
+	disabled?: boolean;
+}
+
+export interface ContextMenuLinkItem extends ContextMenuItemBase {
+	href: string;
+}
+
+export interface ContextMenuActionItem extends ContextMenuItemBase {
+	value: string;
+}
+
+export type ContextMenuEntryItem = ContextMenuLinkItem | ContextMenuActionItem;
+
+interface Props {
+	item: ContextMenuEntryItem;
+}
+
+const { item } = Astro.props;
+const ItemIcon = typeof item.icon === 'string' ? undefined : item.icon;
+const iconText = typeof item.icon === 'string' ? item.icon : undefined;
+---
+
+{'href' in item ? (
+	<a
+		href={item.disabled ? undefined : item.href}
+		class="context-menu-item"
+		role="menuitem"
+		tabindex="-1"
+		aria-disabled={item.disabled ? 'true' : undefined}
+		data-context-menu-item
+	>
+		{item.icon && (
+			<span class="context-menu-item-leading" aria-hidden="true">
+				{ItemIcon ? <ItemIcon /> : iconText}
+			</span>
+		)}
+		{item.label}
+	</a>
+) : (
+	<button
+		type="button"
+		class="context-menu-item"
+		role="menuitem"
+		tabindex="-1"
+		disabled={item.disabled}
+		aria-disabled={item.disabled ? 'true' : undefined}
+		data-context-menu-item
+		data-context-menu-value={item.value}
+	>
+		{item.icon && (
+			<span class="context-menu-item-leading" aria-hidden="true">
+				{ItemIcon ? <ItemIcon /> : iconText}
+			</span>
+		)}
+		{item.label}
+	</button>
+)}

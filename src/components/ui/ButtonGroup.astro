@@ -1,13 +1,46 @@
 ---
-interface Props {
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'div'> {
 	/** Accessible label for the group. */
 	ariaLabel?: string;
 	class?: string;
 }
 
-const { ariaLabel, class: className } = Astro.props;
+const { ariaLabel, 'aria-label': nativeLabel, class: className, ...attributes } = Astro.props;
 ---
 
-<div class:list={['button-group', className]} role="group" aria-label={ariaLabel}>
+<div {...attributes} class:list={['button-group', className]} role="group" aria-label={nativeLabel ?? ariaLabel}>
 	<slot />
 </div>
+
+<style>
+	@layer components {
+		.button-group {
+			display: inline-flex;
+		}
+
+		.button-group > :global(*) {
+			position: relative;
+		}
+
+		.button-group > :global(* + *) {
+			margin-inline-start: -1px;
+		}
+
+		.button-group > :global(:not(:first-child)) {
+			border-start-start-radius: 0;
+			border-end-start-radius: 0;
+		}
+
+		.button-group > :global(:not(:last-child)) {
+			border-start-end-radius: 0;
+			border-end-end-radius: 0;
+		}
+
+		.button-group > :global(:hover),
+		.button-group > :global(:focus-visible) {
+			z-index: 1;
+		}
+	}
+</style>

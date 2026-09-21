@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { buttonVariants } from '../components/ui/button';
 
 const lastUpdated = 'August 9, 2026';
 const contactEmail = 'hello@crapshack.net';
@@ -34,9 +35,9 @@ const apps = [
 				{apps.map((app) => (
 					<a
 						href={app.href}
-						class="inline-flex items-center gap-2 rounded-md border border-line-strong bg-fill px-3 py-2 font-medium text-[var(--color-text)] hover:text-[var(--color-brand)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70"
+						class={buttonVariants({ variant: 'secondary', size: 'lg' })}
 					>
-						<img src={app.icon} alt="" aria-hidden="true" class="h-6 w-6 rounded object-contain" loading="lazy" />
+						<img src={app.icon} alt="" aria-hidden="true" data-icon="inline-start" class="rounded object-contain" loading="lazy" />
 						<span>{app.name}</span>
 					</a>
 				))}
