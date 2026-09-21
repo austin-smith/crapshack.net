@@ -6,13 +6,31 @@ import {
 	releaseBlonkyEmote,
 	type BlonkyEmote,
 } from './blonky';
-import { pickBlonkyReaction } from './blonky/personality';
 
 const HOME_BLONKY_ID = 'home-blonky';
 // A beat to read, then eyes back to the visitor before the reaction lands.
 const READ_BEAT_MS = 650;
 const LOOK_BACK_MS = 375;
 const IDLE_NAP_MS = 35_000;
+
+// Only these emotes participate in automatic reactions. Each bucket's weight
+// is shared equally by its members; selection is independent on every cycle.
+const REACTION_BUCKETS: readonly { weight: number; emotes: readonly BlonkyEmote[] }[] = [
+	{ weight: 35, emotes: ['confirm'] },
+	{ weight: 45, emotes: ['shrug', 'sigh', 'skeptical', 'smh'] },
+	{ weight: 20, emotes: ['nod-off', 'deny', 'cry', 'shudder'] },
+];
+const TOTAL_REACTION_WEIGHT = REACTION_BUCKETS.reduce((total, bucket) => total + bucket.weight, 0);
+
+function pickBlonkyReaction(): BlonkyEmote {
+	const roll = Math.random() * TOTAL_REACTION_WEIGHT;
+	let cumulativeWeight = 0;
+	const bucket = REACTION_BUCKETS.find(({ weight }) => {
+		cumulativeWeight += weight;
+		return roll < cumulativeWeight;
+	}) ?? REACTION_BUCKETS[REACTION_BUCKETS.length - 1];
+	return bucket.emotes[Math.floor(Math.random() * bucket.emotes.length)];
+}
 
 let lifecycleRegistered = false;
 let mountedRoot: HTMLElement | null = null;
@@ -29,9 +47,6 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 
 	const listeners = new AbortController();
 	let requestSequence = 0;
-	let lastReaction: BlonkyEmote | undefined;
-	let lastPoke = -Infinity;
-	let pokes = 0;
 	let napTimer: number | undefined;
 	let cancelBeat: (() => void) | undefined;
 
@@ -56,25 +71,18 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 		napTimer = window.setTimeout(() => {
 			if (document.hidden || document.documentElement.hasAttribute('data-context-menu-open')) return;
 			playBlonkyEmote(HOME_BLONKY_ID, 'nod-off');
-			lastReaction = 'nod-off';
 		}, IDLE_NAP_MS);
 	};
 	const cycleAphorism = async (erase: boolean): Promise<void> => {
 		const request = ++requestSequence;
 		stopWaiting();
-		if (erase) {
-			const now = performance.now();
-			pokes = now - lastPoke < 5000 ? pokes + 1 : 1;
-			lastPoke = now;
-		}
 		playBlonkyEmote(HOME_BLONKY_ID, 'notice');
 		const completed = await aphorism.cycle({ erase });
 		if (!completed || request !== requestSequence) return;
 		if (!await waitBeat(READ_BEAT_MS) || request !== requestSequence) return;
 		releaseBlonkyEmote(HOME_BLONKY_ID);
 		if (!await waitBeat(LOOK_BACK_MS) || request !== requestSequence) return;
-		lastReaction = pickBlonkyReaction(aphorism.getCurrent(), lastReaction, pokes);
-		playBlonkyEmote(HOME_BLONKY_ID, lastReaction);
+		playBlonkyEmote(HOME_BLONKY_ID, pickBlonkyReaction());
 		scheduleNap();
 	};
 
@@ -95,8 +103,7 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 		if (!isBlonkyEmote(event.detail.value)) return;
 		requestSequence += 1;
 		stopWaiting();
-		lastReaction = event.detail.value;
-		playBlonkyEmote(HOME_BLONKY_ID, lastReaction);
+		playBlonkyEmote(HOME_BLONKY_ID, event.detail.value);
 		scheduleNap();
 	}) as EventListener, { signal: listeners.signal });
 
