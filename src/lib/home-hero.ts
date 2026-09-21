@@ -69,7 +69,11 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 		window.clearTimeout(napTimer);
 		if (document.hidden) return;
 		napTimer = window.setTimeout(() => {
-			if (document.hidden || document.documentElement.hasAttribute('data-context-menu-open')) return;
+			if (document.hidden) return;
+			if (document.documentElement.hasAttribute('data-context-menu-open')) {
+				scheduleNap();
+				return;
+			}
 			playBlonkyEmote(HOME_BLONKY_ID, 'nod-off');
 		}, IDLE_NAP_MS);
 	};
