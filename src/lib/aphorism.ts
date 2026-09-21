@@ -1,4 +1,4 @@
-import { pickAphorism } from './aphorisms';
+import { pickAphorism, type Aphorism } from './aphorisms';
 import { eraseTypedText, typedText } from './ui/typed-text';
 
 export interface AphorismCycleOptions {
@@ -8,6 +8,7 @@ export interface AphorismCycleOptions {
 export interface AphorismController {
 	cycle: (options?: AphorismCycleOptions) => Promise<boolean>;
 	destroy: () => void;
+	getCurrent: () => Aphorism | undefined;
 }
 
 export function createAphorismController(root: HTMLElement): AphorismController | undefined {
@@ -16,6 +17,7 @@ export function createAphorismController(root: HTMLElement): AphorismController 
 
 	let activeCycle: AbortController | undefined;
 	let currentText: string | undefined;
+	let current: Aphorism | undefined;
 	let destroyed = false;
 
 	const cycle = async ({ erase = false }: AphorismCycleOptions = {}): Promise<boolean> => {
@@ -27,6 +29,7 @@ export function createAphorismController(root: HTMLElement): AphorismController 
 		const cycleController = new AbortController();
 		activeCycle = cycleController;
 		currentText = picked.text;
+		current = picked;
 
 		if (erase) {
 			await eraseTypedText(target, { signal: cycleController.signal });
@@ -44,5 +47,5 @@ export function createAphorismController(root: HTMLElement): AphorismController 
 		activeCycle = undefined;
 	};
 
-	return { cycle, destroy };
+	return { cycle, destroy, getCurrent: () => current };
 }

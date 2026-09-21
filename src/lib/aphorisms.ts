@@ -1,39 +1,42 @@
+import type { BlonkyEmote } from './blonky/types';
+
 export type Aphorism = {
 	text: string;
 	weight?: number;
+	reactions?: readonly BlonkyEmote[];
 };
 
 const aphorisms: Aphorism[] = [
 	{ text: 'deeply, unfathomably, senselessly, terribly', weight: 3 },
-	{ text: 'everything on earth with you' },
-	{ text: 'in case you ever foolishly forget' },
+	{ text: 'everything on earth with you', reactions: ['wink', 'confirm'] },
+	{ text: 'in case you ever foolishly forget', reactions: ['skeptical', 'wink'] },
 	{ text: 'obscure popular culture' },
 	{ text: 'untenable but inalterable' },
-	{ text: "it's got lots to do with magnets" },
-	{ text: 'on its last legs' },
-	{ text: 'better days to come' },
-	{ text: 'please clap' },
-	{ text: 'smile and wave' },
-	{ text: 'a dead dream' },
-	{ text: "it doesn't even matter" },
-	{ text: 'same as it ever was' },
-	{ text: 'and the days go by' },
-	{ text: 'powered by quiet noise' },
-	{ text: 'product of lost imagination' },
-	{ text: 'website for u' },
-	{ text: 'website for no one' },
-	{ text: 'website for to comfort' },
-	{ text: 'nearing the end' },
-	{ text: 'mediocre at best' },
-	{ text: "dad's favorite" },
-	{ text: 'shut up kiss me hold me tight' },
-	{ text: 'obsessive denial of reality' },
-	{ text: 'hello, friend' },
-	{ text: 'here to remember for u' },
+	{ text: "it's got lots to do with magnets", reactions: ['shrug', 'confirm'] },
+	{ text: 'on its last legs', reactions: ['sigh', 'nod-off'] },
+	{ text: 'better days to come', reactions: ['wink', 'confirm'] },
+	{ text: 'please clap', reactions: ['skeptical', 'sigh'] },
+	{ text: 'smile and wave', reactions: ['wave'] },
+	{ text: 'a dead dream', reactions: ['sigh', 'cry'] },
+	{ text: "it doesn't even matter", reactions: ['shrug', 'sigh'] },
+	{ text: 'same as it ever was', reactions: ['smh', 'confirm'] },
+	{ text: 'and the days go by', reactions: ['nod-off', 'sigh'] },
+	{ text: 'powered by quiet noise', reactions: ['shudder', 'skeptical'] },
+	{ text: 'product of lost imagination', reactions: ['shrug', 'sigh'] },
+	{ text: 'website for u', reactions: ['wink', 'confirm'] },
+	{ text: 'website for no one', reactions: ['shrug', 'cry'] },
+	{ text: 'website for to comfort', reactions: ['wink', 'confirm'] },
+	{ text: 'nearing the end', reactions: ['shudder', 'sigh'] },
+	{ text: 'mediocre at best', reactions: ['shrug', 'skeptical'] },
+	{ text: "dad's favorite", reactions: ['wink', 'deny'] },
+	{ text: 'shut up kiss me hold me tight', reactions: ['wink', 'shudder'] },
+	{ text: 'obsessive denial of reality', reactions: ['deny', 'smh'] },
+	{ text: 'hello, friend', reactions: ['wave', 'confirm'] },
+	{ text: 'here to remember for u', reactions: ['confirm', 'wink'] },
 	{ text: 'uniquely, completely, imperially' },
-	{ text: 'despite all the gin' },
-	{ text: 'profoundly meaningless' },
-	{ text: "i'm happier when ur gone" },
+	{ text: 'despite all the gin', reactions: ['shudder', 'shrug'] },
+	{ text: 'profoundly meaningless', reactions: ['shrug', 'nod-off'] },
+	{ text: "i'm happier when ur gone", reactions: ['deny', 'skeptical'] },
 ];
 
 export function pickAphorism(excludeText?: string): Aphorism | null {
