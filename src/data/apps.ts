@@ -19,7 +19,7 @@ export const bitdream = {
 	sidebarLabel: 'bitdream',
 	href: '/bitdream',
 	icon: '/images/bitdream/bitdream.png',
-	description: 'A native, feature-rich remote control client for Transmission web server.',
+	description: 'A native and feature-rich remote control client for Transmission web server.',
 	repoUrl: 'https://github.com/austin-smith/BitDream',
 	releasesUrl: 'https://github.com/austin-smith/BitDream/releases',
 	appcastUrl: 'https://austin-smith.github.io/BitDream/appcast.xml',
