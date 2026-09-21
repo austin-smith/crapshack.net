@@ -11,17 +11,26 @@ export const BLONKY_VIEWPORTS = {
 
 export type BlonkyView = keyof typeof BLONKY_VIEWPORTS;
 
-export type BlonkyEmote = 'confirm' | 'cry' | 'deny' | 'nod-off' | 'notice' | 'shrug' | 'shudder' | 'sigh' | 'skeptical' | 'smh';
+export type BlonkyEmote = 'confirm' | 'cry' | 'deny' | 'nod-off' | 'notice' | 'shrug' | 'shudder' | 'sigh' | 'skeptical' | 'smh' | 'wink' | 'wave';
 
 export interface BlonkyEmoteInfo {
 	label: string;
 	duration: number;
 	holds?: boolean;
+	/** Representative drawing for reduced-motion playback. */
+	stillFrame?: number;
 }
 
 export interface BlonkyEmoteOffset {
 	presence: number;
 	armTension?: number;
+	leftWave?: number;
+	rightWave?: number;
+	leftWaveSwing?: number;
+	rightWaveSwing?: number;
+	/** Finger spread: 0 is loosely gathered, 1 is an open greeting. */
+	leftWaveFingers?: number;
+	rightWaveFingers?: number;
 	headX: number;
 	headY: number;
 	headAngle: number;
@@ -36,6 +45,7 @@ export interface BlonkyEmoteOffset {
 	mouthPurse: number;
 	mouthTension: number;
 	mouthFrown?: number;
+	mouthSmile?: number;
 	leftBrowLift: number;
 	rightBrowLift: number;
 	leftBrowArch: number;
@@ -45,6 +55,8 @@ export interface BlonkyEmoteOffset {
 	rightEyeOpen: number;
 	leftUpperLid?: number;
 	rightUpperLid?: number;
+	leftWink?: number;
+	rightWink?: number;
 }
 
 export interface BlonkyEmotePose {

@@ -55,6 +55,7 @@ export function sampleConfirmExit(from: BlonkyEmoteOffset, elapsed: number): Blo
 		shoulderTilt: blendToRest(from.shoulderTilt, bodyReturn),
 		bellySpread: blendToRest(from.bellySpread, bodyReturn) - settle * 0.25,
 		mouthPurse: blendToRest(from.mouthPurse, headReturn),
+		mouthSmile: blendToRest(from.mouthSmile ?? 0, headReturn),
 		mouthTension: blendToRest(from.mouthTension, headReturn),
 		leftBrowLift: blendToRest(from.leftBrowLift, headReturn),
 		rightBrowLift: blendToRest(from.rightBrowLift, headReturn),
@@ -63,5 +64,9 @@ export function sampleConfirmExit(from: BlonkyEmoteOffset, elapsed: number): Blo
 		mouthCurl: blendToRest(from.mouthCurl, headReturn),
 		leftEyeOpen: blendToRest(from.leftEyeOpen, eyeReturn, 1),
 		rightEyeOpen: blendToRest(from.rightEyeOpen, eyeReturn, 1),
+		leftUpperLid: blendToRest(from.leftUpperLid ?? 0, eyeReturn),
+		rightUpperLid: blendToRest(from.rightUpperLid ?? 0, eyeReturn),
+		leftWink: blendToRest(from.leftWink ?? 0, eyeReturn),
+		rightWink: blendToRest(from.rightWink ?? 0, eyeReturn),
 	};
 }

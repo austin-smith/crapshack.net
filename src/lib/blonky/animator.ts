@@ -2,6 +2,7 @@ import '../../styles/blonky.css';
 
 import {
 	BLONKY_EMOTES,
+	blonkyTransitionSeconds,
 	isBlonkyEmote,
 	sampleBlonkyEmoteOffset,
 	type BlonkyEmote,
@@ -11,7 +12,6 @@ import {
 } from './emotes';
 import { DEFAULT_BLONKY_PALETTE, drawBlonky } from './drawing';
 import {
-	BLONKY_EMOTE_TRANSITION_FRAMES,
 	BLONKY_FPS,
 	BLONKY_VIEWPORTS,
 	type BlonkyPalette,
@@ -127,9 +127,10 @@ export function createBlonkyAnimator(
 
 	const emotePoseAt = (time: number): BlonkyEmotePose | undefined => {
 		if (!emote) return;
+		if (time < emote.startedAt) return;
 		const emoteElapsed = Math.max(0, time - emote.startedAt);
 		if (emote.kind === 'rest') {
-			if (emoteElapsed >= BLONKY_EMOTE_TRANSITION_FRAMES / BLONKY_FPS) return;
+			if (emoteElapsed >= blonkyTransitionSeconds(emote.transitionFrom)) return;
 			return {
 				kind: 'rest',
 				elapsed: emoteElapsed,
@@ -139,7 +140,7 @@ export function createBlonkyAnimator(
 		}
 		const emoteInfo: BlonkyEmoteInfo = BLONKY_EMOTES[emote.kind];
 		const holds = emoteInfo.holds === true;
-		if (emoteElapsed >= emoteInfo.duration && !holds) return;
+		if (emoteElapsed >= Math.max(emoteInfo.duration, blonkyTransitionSeconds(emote.transitionFrom)) && !holds) return;
 		return {
 			kind: emote.kind,
 			elapsed: holds ? Math.min(emoteElapsed, emoteInfo.duration) : emoteElapsed,
@@ -180,8 +181,9 @@ export function createBlonkyAnimator(
 		const nextFrame = Math.floor(time * BLONKY_FPS);
 		if (!force && nextFrame === lastFrame) return;
 
-		const emotePose = emotePoseAt(time);
-		if (emote && !emotePose) emote = undefined;
+		// Keep the last performance so the lab can seek back through it. Sample
+		// the pose on the same clock as the ink for reproducible exported frames.
+		const emotePose = emotePoseAt(nextFrame / BLONKY_FPS);
 
 		context.setTransform(canvas.width / viewport.width, 0, 0, canvas.height / viewport.height, 0, 0);
 		drawBlonky(context, time, {
@@ -256,12 +258,12 @@ export function createBlonkyAnimator(
 		const nextTime = Number.isFinite(time) ? Math.max(0, time) : 0;
 		elapsed = nextTime;
 		startedAt = performance.now();
-		emote = undefined;
 		lastFrame = -1;
 		draw(nextTime, true);
 	};
 
 	const reset = (): void => {
+		emote = undefined;
 		seek(0);
 	};
 
@@ -310,7 +312,7 @@ export function createBlonkyAnimator(
 	};
 
 	const playEmote = (kind: BlonkyEmote): void => {
-		const time = animationTime();
+		const time = Math.floor(animationTime() * BLONKY_FPS) / BLONKY_FPS;
 		const outgoingPose = emotePoseAt(time);
 		const transitionFrom = outgoingPose
 			? sampleBlonkyEmoteOffset(outgoingPose)
@@ -322,13 +324,20 @@ export function createBlonkyAnimator(
 			startedAt: time,
 			transitionFrom,
 		};
+		if (reducedMotion && (!reducedMotionOverride || manuallyPaused)) {
+			// A deliberate still expression, which remains seekable in the lab.
+			const info = BLONKY_EMOTES[kind];
+			const stillFrame = info.stillFrame ?? Math.round(info.duration * 0.45 * BLONKY_FPS);
+			seek(time + stillFrame / BLONKY_FPS);
+			return;
+		}
 		lastFrame = -1;
 		draw(time, true);
 		scheduleAnimation();
 	};
 
 	const releaseEmote = (): void => {
-		const time = animationTime();
+		const time = Math.floor(animationTime() * BLONKY_FPS) / BLONKY_FPS;
 		const outgoingPose = emotePoseAt(time);
 		if (!outgoingPose || outgoingPose.kind === 'rest') return;
 		emote = {
@@ -337,6 +346,10 @@ export function createBlonkyAnimator(
 			startedAt: time,
 			transitionFrom: sampleBlonkyEmoteOffset(outgoingPose),
 		};
+		if (reducedMotion && (!reducedMotionOverride || manuallyPaused)) {
+			seek(time + blonkyTransitionSeconds(emote.transitionFrom));
+			return;
+		}
 		lastFrame = -1;
 		draw(time, true);
 		scheduleAnimation();
@@ -463,6 +476,11 @@ export function setBlonkyPlaybackRate(id: string, rate: number): void {
 	const root = document.querySelector<HTMLElement>(`[data-blonky-id="${CSS.escape(id)}"]`);
 	if (!root) return;
 	mountedCanvases.get(root)?.setPlaybackRate(rate);
+}
+
+export function releaseBlonkyEmote(id: string): void {
+	const root = document.querySelector<HTMLElement>(`[data-blonky-id="${CSS.escape(id)}"]`);
+	if (root) mountedCanvases.get(root)?.releaseEmote();
 }
 
 export function registerBlonkyCanvasLifecycle(): void {

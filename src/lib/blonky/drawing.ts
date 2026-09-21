@@ -1,3 +1,4 @@
+import { drawnWaveHand, drawnWaveForearm } from './wave-drawings';
 import { sampleBlonkyEmoteOffset } from './emotes';
 import { CRY_LINGER_FRAMES } from './emotes/cry';
 import {
@@ -173,9 +174,11 @@ interface StrokeOptions {
 	alpha?: number;
 	passes?: number;
 	boil?: number;
+	wobble?: number;
 	color?: string;
 	fillRule?: CanvasFillRule;
 	roundedClosedStroke?: boolean;
+	roundedStroke?: boolean;
 }
 
 function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, options: StrokeOptions = {}): void {
@@ -216,16 +219,16 @@ function stroke(ctx: CanvasRenderingContext2D, anchors: Pt[], id: number, option
 				(valueNoise(u * 0.72, frame * 0.41 + pass * 9.1, id + 503) - 0.5) * live * 2
 				+ (valueNoise(u * 1.45, frame * 0.73 + pass * 4.7, id + 557) - 0.5) * live * 0.65;
 			const restatement = pass ? 0.3 : 0;
-			const displacement = staticWobble + boilingWobble + restatement;
+			const displacement = (staticWobble + boilingWobble + restatement) * (options.wobble ?? 1);
 			return { x: point.x + n.x * displacement, y: point.y + n.y * displacement };
 		});
-		if (closed && options.roundedClosedStroke) {
+		if ((closed && options.roundedClosedStroke) || options.roundedStroke) {
 			ctx.beginPath();
 			ctx.moveTo(moved[0].x, moved[0].y);
 			for (let index = 1; index < moved.length; index++) {
 				ctx.lineTo(moved[index].x, moved[index].y);
 			}
-			ctx.closePath();
+			if (closed) ctx.closePath();
 			ctx.lineJoin = 'round';
 			ctx.lineCap = 'round';
 			ctx.lineWidth = width * (primaryPass ? 0.86 : 0.33);
@@ -377,6 +380,12 @@ function stipple(
 interface Pose {
 	centerX: number;
 	armTension: number;
+	leftWave: number;
+	rightWave: number;
+	leftWaveSwing: number;
+	rightWaveSwing: number;
+	leftWaveFingers: number;
+	rightWaveFingers: number;
 	shoulderY: number;
 	torsoY: number;
 	leftShoulderY: number;
@@ -393,6 +402,7 @@ interface Pose {
 	mouthPurse: number;
 	mouthTension: number;
 	mouthFrown: number;
+	mouthSmile: number;
 	leftBrowLift: number;
 	rightBrowLift: number;
 	leftBrowArch: number;
@@ -402,6 +412,8 @@ interface Pose {
 	rightEyeOpen: number;
 	leftUpperLid: number;
 	rightUpperLid: number;
+	leftWink: number;
+	rightWink: number;
 	cryElapsed?: number;
 	cryDirection?: -1 | 1;
 	leftArm: [Pt, Pt, Pt];
@@ -478,6 +490,13 @@ function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 	return {
 		centerX,
 		armTension: emoteOffset.armTension ?? 0,
+		leftWave: emoteOffset.leftWave ?? 0,
+		rightWave: emoteOffset.rightWave ?? 0,
+		leftWaveSwing: emoteOffset.leftWaveSwing ?? 0,
+		rightWaveSwing: emoteOffset.rightWaveSwing ?? 0,
+		leftWaveFingers: emoteOffset.leftWaveFingers ?? 0,
+		rightWaveFingers: emoteOffset.rightWaveFingers ?? 0,
+
 		shoulderY,
 		torsoY,
 		leftShoulderY,
@@ -494,6 +513,7 @@ function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 		mouthPurse: emoteOffset.mouthPurse,
 		mouthTension: behavior.mouthSet * idleBehaviorWeight + emoteOffset.mouthTension,
 		mouthFrown: emoteOffset.mouthFrown ?? 0,
+		mouthSmile: emoteOffset.mouthSmile ?? 0,
 		leftBrowLift: emoteOffset.leftBrowLift,
 		rightBrowLift: emoteOffset.rightBrowLift,
 		leftBrowArch: emoteOffset.leftBrowArch,
@@ -503,6 +523,8 @@ function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 		rightEyeOpen: rightEyeOpen + (emoteOffset.rightEyeOpen - rightEyeOpen) * emoteOffset.presence,
 		leftUpperLid: emoteOffset.leftUpperLid ?? 0,
 		rightUpperLid: emoteOffset.rightUpperLid ?? 0,
+		leftWink: emoteOffset.leftWink ?? 0,
+		rightWink: emoteOffset.rightWink ?? 0,
 		cryElapsed: emote?.kind === 'cry' ? emote.elapsed : undefined,
 		cryDirection: emote?.kind === 'cry' ? emote.direction : undefined,
 		leftArm,
@@ -526,18 +548,9 @@ function tube(chain: [Pt, Pt, Pt], startRadius: number, endRadius: number): { le
 	return { left, right, center };
 }
 
-function drawLimb(
-	ctx: CanvasRenderingContext2D,
-	chain: [Pt, Pt, Pt],
-	side: -1 | 1,
-	innerBoundary: Pt[],
-	innerBoundaryId: number,
-	id: number,
-	startRadius: number,
-	endRadius: number,
-	outlineInk: string,
-	cuffEdge: [Pt, Pt],
-): void {
+function restingSkinContours(arm: ArmGeometry): { outer: Pt[]; inner: Pt[] } {
+	const { chain, side, startRadius, endRadius } = arm;
+	const cuffEdge = arm.cuffLower;
 	const shape = tube(chain, startRadius, endRadius);
 	const trimAtCuff = (points: Pt[]): Pt[] => {
 		const [a, b] = cuffEdge;
@@ -555,16 +568,28 @@ function drawLimb(
 		}
 		return [];
 	};
-	const outer = trimAtCuff(side === -1 ? shape.left : shape.right);
-	const polygon = outer.concat(innerBoundary.slice().reverse());
+	const trimmedOuter = trimAtCuff(side === -1 ? shape.left : shape.right);
+	const outerCuff = side === -1 ? cuffEdge[0] : cuffEdge[1];
+	const outerShift = outerCuff.x - (trimmedOuter[0]?.x ?? outerCuff.x);
+	const outer = trimmedOuter.map((point) => ({
+		x: point.x + outerShift,
+		y: point.y,
+	}));
+	return { outer, inner: arm.skinInnerBoundary };
+}
+
+function drawSkinOutline(ctx: CanvasRenderingContext2D, arm: ArmGeometry, skin: { outer: Pt[]; inner: Pt[] }, outlineInk: string): void {
+	stroke(ctx, skin.outer, arm.limbId, { width: 2.2, boil: 0.42, color: outlineInk });
+	stroke(ctx, skin.inner.slice(1), arm.skinInnerBoundaryId, { width: 3.45, boil: 0.46, color: outlineInk });
+}
+
+function drawLimb(ctx: CanvasRenderingContext2D, arm: ArmGeometry, outlineInk: string): Pt[] {
+	const skin = restingSkinContours(arm);
+	const polygon = skin.outer.concat(skin.inner.slice().reverse());
 	fill(ctx, polygon, SKIN, 1);
 	fill(ctx, polygon, WASH, 0.12);
-	stroke(ctx, outer, id, { width: 2.2, boil: 0.42, color: outlineInk });
-	stroke(ctx, innerBoundary.slice(1), innerBoundaryId, {
-		width: 3.45,
-		boil: 0.46,
-		color: outlineInk,
-	});
+	drawSkinOutline(ctx, arm, skin, outlineInk);
+	return polygon;
 }
 
 function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string): void {
@@ -625,12 +650,17 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		center: Pt,
 		openness: number,
 		upperLid = 0,
+		wink = 0,
+		radius = 12,
 	): Pt[] => points.map((point) => {
 		const y = center.y + (point.y - center.y) * openness;
 		const upperDistance = Math.max(0, center.y - y);
+		// A wink closes against the lifted cheek. Both eye contours converge
+		// on this same arch, including the drawings immediately before closure.
+		const along = Math.min(1, Math.abs(point.x - center.x) / radius);
 		return {
-			x: point.x,
-			y: y + upperDistance * upperLid,
+			x: center.x + (point.x - center.x) * (1 - wink * 0.08),
+			y: y + upperDistance * upperLid + wink * (2 - 5 * (1 - along * along)),
 		};
 	});
 	const leftEye = blink([
@@ -644,7 +674,7 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: leftEyeCenter.x, y: leftEyeCenter.y + 12 },
 		{ x: leftEyeCenter.x - 7, y: leftEyeCenter.y + 9 },
 		{ x: leftEyeCenter.x - 12, y: leftEyeCenter.y + 4 },
-	], leftEyeCenter, pose.leftEyeOpen, pose.leftUpperLid);
+	], leftEyeCenter, pose.leftEyeOpen, pose.leftUpperLid, pose.leftWink);
 	const rightEye = blink([
 		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y - 3 },
 		{ x: rightEyeCenter.x - 6, y: rightEyeCenter.y - 9 },
@@ -655,7 +685,7 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: rightEyeCenter.x + 1, y: rightEyeCenter.y + 10 },
 		{ x: rightEyeCenter.x - 6, y: rightEyeCenter.y + 8 },
 		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y + 2 },
-	], rightEyeCenter, pose.rightEyeOpen, pose.rightUpperLid);
+	], rightEyeCenter, pose.rightEyeOpen, pose.rightUpperLid, pose.rightWink, 10);
 	const leftEyeClosed = pose.leftEyeOpen <= 0.2;
 	const rightEyeClosed = pose.rightEyeOpen <= 0.2;
 	if (!leftEyeClosed) fill(ctx, leftEye, EYE_WHITE, 1);
@@ -718,7 +748,22 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 	};
 	if (!leftEyeClosed) drawTearWell(leftEye, leftEyeCenter, leftTearWell, 1);
 	if (!rightEyeClosed) drawTearWell(rightEye, rightEyeCenter, visibleRightTearWell, -1);
-	stroke(ctx, leftEye, 630, {
+	const drawWinkLid = (center: Pt, radius: number, side: -1 | 1, id: number): void => {
+		// One open stroke: tracing both edges of a collapsed eye makes an ink
+		// wedge. Keep the lid light enough to match the rest of the face.
+		stroke(ctx, quadratic(
+			{ x: center.x - radius * 0.92, y: center.y + 2 },
+			{ x: center.x, y: center.y - 8 },
+			{ x: center.x + radius * 0.92, y: center.y + 2 },
+			8,
+		), id, { width: 1.7, passes: 1, alpha: 0.94, wobble: 0.35 });
+		const corner = { x: center.x + side * radius * 0.92, y: center.y + 2 };
+		stroke(ctx, [corner, { x: corner.x + side * 3, y: corner.y + 3 }], id + 30, {
+			width: 0.9, passes: 1, alpha: 0.65, wobble: 0.25,
+		});
+	};
+	if (leftEyeClosed && pose.leftWink > 0) drawWinkLid(leftEyeCenter, 12, -1, 630);
+	else stroke(ctx, leftEye, 630, {
 		closed: true,
 		seamlessClosed: !leftEyeClosed,
 		width: 1.95,
@@ -727,7 +772,8 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		fillRule: leftEyeClosed ? 'nonzero' : 'evenodd',
 		roundedClosedStroke: pose.cryElapsed !== undefined && !leftEyeClosed,
 	});
-	stroke(ctx, rightEye, 631, {
+	if (rightEyeClosed && pose.rightWink > 0) drawWinkLid(rightEyeCenter, 10, 1, 631);
+	else stroke(ctx, rightEye, 631, {
 		closed: true,
 		seamlessClosed: !rightEyeClosed,
 		width: 1.86,
@@ -827,8 +873,20 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 			leftTearsLead ? followingTears : leadingTears,
 		);
 	}
-	stroke(ctx, [{ x: -47 + leftEyeTurn, y: -40 + underEyeFollow }, { x: -38 + leftEyeTurn, y: -35 + underEyeFollow }, { x: -28 + leftEyeTurn, y: -35 + underEyeFollow }, { x: -20 + leftEyeTurn, y: -40 + underEyeFollow }], 632, { width: 1.12, alpha: 0.82, passes: 1, boil: 0.28 });
-	stroke(ctx, [{ x: 21 + rightEyeTurn, y: -35 + underEyeFollow }, { x: 28 + rightEyeTurn, y: -32 + underEyeFollow }, { x: 36 + rightEyeTurn, y: -33 + underEyeFollow }, { x: 41 + rightEyeTurn, y: -37 + underEyeFollow }], 633, { width: 1.02, alpha: 0.76, passes: 1, boil: 0.28 });
+	const leftCheek = pose.leftWink * 2 + pose.mouthSmile * 0.6;
+	const rightCheek = pose.rightWink * 2 + pose.mouthSmile * 0.6;
+	stroke(ctx, [
+		{ x: -47 + leftEyeTurn, y: -40 + underEyeFollow - leftCheek * 0.6 },
+		{ x: -38 + leftEyeTurn, y: -35 + underEyeFollow - leftCheek },
+		{ x: -28 + leftEyeTurn, y: -35 + underEyeFollow - leftCheek },
+		{ x: -20 + leftEyeTurn, y: -40 + underEyeFollow - leftCheek * 0.6 },
+	], 632, { width: 1.12, alpha: 0.82 * (1 - pose.leftWink * 0.15), passes: 1, boil: 0.28 });
+	stroke(ctx, [
+		{ x: 21 + rightEyeTurn, y: -35 + underEyeFollow - rightCheek * 0.6 },
+		{ x: 28 + rightEyeTurn, y: -32 + underEyeFollow - rightCheek },
+		{ x: 36 + rightEyeTurn, y: -33 + underEyeFollow - rightCheek },
+		{ x: 41 + rightEyeTurn, y: -37 + underEyeFollow - rightCheek * 0.6 },
+	], 633, { width: 1.02, alpha: 0.76 * (1 - pose.rightWink * 0.15), passes: 1, boil: 0.28 });
 	stroke(ctx, [
 		{ x: -49 + leftEyeTurn, y: -67 - pose.leftBrowLift * 0.5 - pose.leftBrowArch * 0.75 },
 		{ x: -41 + leftEyeTurn, y: -75 - pose.leftBrowLift - pose.leftBrowArch },
@@ -852,6 +910,7 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 	], 636, { width: 1.7, boil: 0.4 });
 	const mouthPurse = pose.mouthPurse;
 	const mouthFrown = pose.mouthFrown;
+	const mouthSmile = pose.mouthSmile;
 	const leftMouthCurl = Math.max(0, -pose.mouthCurl);
 	const rightMouthCurl = Math.max(0, pose.mouthCurl);
 	const mouthLine: Pt[] = [
@@ -860,8 +919,18 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: 1 + turn - mouthPurse * 2 - rightMouthCurl * 1.4, y: 12 - mouthFrown * 1.4 - rightMouthCurl * 1.2 },
 		{ x: 17 + turn * 1.2 - mouthPurse * 8 - rightMouthCurl * 4, y: 14 - pose.mouthTension * 1.15 + mouthFrown * 4.4 - rightMouthCurl * 3.2 },
 	];
-	stroke(ctx, mouthLine, 637, { width: 1.62, boil: 0.36 });
-	stroke(ctx, [{ x: -18, y: 22 }, { x: -5, y: 21 }], 638, { width: 1.08, alpha: 0.7, passes: 1 });
+	// Bend the whole mouth into a shallow smile. Moving only its four anchors
+	// makes a sharp notch; pulling a corner inward makes it hook into the nose.
+	const smilingMouth = mouthSmile > 0 ? densify(mouthLine, false, 4).map((point) => {
+		const t = (point.x - mouthLine[0].x) / (mouthLine.at(-1)!.x - mouthLine[0].x);
+		const u = 1 - t;
+		const smileY = u * u * (14 - leftMouthCurl * 4)
+			+ 2 * u * t * 24
+			+ t * t * (13 - rightMouthCurl * 4);
+		return { x: point.x, y: point.y + (smileY - point.y) * mouthSmile };
+	}) : mouthLine;
+	stroke(ctx, smilingMouth, 637, { width: 1.62, boil: 0.36, wobble: 1 - mouthSmile * 0.35 });
+	stroke(ctx, [{ x: -18, y: 22 + mouthSmile * 3 }, { x: -5, y: 21 + mouthSmile * 3 }], 638, { width: 1.08, alpha: 0.7 * (1 - mouthSmile * 0.35), passes: 1 });
 	stroke(ctx, [{ x: -55, y: 32 }, { x: -39, y: 44 }, { x: -12, y: 51 }, { x: 14, y: 49 }, { x: 43, y: 33 }], 639, { width: 1.5, alpha: 0.7, boil: 0.34 });
 	stroke(ctx, [{ x: -42, y: 49 }, { x: -20, y: 58 }, { x: 2, y: 61 }, { x: 22, y: 56 }, { x: 36, y: 48 }], 640, { width: 1.12, alpha: 0.54, passes: 1, boil: 0.3 });
 	ctx.restore();
@@ -963,7 +1032,22 @@ function collarGeometry(pose: Pose): CollarGeometry {
 	return { chestSkin, edge, leftContact, rightContact, seam };
 }
 
+const WAVE_FOREARM_LENGTH = 190;
+// Keep the wrist independent of torso breathing and gesture blending.
+const WAVE_WRIST_RADIUS = 72;
+const WAVE_BEND = 2;
+
+interface WaveArm {
+	restArm: ArmGeometry;
+	shoulder: Pt;
+	shoulderAngle: number;
+	lift: number;
+	swing: number;
+	fingers: number;
+}
+
 interface ArmGeometry {
+	wave?: WaveArm;
 	attachmentEdge: Pt[];
 	chain: [Pt, Pt, Pt];
 	cuffId: number;
@@ -1003,6 +1087,205 @@ function tensionArmGeometry(arm: ArmGeometry, tension: number): ArmGeometry {
 		sleeveOuter: arm.sleeveOuter.map(translate),
 		sleeveSurface: arm.sleeveSurface.map(translate),
 	};
+}
+
+function rotateAbout(point: Pt, pivot: Pt, angle: number): Pt {
+	const relative = sub(point, pivot);
+	return add(pivot, {
+		x: relative.x * Math.cos(angle) - relative.y * Math.sin(angle),
+		y: relative.x * Math.sin(angle) + relative.y * Math.cos(angle),
+	});
+}
+
+function waveShoulderPoint(point: Pt, shoulder: Pt, angle: number, lift: number): Pt {
+	const rotated = rotateAbout(point, shoulder, angle);
+	return { x: rotated.x, y: shoulder.y + (rotated.y - shoulder.y) * Math.cos(smoothstep((lift - 0.2) / 0.8) * 0.85) };
+}
+
+function wavingArmGeometry(arm: ArmGeometry, pose: Pose): ArmGeometry {
+	const lift = arm.side < 0 ? pose.leftWave : pose.rightWave;
+	if (lift <= 0) return arm;
+	const shoulderY = arm.side < 0 ? pose.leftShoulderY : pose.rightShoulderY;
+	const shoulder = { x: arm.chain[0].x, y: shoulderY + 150 };
+	// A low greeting: the sleeve barely moves, and the elbow stays tucked in.
+	const shoulderAngle = arm.side * 0.13 * lift;
+	const rotate = (point: Pt): Pt => waveShoulderPoint(point, shoulder, shoulderAngle, lift);
+	const cuffY = Math.min(...arm.cuffUpper.map((point) => point.y));
+	const sleevePoint = (point: Pt): Pt => lerp(
+		point,
+		rotate(point),
+		smoothstep((point.y - shoulderY - 205) / (cuffY - shoulderY - 205)),
+	);
+	return {
+		...arm,
+		wave: {
+			restArm: arm,
+			shoulder,
+			shoulderAngle,
+			lift,
+			swing: arm.side < 0 ? pose.leftWaveSwing : pose.rightWaveSwing,
+			fingers: arm.side < 0 ? pose.leftWaveFingers : pose.rightWaveFingers,
+		},
+		cuffLower: arm.cuffLower.map(rotate) as [Pt, Pt],
+		cuffUpper: arm.cuffUpper.map(rotate) as [Pt, Pt],
+		innerContour: arm.innerContour.map(sleevePoint),
+		sleeveOuter: arm.sleeveOuter.map(sleevePoint),
+		sleeveSurface: arm.sleeveSurface.map(sleevePoint),
+	};
+}
+
+interface WaveGeometry {
+	upperOuter: Pt[];
+	upperInnerOutline: Pt[];
+	forearmFold: Pt[];
+	palmCrease: Pt[];
+	wristCrease: Pt[];
+	forearm: Pt[];
+	hand: Pt[];
+	upperSkin: Pt[];
+}
+
+function waveForearmGeometry(arm: ArmGeometry): WaveGeometry {
+	const { lift, swing, fingers, restArm, shoulder, shoulderAngle } = arm.wave!;
+	const skin = restingSkinContours(restArm);
+	const atY = (points: Pt[], y: number): Pt => {
+		const index = points.findIndex((point) => point.y >= y);
+		if (index <= 0) return points[index === 0 ? 0 : points.length - 1];
+		return lerp(points[index - 1], points[index], (y - points[index - 1].y) / (points[index].y - points[index - 1].y));
+	};
+	// The original bust crops the resting elbow; bend below that crop first.
+	const elbowY = H + 20;
+	const inner = atY(skin.inner, elbowY);
+	const outer = atY(skin.outer, elbowY);
+	const restElbow = { x: (inner.x + outer.x) / 2, y: elbowY };
+	const elbow = waveShoulderPoint(restElbow, shoulder, shoulderAngle, lift);
+	const radius = Math.abs(outer.x - inner.x) / 2;
+	const wristRadius = WAVE_WRIST_RADIUS;
+	const flex = Math.sin(Math.PI * 0.5 * lift);
+	const theta = WAVE_BEND * flex;
+	// Keep the elbow-to-wrist axis aimed mostly toward the viewer.
+	// Finger opening must not sweep the whole forearm across the torso.
+	const lean = -0.18;
+	const forward = { x: arm.side * lean * Math.sin(theta), y: Math.cos(theta) };
+	const wrist = { x: elbow.x + forward.x * WAVE_FOREARM_LENGTH, y: elbow.y + forward.y * WAVE_FOREARM_LENGTH };
+	// Hand poses are drawn in camera space; only the greeting rotates them.
+	const handPoint = (point: Pt): Pt => {
+		const local = rotateAbout(point, { x: 0, y: 0 }, swing * 0.095);
+		return { x: wrist.x + arm.side * local.x, y: wrist.y + local.y };
+	};
+	const handCorners = drawnWaveHand(lift, fingers).map(handPoint);
+	const shape = handCorners.flatMap((point, index): Pt[] => {
+		if (index === 0 || index === handCorners.length - 1) return [point];
+		const before = handCorners[index - 1];
+		const after = handCorners[index + 1];
+		const radius = [4, 5, 6, 7, 13, 14, 15, 16, 23, 24, 25, 26, 33, 34, 35].includes(index) ? 4 : 2;
+		return quadratic(lerp(point, before, Math.min(0.3, radius / Math.hypot(point.x - before.x, point.y - before.y))), point, lerp(point, after, Math.min(0.3, radius / Math.hypot(point.x - after.x, point.y - after.y))), 3);
+	});
+	const projectUpper = (point: Pt): Pt => waveShoulderPoint(point, shoulder, shoulderAngle, lift);
+	const cap = (points: Pt[], sign: number): Pt[] => {
+		const last = points.at(-1)!;
+		points = points.concat(Array.from({ length: 13 }, (_, index) => ({ x: last.x, y: restElbow.y + radius * index / 12 })).filter((point) => point.y > last.y));
+		const end = points.at(-1)!;
+		const sampled = points.length > 10 ? points : points.flatMap((point, index) => {
+			if (index === points.length - 1) return [point];
+			return Array.from({ length: 10 }, (_, step) => lerp(point, points[index + 1], step / 10));
+		});
+		return sampled.map((point) => {
+			if (point.y <= restElbow.y) return projectUpper(point);
+			const t = (point.y - restElbow.y) / (end.y - restElbow.y);
+			const rounded = { x: restElbow.x + sign * radius * Math.cos(t * Math.PI / 2), y: restElbow.y + radius * Math.sin(t * Math.PI / 2) };
+			return projectUpper(lerp(point, rounded, smoothstep(lift)));
+		});
+	};
+	const upperOuter = cap(skin.outer, arm.side);
+	const upperInner = cap(skin.inner, -arm.side);
+	const hand = shape;
+
+	const drawnForearm = drawnWaveForearm(lift);
+	const place = (p: Pt): Pt => ({ x: elbow.x + arm.side * p.x * radius / 100, y: elbow.y + p.y * radius / 100 });
+	const forearm = drawnForearm.outline.map(place);
+	forearm[0] = handPoint({ x: -wristRadius, y: 0 });
+	forearm[forearm.length - 1] = handPoint({ x: wristRadius, y: 0 });
+	const forearmFold = quadratic(handPoint({ x: wristRadius, y: 0 }), place(drawnForearm.fold[1]), place(drawnForearm.fold.at(-1)!), 14);
+	return {
+		// The fold is exposed once the forearm bends back over the upper arm.
+		forearmFold: forward.y < 0 ? forearmFold : [],
+		forearm,
+		hand,
+		wristCrease: [{ x: -29, y: -6 }, { x: -11, y: -2 }, { x: 5, y: -2 }, { x: 26, y: -6 }].map(handPoint),
+		palmCrease: quadratic({ x: -40, y: -48 }, { x: -23, y: -36 }, { x: -29, y: -20 }, 9).map((point) => handPoint({ x: point.x * wristRadius / 65, y: point.y })),
+		upperSkin: upperOuter.concat(upperInner.slice().reverse()),
+		upperOuter, upperInnerOutline: cap(skin.inner.slice(1), -arm.side),
+	};
+}
+
+function clipOutside(ctx: CanvasRenderingContext2D, polygon: Pt[]): void {
+	ctx.beginPath();
+	ctx.rect(-2000, -2000, 5000, 5000);
+	ctx.moveTo(polygon[0].x, polygon[0].y);
+	for (const point of polygon.slice(1)) ctx.lineTo(point.x, point.y);
+	ctx.closePath();
+	ctx.clip('evenodd');
+}
+
+// Above the bust edge, the whole canvas is available to the moving hand.
+// Portraits also expose the source arm's uneven lower edge: preserve that
+// silhouette there without extending its diagonal crop through the scene.
+function clipWaveToBust(ctx: CanvasRenderingContext2D, arm: ArmGeometry): void {
+	const { restArm, shoulder, shoulderAngle } = arm.wave!;
+	const skin = restingSkinContours(restArm);
+	const lowerSilhouette = skin.outer.concat(skin.inner.slice().reverse())
+		.map((point) => rotateAbout(point, shoulder, shoulderAngle));
+	// Match the rectangle's winding so their overlapping regions form a union.
+	const area = lowerSilhouette.reduce((sum, point, index) => {
+		const next = lowerSilhouette[(index + 1) % lowerSilhouette.length];
+		return sum + point.x * next.y - next.x * point.y;
+	}, 0);
+	if (area < 0) lowerSilhouette.reverse();
+	ctx.beginPath();
+	// Match the torso's authored bottom, including its 18-unit bleed.
+	ctx.rect(-2000, -2000, 5000, H + 18 + 2000);
+	ctx.moveTo(lowerSilhouette[0].x, lowerSilhouette[0].y);
+	for (const point of lowerSilhouette.slice(1)) ctx.lineTo(point.x, point.y);
+	ctx.closePath();
+	ctx.clip();
+}
+
+function drawWaveUpperSkin(ctx: CanvasRenderingContext2D, arm: ArmGeometry, palette: BlonkyPalette): Pt[] {
+	const geometry = waveForearmGeometry(arm);
+	ctx.save();
+	clipWaveToBust(ctx, arm);
+	fill(ctx, geometry.upperSkin, SKIN, 1);
+	fill(ctx, geometry.upperSkin, WASH, 0.12);
+	ctx.save();
+	clipOutside(ctx, geometry.forearm);
+	clipOutside(ctx, geometry.hand);
+	stroke(ctx, geometry.upperOuter, arm.limbId, { width: 2.2, boil: 0.42, color: palette.outlineInk });
+	stroke(ctx, geometry.upperInnerOutline, arm.skinInnerBoundaryId, { width: 3.45, boil: 0.46, color: palette.outlineInk });
+	ctx.restore();
+	ctx.restore();
+	return geometry.upperSkin;
+}
+
+function drawWavingForearm(ctx: CanvasRenderingContext2D, arm: ArmGeometry, palette: BlonkyPalette, upperSkin?: Pt[]): void {
+	if (!arm.wave || !upperSkin) return;
+	const { forearm, hand, palmCrease, forearmFold, wristCrease } = waveForearmGeometry(arm);
+	ctx.save();
+	clipWaveToBust(ctx, arm);
+	// One skin silhouette avoids seams or double wash at the wrist.
+	const silhouette = hand.concat(forearm.slice(1, -1).reverse());
+	fill(ctx, silhouette, SKIN, 1);
+	fill(ctx, silhouette, WASH, 0.12);
+	ctx.save();
+	for (const part of [upperSkin, hand]) clipOutside(ctx, part);
+	stroke(ctx, forearm.slice(1), 795 + arm.side, { width: 3.1, passes: 1, roundedStroke: true, wobble: 0.48, color: palette.outlineInk });
+	ctx.restore();
+	// Carry the outside of the palm into the elbow fold. The forearm
+	// sits in front of the upper arm even where their skin fills overlap.
+	stroke(ctx, [forearm[1], ...hand, ...forearmFold.slice(1)], 819 + arm.side, { width: 3.1, passes: 1, roundedStroke: true, wobble: 0.48, color: palette.outlineInk });
+	stroke(ctx, wristCrease, 853 + arm.side, { width: 1.5, alpha: 0.4, passes: 1, wobble: 0.32, color: palette.outlineInk });
+	stroke(ctx, palmCrease, 840 + arm.side, { width: 1.5, alpha: arm.wave.fingers * 0.4, passes: 1, wobble: 0.25, color: palette.outlineInk });
+	ctx.restore();
 }
 
 interface TorsoGeometry {
@@ -1065,6 +1348,11 @@ function armGeometry(
 			bodyFillTop,
 			bodySide,
 		) ?? bodyFillTop;
+		const innerShift = cuffLower[1].x - skinTop.x;
+		const skinInnerBoundary = [skinTop, bodySide, bodyBottom].map((point) => ({
+			x: point.x + innerShift,
+			y: point.y,
+		}));
 		return {
 			attachmentEdge,
 			chain,
@@ -1076,7 +1364,7 @@ function armGeometry(
 			outlineId: 752,
 			side,
 			skinInnerBoundaryId: 754,
-			skinInnerBoundary: [skinTop, bodySide, bodyBottom],
+			skinInnerBoundary,
 			sleeveOuter,
 			sleeveSurface: sleeveOuter.concat(
 				innerContour.slice(0, -1).reverse(),
@@ -1127,6 +1415,11 @@ function armGeometry(
 		bodyFillTop,
 		bodySide,
 	) ?? bodyFillTop;
+	const innerShift = cuffLower[0].x - skinTop.x;
+	const skinInnerBoundary = [skinTop, bodySide, bodyBottom].map((point) => ({
+		x: point.x + innerShift,
+		y: point.y,
+	}));
 	return {
 		attachmentEdge,
 		chain,
@@ -1138,7 +1431,7 @@ function armGeometry(
 		outlineId: 765,
 		side,
 		skinInnerBoundaryId: 766,
-		skinInnerBoundary: [skinTop, bodySide, bodyBottom],
+		skinInnerBoundary,
 		sleeveOuter,
 		sleeveSurface: sleeveOuter.concat(
 			attachmentEdge.slice(0, -1),
@@ -1309,19 +1602,11 @@ function drawArm(
 	palette: BlonkyPalette,
 	textureId: number,
 	drawOuterOutline = true,
-): void {
-	drawLimb(
-		ctx,
-		arm.chain,
-		arm.side,
-		arm.skinInnerBoundary,
-		arm.skinInnerBoundaryId,
-		arm.limbId,
-		arm.startRadius,
-		arm.endRadius,
-		palette.outlineInk,
-		arm.cuffLower,
-	);
+): Pt[] {
+	const skin = arm.wave
+		? drawWaveUpperSkin(ctx, arm, palette)
+		: drawLimb(ctx, arm, palette.outlineInk);
+
 	drawShirtSurface(ctx, arm.sleeveSurface, palette, textureId, 360);
 	if (drawOuterOutline) {
 		stroke(ctx, arm.sleeveOuter, arm.outlineId, {
@@ -1344,6 +1629,7 @@ function drawArm(
 		boil: 0.42,
 		color: palette.outlineInk,
 	});
+	return skin;
 }
 
 function drawUpperBody(
@@ -1352,17 +1638,19 @@ function drawUpperBody(
 	palette: BlonkyPalette,
 	showArms: boolean,
 	showBody: boolean,
-): void {
+): () => void {
 	const collar = collarGeometry(pose);
-	const leftArm = tensionArmGeometry(armGeometry(pose, -1), pose.armTension);
-	const rightArm = tensionArmGeometry(armGeometry(pose, 1), pose.armTension);
+	const leftArm = wavingArmGeometry(tensionArmGeometry(armGeometry(pose, -1), pose.armTension), pose);
+	const rightArm = wavingArmGeometry(tensionArmGeometry(armGeometry(pose, 1), pose.armTension), pose);
 	const torso = torsoGeometry(pose, collar, leftArm, rightArm);
 	// These are literal component layers: combined rendering executes the exact
 	// same torso and arm draw calls as the standalone views, in a fixed order.
 	if (showBody) drawTorso(ctx, pose, torso, palette, !showArms);
+	let leftSkin: Pt[] | undefined;
+	let rightSkin: Pt[] | undefined;
 	if (showArms) {
-		drawArm(ctx, leftArm, palette, 770, !showBody);
-		drawArm(ctx, rightArm, palette, 780, !showBody);
+		leftSkin = drawArm(ctx, leftArm, palette, 770, !showBody);
+		rightSkin = drawArm(ctx, rightArm, palette, 780, !showBody);
 	}
 	if (showBody && showArms) {
 		stroke(ctx, [collar.leftContact, ...leftArm.sleeveOuter], leftArm.outlineId, {
@@ -1376,6 +1664,11 @@ function drawUpperBody(
 			color: palette.outlineInk,
 		});
 	}
+	return () => {
+		if (!showArms) return;
+		drawWavingForearm(ctx, leftArm, palette, leftSkin);
+		drawWavingForearm(ctx, rightArm, palette, rightSkin);
+	};
 }
 
 export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options: BlonkyDrawOptions = {}): void {
@@ -1386,6 +1679,8 @@ export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options:
 	const palette = options.palette ?? DEFAULT_BLONKY_PALETTE;
 	ctx.clearRect(0, 0, viewport.width, viewport.height);
 	const pose = poseAtRest(inkTime, options.emote);
+	const showBody = options.showBody !== false;
+	const showArms = options.showArms ?? showBody;
 	ctx.save();
 	if (view === 'debug') {
 		ctx.translate((viewport.width - BLONKY_BUST_WIDTH) / 2, 0);
@@ -1393,9 +1688,8 @@ export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options:
 		ctx.translate(8, -5);
 		ctx.scale(0.56, 0.56);
 	}
-	const showBody = options.showBody !== false;
-	const showArms = options.showArms ?? showBody;
-	if (showArms || showBody) drawUpperBody(ctx, pose, palette, showArms, showBody);
+	const foreground = showArms || showBody ? drawUpperBody(ctx, pose, palette, showArms, showBody) : undefined;
 	if (options.showHead !== false) drawHead(ctx, pose, palette.outlineInk);
+	foreground?.();
 	ctx.restore();
 }

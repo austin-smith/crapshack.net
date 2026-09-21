@@ -2,6 +2,7 @@ export {
 	createBlonkyAnimator,
 	mountBlonkyCanvases,
 	playBlonkyEmote,
+	releaseBlonkyEmote,
 	registerBlonkyCanvasLifecycle,
 	setBlonkyPlaybackRate,
 	unmountBlonkyCanvases,
