@@ -107,9 +107,7 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 		scheduleNap();
 	}) as EventListener, { signal: listeners.signal });
 
-	document.addEventListener('visibilitychange', () => {
-		window.clearTimeout(napTimer);
-	}, { signal: listeners.signal });
+	document.addEventListener('visibilitychange', scheduleNap, { signal: listeners.signal });
 
 	void cycleAphorism(false);
 
