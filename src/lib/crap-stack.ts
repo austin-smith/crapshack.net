@@ -421,7 +421,10 @@ export function initCrapStack(root: HTMLElement): void {
 		comboElement.classList.remove('is-showing');
 		void comboElement.offsetWidth;
 		comboElement.classList.add('is-showing');
-		comboTimer = window.setTimeout(() => comboElement.classList.remove('is-showing'), 650);
+		comboTimer = window.setTimeout(() => {
+			comboElement.textContent = '';
+			comboElement.classList.remove('is-showing');
+		}, 650);
 	}
 
 	function impact(level: number): void {
@@ -746,6 +749,7 @@ export function initCrapStack(root: HTMLElement): void {
 		gameOverPanel.hidden = true;
 		finalBest.hidden = true;
 		hint.dataset.dismissed = 'false';
+		comboElement.textContent = '';
 		comboElement.classList.remove('is-showing');
 		stage.dataset.danger = 'false';
 		stage.style.setProperty('--danger-progress', '0');
