@@ -102,6 +102,17 @@ function clamp(value: number, minimum: number, maximum: number): number {
 	return Math.max(minimum, Math.min(maximum, value));
 }
 
+// Higher rungs first appear mid-game, straight out of a merge. Fetching the
+// whole ladder once the page has loaded keeps them from popping in blank, and
+// holding the images keeps them in the page's memory cache.
+function preloadStickers(stickers: Sticker[], into: HTMLImageElement[]): void {
+	for (const sticker of stickers) {
+		const image = new Image();
+		image.src = sticker.source;
+		into.push(image);
+	}
+}
+
 export function initCrapStack(root: HTMLElement): void {
 	const stickers = JSON.parse(root.dataset.stickers ?? '[]') as Sticker[];
 	if (stickers.length < 2) return;
@@ -167,8 +178,11 @@ export function initCrapStack(root: HTMLElement): void {
 	let nudgeMerges = 0;
 	let nudgeCooldown = 0;
 	let nudgeDisplay = '';
+	const preloadedStickers: HTMLImageElement[] = [];
 
 	bestElement.textContent = String(best);
+	if (document.readyState === 'complete') preloadStickers(stickers, preloadedStickers);
+	else window.addEventListener('load', () => preloadStickers(stickers, preloadedStickers), { once: true });
 
 	function radiusFor(level: number): number {
 		return width * RADIUS_FACTORS[level];
@@ -204,7 +218,7 @@ export function initCrapStack(root: HTMLElement): void {
 		const diameter = radius * 2;
 		const armed = canDrop && !gameOver;
 		styleToken(currentToken, currentLevel);
-		// Reassigning the same GIF source restarts its animation in WebKit.
+		// Reassigning the same animated source restarts its animation in WebKit.
 		if (currentImage.getAttribute('src') !== stickers[currentLevel].source) {
 			currentImage.src = stickers[currentLevel].source;
 		}
