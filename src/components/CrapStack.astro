@@ -225,10 +225,13 @@ const stickers = [
 	}
 
 	/* The 17% here is the danger line: DANGER_LINE in src/lib/crap-stack.ts
-	   has to match it, or the pile crosses the mark before the game says so. */
+	   has to match it, or the pile crosses the mark before the game says so.
+	   Like the current token, the guide sits at the left edge and the script
+	   moves it to the aim point with `translate`. */
 	.crap-stack-guide {
 		position: absolute;
 		top: 0;
+		left: 0;
 		z-index: 1;
 		height: 17%;
 		border-left: 1px dashed rgb(var(--crap-stack-paper-ink) / 0.28);
@@ -290,6 +293,7 @@ const stickers = [
 
 	.crap-stack-current {
 		top: 0.35rem;
+		left: 0;
 		z-index: 5;
 		opacity: 0.78;
 		pointer-events: none;

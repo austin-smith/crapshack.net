@@ -22,6 +22,9 @@ type Piece = {
 	previousX: number;
 	previousY: number;
 	renderedRadius: number;
+	renderedX: number;
+	renderedY: number;
+	renderedAngle: number;
 	element: HTMLDivElement;
 };
 
@@ -299,6 +302,9 @@ export function initCrapStack(root: HTMLElement): void {
 	let saveRequested = false;
 	let lastSavedAt = 0;
 	let savedJson = '';
+	let shownDanger = '';
+	let shownDangerProgress = '';
+	let stageLeft: number | null = null;
 	const preloadedStickers: HTMLImageElement[] = [];
 
 	bestElement.textContent = String(best);
@@ -329,9 +335,13 @@ export function initCrapStack(root: HTMLElement): void {
 		}
 	}
 
+	// Aiming moves with `translate`, which the compositor handles; moving `left`
+	// would re-run layout on every pointer move. It applies ahead of the token's
+	// own centring transform, so the two compose the way `left` did.
 	function updateAim(): void {
-		currentToken.style.left = `${aimX}px`;
-		guide.style.left = `${aimX}px`;
+		const offset = `${aimX}px 0`;
+		currentToken.style.translate = offset;
+		guide.style.translate = offset;
 	}
 
 	function updatePreview(): void {
@@ -362,9 +372,11 @@ export function initCrapStack(root: HTMLElement): void {
 	function setAim(clientX: number): void {
 		const radius = radiusFor(currentLevel);
 		// clientLeft is the stage border: pieces are laid out in the padding box,
-		// so that is where the playfield's own origin sits.
-		const left = stage.getBoundingClientRect().left + stage.clientLeft;
-		aimX = clamp(clientX - left, radius, width - radius);
+		// so that is where the playfield's own origin sits. Pointer events can
+		// outnumber frames and each measurement can force a layout, so it is taken
+		// at most once a frame; frame() clears it, so it is never older than that.
+		stageLeft ??= stage.getBoundingClientRect().left + stage.clientLeft;
+		aimX = clamp(clientX - stageLeft, radius, width - radius);
 		updateAim();
 	}
 
@@ -397,6 +409,9 @@ export function initCrapStack(root: HTMLElement): void {
 			previousX: x,
 			previousY: y,
 			renderedRadius: 0,
+			renderedX: Number.NaN,
+			renderedY: Number.NaN,
+			renderedAngle: Number.NaN,
 			element,
 		};
 	}
@@ -793,9 +808,22 @@ export function initCrapStack(root: HTMLElement): void {
 			maximum = Math.max(maximum, piece.dangerFor);
 			if (piece.dangerFor > DANGER_LIMIT) endGame();
 		}
-		const progress = Math.min(maximum / DANGER_LIMIT, 1);
-		stage.dataset.danger = progress > 0.04 ? 'true' : 'false';
-		stage.style.setProperty('--danger-progress', progress.toFixed(3));
+		showDanger(Math.min(maximum / DANGER_LIMIT, 1));
+	}
+
+	// Runs every physics step, but the meter sits at zero for most of a game, so
+	// only touch the stage when what it shows actually changes.
+	function showDanger(progress: number): void {
+		const danger = progress > 0.04 ? 'true' : 'false';
+		const progressText = progress.toFixed(3);
+		if (danger !== shownDanger) {
+			shownDanger = danger;
+			stage.dataset.danger = danger;
+		}
+		if (progressText !== shownDangerProgress) {
+			shownDangerProgress = progressText;
+			stage.style.setProperty('--danger-progress', progressText);
+		}
 	}
 
 	function physicsStep(delta: number, now: number): void {
@@ -828,17 +856,25 @@ export function initCrapStack(root: HTMLElement): void {
 
 	function render(): void {
 		for (const piece of pieces) {
-			if (piece.renderedRadius !== piece.radius) {
+			const resized = piece.renderedRadius !== piece.radius;
+			if (resized) {
 				piece.renderedRadius = piece.radius;
 				const diameter = piece.radius * 2;
 				piece.element.style.width = `${diameter}px`;
 				piece.element.style.height = `${diameter}px`;
 			}
+			// Once a piece has come fully to rest it keeps exactly the same position,
+			// so skip rebuilding a transform it already has.
+			if (!resized && piece.x === piece.renderedX && piece.y === piece.renderedY && piece.angle === piece.renderedAngle) continue;
+			piece.renderedX = piece.x;
+			piece.renderedY = piece.y;
+			piece.renderedAngle = piece.angle;
 			piece.element.style.transform = `translate3d(${piece.x - piece.radius}px, ${piece.y - piece.radius}px, 0) rotate(${piece.angle}rad)`;
 		}
 	}
 
 	function frame(time: number): void {
+		stageLeft = null;
 		if (!lastTime) lastTime = time;
 		const elapsed = Math.min((time - lastTime) / 1000, 0.05);
 		lastTime = time;
@@ -938,8 +974,7 @@ export function initCrapStack(root: HTMLElement): void {
 		hint.dataset.dismissed = pieces.length > 0 ? 'true' : 'false';
 		comboElement.textContent = '';
 		comboElement.classList.remove('is-showing');
-		stage.dataset.danger = 'false';
-		stage.style.setProperty('--danger-progress', '0');
+		showDanger(0);
 		aimX = width / 2;
 		updateProgress(saved?.highestLevel ?? 0);
 		updatePreview();
