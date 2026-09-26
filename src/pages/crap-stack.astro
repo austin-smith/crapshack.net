@@ -1,0 +1,15 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CrapStack from '../components/CrapStack.astro';
+---
+
+<Layout title="crapshack (crap stack)" fullBleed>
+	<CrapStack />
+</Layout>
+
+<style>
+	/* Keep weather behind the game board and controls. */
+	:global(.weather-container) {
+		z-index: 0;
+	}
+</style>
