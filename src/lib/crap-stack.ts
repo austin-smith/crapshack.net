@@ -434,6 +434,12 @@ export function initCrapStack(root: HTMLElement): void {
 		gain.gain.setValueAtTime(volume, now);
 		gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 		oscillator.connect(gain).connect(context.destination);
+		// Every drop, merge and nudge makes a pair of nodes, and a long game makes
+		// thousands. Unhook them once the sound is over so none can outlive it.
+		oscillator.addEventListener('ended', () => {
+			oscillator.disconnect();
+			gain.disconnect();
+		}, { once: true });
 		oscillator.start(now);
 		oscillator.stop(now + duration);
 	}
