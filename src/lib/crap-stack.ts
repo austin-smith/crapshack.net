@@ -193,6 +193,33 @@ function clamp(value: number, minimum: number, maximum: number): number {
 	return Math.max(minimum, Math.min(maximum, value));
 }
 
+// Plays a class-driven CSS animation from the top. Toggling the class through a
+// layout read would force a full layout mid-frame, and most of these fire from
+// inside the physics step on a merge. Instead a live animation is rewound in
+// place, which only needs styles. Every class is dropped once its animation is
+// done, so a class that is still present means its animation is still live —
+// unless reduced motion has switched it off, and then there is nothing to play.
+function replayAnimation(element: HTMLElement, className: string): void {
+	if (!element.classList.contains(className)) {
+		element.classList.add(className);
+		return;
+	}
+	for (const animation of element.getAnimations()) {
+		if (!(animation instanceof CSSAnimation)) continue;
+		animation.currentTime = 0;
+		animation.play();
+	}
+}
+
+// Descendants' animation events bubble up too, so only the element's own count.
+function dropClassWhenAnimationEnds(element: HTMLElement, className: string): void {
+	const drop = (event: AnimationEvent) => {
+		if (event.target === element) element.classList.remove(className);
+	};
+	element.addEventListener('animationend', drop);
+	element.addEventListener('animationcancel', drop);
+}
+
 // Higher rungs first appear mid-game, straight out of a merge. Fetching the
 // whole ladder once the page has loaded keeps them from popping in blank, and
 // holding the images keeps them in the page's memory cache.
@@ -452,9 +479,7 @@ export function initCrapStack(root: HTMLElement): void {
 			piece.supported = false;
 		}
 		cabinet.style.setProperty('--nudge-direction', String(direction));
-		cabinet.classList.remove('is-nudging');
-		void cabinet.offsetWidth;
-		cabinet.classList.add('is-nudging');
+		replayAnimation(cabinet, 'is-nudging');
 		nudgeStatus.textContent = `Nudged ${direction < 0 ? 'left' : 'right'}. ${nudges} of ${NUDGE_CAPACITY} nudges left.`;
 		updateNudges();
 		tone(72, 0.14, 0.035, 'triangle');
@@ -508,9 +533,7 @@ export function initCrapStack(root: HTMLElement): void {
 	}
 
 	function bumpScore(): void {
-		scoreElement.classList.remove('is-bumping');
-		void scoreElement.offsetWidth;
-		scoreElement.classList.add('is-bumping');
+		replayAnimation(scoreElement, 'is-bumping');
 	}
 
 	function updateScore(points: number): void {
@@ -528,9 +551,9 @@ export function initCrapStack(root: HTMLElement): void {
 		if (combo < 2) return;
 		window.clearTimeout(comboTimer);
 		comboElement.textContent = `${combo}× chain`;
-		comboElement.classList.remove('is-showing');
-		void comboElement.offsetWidth;
-		comboElement.classList.add('is-showing');
+		// The callout holds its last frame, so it stays live until this timer
+		// takes the class away.
+		replayAnimation(comboElement, 'is-showing');
 		comboTimer = window.setTimeout(() => {
 			comboElement.textContent = '';
 			comboElement.classList.remove('is-showing');
@@ -539,10 +562,7 @@ export function initCrapStack(root: HTMLElement): void {
 
 	function impact(level: number): void {
 		if (level < 3) return;
-		stage.classList.remove('is-impacting');
-		void stage.offsetWidth;
-		stage.classList.add('is-impacting');
-		window.setTimeout(() => stage.classList.remove('is-impacting'), 190);
+		replayAnimation(stage, 'is-impacting');
 		if (!reducedMotion.matches && 'vibrate' in navigator) navigator.vibrate(Math.min(8 + level * 2, 24));
 	}
 
@@ -1005,9 +1025,9 @@ export function initCrapStack(root: HTMLElement): void {
 	nudgeControls.addEventListener('keydown', (event) => {
 		if (event.repeat && (event.key === 'Enter' || event.key === ' ')) event.preventDefault();
 	});
-	cabinet.addEventListener('animationend', (event) => {
-		if (event.target === cabinet) cabinet.classList.remove('is-nudging');
-	});
+	dropClassWhenAnimationEnds(cabinet, 'is-nudging');
+	dropClassWhenAnimationEnds(scoreElement, 'is-bumping');
+	dropClassWhenAnimationEnds(stage, 'is-impacting');
 	stage.addEventListener('pointermove', (event) => setAim(event.clientX));
 	stage.addEventListener('pointerdown', (event) => {
 		if (event.button !== 0) return;
