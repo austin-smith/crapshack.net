@@ -883,6 +883,9 @@ export function initCrapStack(root: HTMLElement): void {
 	}
 
 	function frame(time: number): void {
+		// Book the next frame before doing any work, so a frame that throws cannot
+		// stop the game loop for good.
+		requestAnimationFrame(frame);
 		stageLeft = null;
 		if (!lastTime) lastTime = time;
 		const elapsed = Math.min((time - lastTime) / 1000, 0.05);
@@ -900,7 +903,6 @@ export function initCrapStack(root: HTMLElement): void {
 			lastSavedAt = time;
 			saveGame();
 		}
-		requestAnimationFrame(frame);
 	}
 
 	function snapshot(): SavedGame {
