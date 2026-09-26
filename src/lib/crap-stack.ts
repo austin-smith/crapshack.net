@@ -708,9 +708,12 @@ export function initCrapStack(root: HTMLElement): void {
 					const second = pieces[secondIndex];
 					let dx = second.x - first.x;
 					let dy = second.y - first.y;
-					let distance = Math.hypot(dx, dy);
 					const minimumDistance = first.radius + second.radius;
-					if (distance >= minimumDistance) continue;
+					// Most pairs are nowhere near touching, so rule them out on the
+					// squared distance and only take the square root for a contact.
+					const distanceSquared = dx * dx + dy * dy;
+					if (distanceSquared >= minimumDistance * minimumDistance) continue;
+					let distance = Math.sqrt(distanceSquared);
 					if (distance < 0.001) {
 						dx = 0.01;
 						dy = 0;
