@@ -1,0 +1,495 @@
+---
+import { Volume2, VolumeX } from '@lucide/astro';
+import Button from './ui/Button.astro';
+import Kbd from './ui/Kbd.astro';
+
+const stickers = [
+	{ name: 'test tube', source: '/images/crap-stack/test-tube.webp', color: '#b9e4f3', artScale: 1.12 },
+	{ name: 'wine', source: '/images/crap-stack/wine.webp', color: '#f2b6c4', artScale: 1.14 },
+	{ name: 'milk', source: '/images/crap-stack/milk.webp', color: '#eee6d7', artScale: 1.1 },
+	{ name: 'popcorn', source: '/images/crap-stack/popcorn.webp', color: '#f5cf61', artScale: 1.02 },
+	{ name: 'wink', source: '/images/crap-stack/wink.webp', color: '#ef9c43', artScale: 1.08 },
+	{ name: 'blinky', source: '/images/crap-stack/blinky.webp', color: '#a9d5f3', artScale: 0.92 },
+	{ name: 'brows', source: '/images/crap-stack/brows.webp', color: '#cbb99c', artScale: 1.02 },
+	{ name: 'hair', source: '/images/crap-stack/hair.webp', color: '#f3e86a', artScale: 0.98 },
+	{ name: 'spiral', source: '/images/crap-stack/spiral.webp', color: '#d8a5cf', artScale: 1.04 },
+	{ name: 'robot', source: '/images/crap-stack/robot.webp', color: '#91a6b7', artScale: 1.03 },
+];
+---
+
+<section class="crap-stack-root text-text" data-crap-stack-root data-stickers={JSON.stringify(stickers)} aria-labelledby="crap-stack-title" aria-describedby="crap-stack-instructions">
+	<div class="crap-stack-cabinet">
+		<header class="crap-stack-header">
+			<h1 id="crap-stack-title" class="crap-stack-title text-brand">crap stack</h1>
+		</header>
+		<div
+			class="crap-stack-stage"
+			data-crap-stack-stage
+			tabindex="0"
+			aria-label="Crap Stack game board. Move with the pointer or arrow keys and drop with click, tap, Enter, or Space. Press A to nudge the pile left or D to nudge right."
+		>
+			<div class="crap-stack-stage__sheen" aria-hidden="true"></div>
+			<div class="crap-stack-danger" aria-hidden="true"></div>
+			<div class="crap-stack-guide" data-crap-stack-guide aria-hidden="true"></div>
+
+			<div class="crap-stack-current crap-stack-token" data-crap-stack-current aria-hidden="true">
+				<img src={stickers[0].source} alt="" draggable="false" />
+			</div>
+			<div class="crap-stack-pieces" data-crap-stack-pieces aria-hidden="true"></div>
+
+			<div class="crap-stack-first-hint text-sm" data-crap-stack-hint aria-hidden="true">
+				<strong>match two of the same</strong>
+				<span>keep the pile below the line</span>
+			</div>
+
+			<output class="crap-stack-combo" data-crap-stack-combo aria-live="polite"></output>
+
+			<div class="crap-stack-game-over" data-crap-stack-game-over role="status" hidden>
+				<p class="text-3xl font-mono font-semibold">game over</p>
+				<p class="my-4 text-base tabular-nums"><span data-crap-stack-final>0</span> points</p>
+				<div class="mb-4 text-sm font-semibold" data-crap-stack-final-best hidden>new high score</div>
+				<Button data-crap-stack-restart>play again</Button>
+			</div>
+		</div>
+
+		<aside class="crap-stack-controls grid gap-5 self-start rounded-lg border border-line-strong bg-sidebar-bg p-5" aria-label="Game status and controls">
+			<div class="crap-stack-scores grid grid-cols-2 gap-4 tabular-nums" aria-label="Game scores">
+				<p class="grid gap-1"><span class="text-xs text-subtle">score</span><strong class="font-mono text-2xl font-semibold" data-crap-stack-score>0</strong></p>
+				<p class="grid gap-1"><span class="text-xs text-subtle">best</span><strong class="font-mono text-2xl font-semibold" data-crap-stack-best>0</strong></p>
+			</div>
+			<div class="flex items-center gap-4 border-t border-line-strong pt-5" aria-label="Next piece">
+				<div class="crap-stack-next__token crap-stack-token" data-crap-stack-next-token>
+					<img data-crap-stack-next src={stickers[0].source} alt="" draggable="false" />
+				</div>
+				<p class="grid gap-1"><span class="text-xs text-subtle">next up</span><strong class="text-sm font-semibold" data-crap-stack-next-name>{stickers[0].name}</strong></p>
+			</div>
+			<div class="grid gap-3 border-t border-line-strong pt-5" data-crap-stack-nudges role="group" tabindex="-1" aria-labelledby="crap-stack-nudge-title" aria-describedby="crap-stack-nudge-rules">
+				<div class="flex items-center justify-between gap-3 text-sm">
+					<strong id="crap-stack-nudge-title" class="font-semibold">nudges</strong>
+					<span class="tabular-nums" aria-label="Available nudges" data-crap-stack-nudge-count>2 / 2</span>
+				</div>
+				<div class="grid grid-cols-2 gap-2">
+					<Button variant="secondary" data-crap-stack-nudge="left" aria-label="Nudge pile left" aria-keyshortcuts="A" disabled>
+						<Kbd aria-hidden="true">A</Kbd><span aria-hidden="true">←</span>
+					</Button>
+					<Button variant="secondary" data-crap-stack-nudge="right" aria-label="Nudge pile right" aria-keyshortcuts="D" disabled>
+						<span aria-hidden="true">→</span><Kbd aria-hidden="true">D</Kbd>
+					</Button>
+				</div>
+				<div class="grid gap-2">
+					<div class="crap-stack-nudges__meter grid grid-cols-5 gap-1" data-crap-stack-nudge-meter role="progressbar" aria-label="Nudge recharge" aria-valuemin="0" aria-valuemax="5" aria-valuenow="5" aria-valuetext="2 nudges available">
+						{Array.from({ length: 5 }, () => <span data-crap-stack-nudge-tick data-filled="true"></span>)}
+					</div>
+					<span class="text-xs text-subtle empty:hidden" data-crap-stack-nudge-hint></span>
+				</div>
+				<p id="crap-stack-nudge-rules" class="text-xs text-subtle">2 nudges max · 5 merges earn 1</p>
+				<span class="sr-only" data-crap-stack-nudge-status role="status" aria-live="polite" aria-atomic="true"></span>
+			</div>
+			<div class="grid gap-3 border-t border-line-strong pt-5">
+				<p class="grid gap-1"><span class="text-xs text-subtle">highest piece</span><strong class="text-sm font-semibold" data-crap-stack-achieved-name>{stickers[0].name}</strong></p>
+				<div class="crap-stack-progress flex justify-between gap-1" aria-hidden="true">
+					{stickers.map((sticker, level) => (
+						<span data-crap-stack-progress={level} style={`--token-color: ${sticker.color}`}></span>
+					))}
+				</div>
+			</div>
+			<div class="flex gap-2 border-t border-line-strong pt-5">
+				<Button variant="secondary" class="flex-1" data-crap-stack-restart>restart</Button>
+				<Button variant="secondary" size="icon" aria-pressed="true" data-crap-stack-sound aria-label="Turn sound off">
+					<Volume2 aria-hidden="true" data-crap-stack-sound-on />
+					<VolumeX aria-hidden="true" data-crap-stack-sound-off class="hidden" />
+				</Button>
+			</div>
+		</aside>
+		<p class="crap-stack-instructions text-center text-xs text-muted" id="crap-stack-instructions">
+			<span class="crap-stack-pointer-copy">move · click to drop</span>
+			<span class="crap-stack-touch-copy">tap where it should drop</span>
+			<span class="crap-stack-keyboard-copy"><Kbd aria-label="Left arrow">←</Kbd> <Kbd aria-label="Right arrow">→</Kbd> move · <Kbd>space</Kbd> drops</span>
+		</p>
+	</div>
+</section>
+
+<script>
+	import { initCrapStack } from '../lib/crap-stack';
+
+	const root = document.querySelector<HTMLElement>('[data-crap-stack-root]');
+	if (root) initCrapStack(root);
+</script>
+
+<style>
+	.crap-stack-root {
+		min-height: 100dvh;
+		padding: 2rem 1.5rem;
+	}
+
+	.crap-stack-cabinet {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 15rem;
+		column-gap: 1.5rem;
+		width: min(100%, 54.5rem, calc((100dvh - 10rem) * 4 / 5 + 16.5rem));
+		margin-inline: auto;
+	}
+
+	.crap-stack-header { grid-column: 1 / -1; margin-bottom: 1.5rem; }
+	.crap-stack-title {
+		font-family: Georgia, 'Times New Roman', serif;
+		font-size: 2.5rem;
+		font-weight: 400;
+		letter-spacing: -0.07em;
+		line-height: 1;
+	}
+
+	.crap-stack-stage { grid-column: 1; grid-row: 2; }
+	.crap-stack-controls { grid-column: 2; grid-row: 2 / 4; }
+	.crap-stack-instructions { grid-column: 1; margin-top: 1rem; }
+
+	.crap-stack-nudges__meter span {
+		height: 0.375rem;
+		border: 1px solid var(--app-subtle);
+		border-radius: 1px;
+	}
+
+	.crap-stack-nudges__meter span[data-filled='true'] { background: var(--app-brand); }
+
+	.crap-stack-progress span {
+		width: 0.75rem;
+		height: 0.75rem;
+		flex-shrink: 0;
+		border: 1px solid var(--app-subtle);
+		border-radius: 50%;
+	}
+
+	.crap-stack-progress span[data-achieved='true'] {
+		background: var(--token-color);
+		border-color: var(--token-color);
+	}
+
+	[data-crap-stack-score].is-bumping { animation: score-bump 180ms ease-out; }
+	.crap-stack-cabinet.is-nudging { animation: shack-nudge 320ms ease-out; }
+
+	/* The paper and ink belong to the playfield; controls use site tokens. */
+	.crap-stack-stage {
+		--crap-stack-paper: #f2f5ee;
+		--crap-stack-paper-ink: 16 39 60;
+		--crap-stack-combo-ink: #c74e78;
+		--danger-progress: 0;
+		position: relative;
+		isolation: isolate;
+		width: 100%;
+		aspect-ratio: 4 / 5;
+		overflow: hidden;
+		border: 2px solid var(--app-brand);
+		border-radius: 1rem;
+		background:
+			linear-gradient(rgb(var(--crap-stack-paper-ink) / 0.055) 1px, transparent 1px),
+			linear-gradient(90deg, rgb(var(--crap-stack-paper-ink) / 0.055) 1px, transparent 1px),
+			var(--crap-stack-paper);
+		background-size: 24px 24px;
+		box-shadow: 0 12px 32px rgb(0 0 0 / 0.16);
+		cursor: crosshair;
+		touch-action: none;
+		user-select: none;
+	}
+
+	.crap-stack-stage:focus-visible {
+		outline: 2px solid var(--app-brand);
+		outline-offset: 3px;
+	}
+
+	.crap-stack-stage[data-danger='true'] {
+		box-shadow: 0 0 0 calc(6px * var(--danger-progress)) rgb(234 75 104 / 0.55), 0 12px 32px rgb(0 0 0 / 0.16);
+	}
+
+	.crap-stack-stage.is-impacting {
+		animation: cabinet-impact 170ms ease-out;
+	}
+
+	.crap-stack-stage__sheen {
+		position: absolute;
+		inset: 0;
+		z-index: 8;
+		background: linear-gradient(115deg, rgb(255 255 255 / 0.05), transparent 22% 78%, rgb(var(--crap-stack-paper-ink) / 0.04));
+		pointer-events: none;
+	}
+
+	.crap-stack-danger {
+		position: absolute;
+		top: 17%;
+		left: 0;
+		z-index: 4;
+		width: 100%;
+		border-top: 2px dashed rgb(199 78 120 / 0.72);
+		pointer-events: none;
+	}
+
+	/* The 17% here is the danger line: DANGER_LINE in src/lib/crap-stack.ts
+	   has to match it, or the pile crosses the mark before the game says so.
+	   Like the current token, the guide sits at the left edge and the script
+	   moves it to the aim point with `translate`. */
+	.crap-stack-guide {
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 1;
+		height: 17%;
+		border-left: 1px dashed rgb(var(--crap-stack-paper-ink) / 0.28);
+		pointer-events: none;
+		transition: opacity 160ms ease;
+	}
+
+	.crap-stack-current[data-armed='false'],
+	.crap-stack-guide[data-armed='false'] {
+		opacity: 0;
+	}
+
+	.crap-stack-pieces {
+		position: absolute;
+		inset: 0;
+		z-index: 3;
+		pointer-events: none;
+	}
+
+	.crap-stack-token,
+	:global(.crap-stack-piece) {
+		--token-color: #b9e4f3;
+		--art-scale: 1;
+		position: absolute;
+		border: max(2px, 0.3vw) solid #10273c;
+		border-radius: 48% 52% 49% 51% / 52% 47% 53% 48%;
+		background:
+			radial-gradient(circle at 34% 27%, rgb(255 255 255 / 0.8) 0 6%, transparent 7%),
+			var(--token-color);
+		box-shadow:
+			inset -4px -5px 0 rgb(16 39 60 / 0.09),
+			inset 3px 3px 0 rgb(255 255 255 / 0.42),
+			0 3px 0 rgb(16 39 60 / 0.3),
+			0 6px 9px rgb(16 39 60 / 0.14);
+		overflow: hidden;
+	}
+
+	.crap-stack-token::after,
+	:global(.crap-stack-piece::after) {
+		position: absolute;
+		inset: 5%;
+		border: 1px solid rgb(16 39 60 / 0.1);
+		border-radius: inherit;
+		content: '';
+		pointer-events: none;
+	}
+
+	.crap-stack-token img,
+	:global(.crap-stack-piece img) {
+		position: absolute;
+		inset: -6%;
+		display: block;
+		width: 112%;
+		height: 112%;
+		object-fit: contain;
+		filter: drop-shadow(0 2px 0 rgb(16 39 60 / 0.14));
+		transform: scale(var(--art-scale));
+	}
+
+	.crap-stack-current {
+		top: 0.35rem;
+		left: 0;
+		z-index: 5;
+		opacity: 0.78;
+		pointer-events: none;
+		transform: translateX(-50%);
+		transition: opacity 160ms ease;
+	}
+
+	:global(.crap-stack-piece) {
+		top: 0;
+		left: 0;
+		will-change: transform;
+		transform-origin: center;
+		pointer-events: none;
+	}
+
+	:global(.crap-stack-piece.is-merged) {
+		animation: token-arrive 270ms cubic-bezier(0.12, 1.25, 0.3, 1);
+	}
+
+	.crap-stack-first-hint {
+		position: absolute;
+		top: 43%;
+		left: 50%;
+		z-index: 2;
+		display: grid;
+		gap: 0.25rem;
+		width: max-content;
+		max-width: 80%;
+		color: rgb(var(--crap-stack-paper-ink) / 0.75);
+		text-align: center;
+		transform: translate(-50%, -50%);
+		transition: opacity 180ms ease, transform 180ms ease;
+	}
+
+	.crap-stack-first-hint[data-dismissed='true'] {
+		opacity: 0;
+		transform: translate(-50%, -45%);
+	}
+
+	.crap-stack-combo {
+		position: absolute;
+		top: 23%;
+		left: 50%;
+		z-index: 12;
+		color: var(--crap-stack-combo-ink);
+		font-size: clamp(1rem, 4vw, 1.45rem);
+		font-weight: 950;
+		letter-spacing: -0.06em;
+		pointer-events: none;
+		/* Knockout halo against the playfield, so it must follow the paper. */
+		text-shadow: 2px 2px 0 var(--crap-stack-paper);
+		transform: translateX(-50%);
+	}
+
+	.crap-stack-combo.is-showing {
+		animation: combo-callout 620ms ease-out forwards;
+	}
+
+	/* Matching a pair at the top of the ladder clears them off the board. */
+	:global(.crap-stack-burst) {
+		position: absolute;
+		z-index: 10;
+		border: max(3px, 0.45vw) solid var(--app-brand);
+		border-radius: 50%;
+		pointer-events: none;
+		transform: translate(-50%, -50%);
+		animation: burst-ring 560ms cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+	}
+
+	:global(.crap-stack-points) {
+		position: absolute;
+		z-index: 11;
+		padding: 0.15rem 0.3rem;
+		border: 1px solid #10273c;
+		border-radius: 999px;
+		background: var(--app-brand);
+		box-shadow: 1px 2px 0 #10273c;
+		color: #10273c;
+		font-size: clamp(0.55rem, 2vw, 0.72rem);
+		font-weight: 900;
+		pointer-events: none;
+		animation: points-float 680ms ease-out forwards;
+	}
+
+	.crap-stack-game-over {
+		position: absolute;
+		inset: 0;
+		z-index: 30;
+		display: grid;
+		place-content: center;
+		justify-items: center;
+		padding: 2rem;
+		background: color-mix(in srgb, var(--crap-stack-paper) 90%, transparent);
+		backdrop-filter: blur(7px);
+		-webkit-backdrop-filter: blur(7px);
+		color: rgb(var(--crap-stack-paper-ink));
+		text-align: center;
+	}
+
+	.crap-stack-game-over[hidden] { display: none; }
+
+	.crap-stack-next__token {
+		position: relative;
+		flex: 0 0 auto;
+		width: 4rem;
+		height: 4rem;
+	}
+
+	:global(html[data-theme]:not([data-theme='light'])) .crap-stack-stage {
+		--crap-stack-paper: var(--app-panel);
+		--crap-stack-paper-ink: var(--app-fg-rgb);
+		--crap-stack-combo-ink: var(--app-brand);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:global(html:not([data-theme])) .crap-stack-stage {
+			--crap-stack-paper: var(--app-panel);
+			--crap-stack-paper-ink: var(--app-fg-rgb);
+			--crap-stack-combo-ink: var(--app-brand);
+		}
+	}
+
+	.crap-stack-touch-copy,
+	.crap-stack-keyboard-copy { display: none; }
+
+	@media (hover: none) {
+		.crap-stack-pointer-copy { display: none; }
+		.crap-stack-touch-copy { display: inline; }
+	}
+
+	@media (hover: hover) and (min-width: 720px) {
+		.crap-stack-pointer-copy { display: none; }
+		.crap-stack-keyboard-copy { display: inline; }
+	}
+
+	@media (max-width: 719px) {
+		.crap-stack-root { padding: 1.5rem 1rem; }
+		.crap-stack-cabinet { width: min(100%, 32rem); grid-template-columns: minmax(0, 1fr); }
+		.crap-stack-controls { grid-column: 1; grid-row: 4; margin-top: 1.5rem; }
+	}
+
+	@keyframes token-arrive {
+		0% { scale: 0.3; filter: brightness(1.5); }
+		65% { scale: 1.15; }
+		100% { scale: 1; filter: none; }
+	}
+
+	@keyframes burst-ring {
+		0% { opacity: 0.9; scale: 0.45; }
+		100% { opacity: 0; scale: 1.9; }
+	}
+
+	@keyframes points-float {
+		0% { opacity: 0; transform: translate(-50%, 0) scale(0.7) rotate(-3deg); }
+		18% { opacity: 1; }
+		100% { opacity: 0; transform: translate(-50%, -2.8rem) scale(1.08) rotate(2deg); }
+	}
+
+	@keyframes combo-callout {
+		0% { opacity: 0; transform: translateX(-50%) scale(0.5) rotate(-5deg); }
+		22% { opacity: 1; transform: translateX(-50%) scale(1.1) rotate(2deg); }
+		75% { opacity: 1; }
+		100% { opacity: 0; transform: translateX(-50%) translateY(-1.2rem) scale(0.94); }
+	}
+
+	@keyframes score-bump {
+		50% { color: var(--app-brand); transform: scale(1.15); }
+	}
+
+	@keyframes cabinet-impact {
+		25% { transform: translateX(-2px) rotate(-0.15deg); }
+		55% { transform: translateX(2px) rotate(0.15deg); }
+	}
+
+	@keyframes shack-nudge {
+		15% { transform: translateX(calc(var(--nudge-direction) * 6px)) rotate(calc(var(--nudge-direction) * 0.35deg)); }
+		42% { transform: translateX(calc(var(--nudge-direction) * -3px)) rotate(calc(var(--nudge-direction) * -0.18deg)); }
+		70% { transform: translateX(calc(var(--nudge-direction) * 1px)); }
+		100% { transform: none; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.crap-stack-first-hint,
+		.crap-stack-current,
+		.crap-stack-guide {
+			transition: none;
+		}
+
+		.crap-stack-stage.is-impacting,
+		.crap-stack-cabinet.is-nudging,
+		.crap-stack-scores strong.is-bumping,
+		:global(.crap-stack-piece.is-merged),
+		:global(.crap-stack-points),
+		:global(.crap-stack-burst),
+		.crap-stack-combo.is-showing {
+			animation: none;
+		}
+	}
+</style>
