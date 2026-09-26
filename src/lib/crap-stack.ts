@@ -25,7 +25,41 @@ type Piece = {
 	element: HTMLDivElement;
 };
 
+type SavedPiece = {
+	level: number;
+	// Position and velocity are fractions of the board, so a save survives the
+	// board being a different size when it is restored.
+	x: number;
+	y: number;
+	vx: number;
+	vy: number;
+	angle: number;
+	angularVelocity: number;
+	age: number;
+	dangerFor: number;
+};
+
+type SavedGame = {
+	version: number;
+	score: number;
+	startingBest: number;
+	highestLevel: number;
+	currentLevel: number;
+	nextLevel: number;
+	spawnBag: number[];
+	nudges: number;
+	nudgeMerges: number;
+	pieces: SavedPiece[];
+};
+
 const BEST_SCORE_KEY = 'crap-stack:best';
+// A game in progress is kept in storage so a reload resumes it. Safari can kill
+// the tab outright without firing any unload event, so the game is saved on a
+// timer while it runs, not only on the way out. Bump the version whenever the
+// ladder or the board changes shape so stale saves are dropped.
+const SAVED_GAME_KEY = 'crap-stack:game';
+const SAVE_VERSION = 1;
+const SAVE_INTERVAL = 1000;
 const FIXED_STEP = 1 / 60;
 // Piece radius as a fraction of board width. The big ones are capped so two of them
 // plus everything below still fits on the board.
@@ -87,6 +121,63 @@ function saveBestScore(score: number): void {
 	} catch {
 		// Storage can be unavailable without affecting the game.
 	}
+}
+
+function isWhole(value: unknown, maximum = Number.MAX_SAFE_INTEGER): value is number {
+	return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= maximum;
+}
+
+function isSavedPiece(value: unknown, topLevel: number): value is SavedPiece {
+	if (typeof value !== 'object' || value === null) return false;
+	const piece = value as Record<string, unknown>;
+	return isWhole(piece.level, topLevel)
+		&& [piece.x, piece.y, piece.vx, piece.vy, piece.angle, piece.angularVelocity, piece.age, piece.dangerFor]
+			.every((number) => Number.isFinite(number));
+}
+
+function isSavedGame(value: unknown, topLevel: number): value is SavedGame {
+	if (typeof value !== 'object' || value === null) return false;
+	const game = value as Record<string, unknown>;
+	return game.version === SAVE_VERSION
+		&& isWhole(game.score)
+		&& isWhole(game.startingBest)
+		&& isWhole(game.highestLevel, topLevel)
+		&& isWhole(game.currentLevel, topLevel)
+		&& isWhole(game.nextLevel, topLevel)
+		&& Array.isArray(game.spawnBag) && game.spawnBag.every((level) => isWhole(level, topLevel))
+		&& isWhole(game.nudges, NUDGE_CAPACITY)
+		&& isWhole(game.nudgeMerges, MERGES_PER_NUDGE - 1)
+		&& Array.isArray(game.pieces) && game.pieces.every((piece) => isSavedPiece(piece, topLevel));
+}
+
+function readSavedGame(topLevel: number): SavedGame | null {
+	try {
+		const saved: unknown = JSON.parse(localStorage.getItem(SAVED_GAME_KEY) ?? 'null');
+		return isSavedGame(saved, topLevel) ? saved : null;
+	} catch {
+		return null;
+	}
+}
+
+function writeSavedGame(json: string): void {
+	try {
+		localStorage.setItem(SAVED_GAME_KEY, json);
+	} catch {
+		// Storage can be unavailable without affecting the game.
+	}
+}
+
+function clearSavedGame(): void {
+	try {
+		localStorage.removeItem(SAVED_GAME_KEY);
+	} catch {
+		// Storage can be unavailable without affecting the game.
+	}
+}
+
+function rounded(value: number, places: number): number {
+	const scale = 10 ** places;
+	return Math.round(value * scale) / scale;
 }
 
 function shuffledBag(): number[] {
@@ -178,6 +269,9 @@ export function initCrapStack(root: HTMLElement): void {
 	let nudgeMerges = 0;
 	let nudgeCooldown = 0;
 	let nudgeDisplay = '';
+	let saveRequested = false;
+	let lastSavedAt = 0;
+	let savedJson = '';
 	const preloadedStickers: HTMLImageElement[] = [];
 
 	bestElement.textContent = String(best);
@@ -348,6 +442,7 @@ export function initCrapStack(root: HTMLElement): void {
 		if (resting.length === 0) return;
 		nudges -= 1;
 		nudgeCooldown = NUDGE_COOLDOWN;
+		saveRequested = true;
 		for (const piece of resting) {
 			const response = Math.sqrt(radiusFor(0) / piece.radius);
 			piece.vx = clamp(piece.vx + direction * width * 0.32 * response, -width * 0.55, width * 0.55);
@@ -375,6 +470,7 @@ export function initCrapStack(root: HTMLElement): void {
 		currentLevel = nextLevel;
 		nextLevel = nextFromBag();
 		canDrop = false;
+		saveRequested = true;
 		updatePreview();
 		window.clearTimeout(dropTimer);
 		dropTimer = window.setTimeout(() => {
@@ -505,6 +601,7 @@ export function initCrapStack(root: HTMLElement): void {
 		}
 
 		if (consumed.size === 0) return;
+		saveRequested = true;
 		pieces = pieces.filter((piece) => {
 			if (!consumed.has(piece.id)) return true;
 			removePiece(piece);
@@ -655,6 +752,9 @@ export function initCrapStack(root: HTMLElement): void {
 		gameOver = true;
 		canDrop = false;
 		window.clearTimeout(dropTimer);
+		// A finished game has nothing to resume.
+		clearSavedGame();
+		savedJson = '';
 		updatePreview();
 		finalElement.textContent = String(score);
 		finalBest.hidden = score <= startingBest;
@@ -731,7 +831,58 @@ export function initCrapStack(root: HTMLElement): void {
 		}
 		render();
 		updateNudges();
+		if (saveRequested || time - lastSavedAt >= SAVE_INTERVAL) {
+			lastSavedAt = time;
+			saveGame();
+		}
 		requestAnimationFrame(frame);
+	}
+
+	function snapshot(): SavedGame {
+		return {
+			version: SAVE_VERSION,
+			score,
+			startingBest,
+			highestLevel,
+			currentLevel,
+			nextLevel,
+			spawnBag: [...spawnBag],
+			nudges,
+			nudgeMerges,
+			pieces: pieces.map((piece) => ({
+				level: piece.level,
+				x: rounded(piece.x / width, 5),
+				y: rounded(piece.y / height, 5),
+				vx: rounded(piece.vx / width, 5),
+				vy: rounded(piece.vy / height, 5),
+				angle: rounded(piece.angle, 4),
+				angularVelocity: rounded(piece.angularVelocity, 4),
+				// Age only matters until the danger grace runs out. Capping it keeps a
+				// settled board serialising identically, so it is not rewritten.
+				age: rounded(Math.min(piece.age, DANGER_GRACE), 3),
+				dangerFor: rounded(piece.dangerFor, 3),
+			})),
+		};
+	}
+
+	function saveGame(): void {
+		saveRequested = false;
+		if (gameOver || width <= 0 || height <= 0) return;
+		const json = JSON.stringify(snapshot());
+		if (json === savedJson) return;
+		savedJson = json;
+		writeSavedGame(json);
+	}
+
+	function restorePiece(saved: SavedPiece): Piece {
+		const piece = makePiece(saved.level, saved.x * width, saved.y * height);
+		piece.vx = saved.vx * width;
+		piece.vy = saved.vy * height;
+		piece.angle = saved.angle;
+		piece.angularVelocity = saved.angularVelocity;
+		piece.age = saved.age;
+		piece.dangerFor = saved.dangerFor;
+		return piece;
 	}
 
 	function clearPieces(): void {
@@ -740,37 +891,40 @@ export function initCrapStack(root: HTMLElement): void {
 		piecesLayer.replaceChildren();
 	}
 
-	function restart(): void {
+	// Starts a fresh game, or picks a saved one back up where it left off.
+	function startGame(saved: SavedGame | null): void {
 		window.clearTimeout(dropTimer);
 		window.clearTimeout(comboTimer);
 		clearPieces();
-		spawnBag = shuffledBag();
-		score = 0;
+		spawnBag = saved ? [...saved.spawnBag] : shuffledBag();
+		score = saved?.score ?? 0;
 		combo = 0;
 		lastMergeAt = 0;
 		highestLevel = 0;
-		startingBest = best;
+		startingBest = saved?.startingBest ?? best;
 		gameOver = false;
 		canDrop = true;
-		nudges = NUDGE_CAPACITY;
-		nudgeMerges = 0;
+		nudges = saved?.nudges ?? NUDGE_CAPACITY;
+		nudgeMerges = saved?.nudgeMerges ?? 0;
 		nudgeCooldown = 0;
 		nudgeStatus.textContent = '';
 		cabinet.classList.remove('is-nudging');
-		currentLevel = nextFromBag();
-		nextLevel = nextFromBag();
-		scoreElement.textContent = '0';
+		currentLevel = saved?.currentLevel ?? nextFromBag();
+		nextLevel = saved?.nextLevel ?? nextFromBag();
+		for (const piece of saved?.pieces ?? []) pieces.push(restorePiece(piece));
+		scoreElement.textContent = String(score);
 		gameOverPanel.hidden = true;
 		finalBest.hidden = true;
-		hint.dataset.dismissed = 'false';
+		hint.dataset.dismissed = pieces.length > 0 ? 'true' : 'false';
 		comboElement.textContent = '';
 		comboElement.classList.remove('is-showing');
 		stage.dataset.danger = 'false';
 		stage.style.setProperty('--danger-progress', '0');
 		aimX = width / 2;
-		updateProgress(0);
+		updateProgress(saved?.highestLevel ?? 0);
 		updatePreview();
 		updateNudges();
+		saveRequested = true;
 		stage.focus();
 	}
 
@@ -843,7 +997,7 @@ export function initCrapStack(root: HTMLElement): void {
 	}
 
 	soundButton.addEventListener('click', () => setSound(!soundEnabled));
-	for (const button of restartButtons) button.addEventListener('click', restart);
+	for (const button of restartButtons) button.addEventListener('click', () => startGame(null));
 	for (const button of nudgeButtons) {
 		button.addEventListener('click', () => nudge(button.dataset.crapStackNudge === 'left' ? -1 : 1));
 	}
@@ -861,8 +1015,15 @@ export function initCrapStack(root: HTMLElement): void {
 		drop();
 	});
 	root.addEventListener('keydown', handleKeydown);
+	// The save timer covers a tab that dies without warning; these catch the
+	// latest state when the browser does announce that the page is going away.
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'hidden') saveGame();
+	});
+	window.addEventListener('pagehide', () => saveGame());
 	new ResizeObserver(resize).observe(stage);
 	resize();
-	restart();
+	// Saved positions are fractions of the board, so they need a measured board.
+	startGame(width > 0 ? readSavedGame(topLevel) : null);
 	requestAnimationFrame(frame);
 }
