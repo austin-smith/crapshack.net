@@ -121,8 +121,13 @@ export function createClayWeather(canvas: HTMLCanvasElement): ClayWeather | unde
 		gl.useProgram(sprite);
 		gl.uniform2f(gl.getUniformLocation(sprite, 'u_size'), sheet.width, sheet.height);
 		gpu.drawTo(null, sheet.width, sheet.height);
+		const error = gl.getError();
+		if (gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION) {
+			throw new Error('The clay weather sprites could not be drawn');
+		}
 	} catch (error) {
 		console.error(error);
+		gl.getExtension('WEBGL_lose_context')?.loseContext();
 		return;
 	}
 	const sprites = document.createElement('canvas');

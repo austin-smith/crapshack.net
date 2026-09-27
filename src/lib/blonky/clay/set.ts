@@ -26,7 +26,7 @@ export interface ClaySetOptions {
 	figure: () => HTMLCanvasElement | null;
 	/**
 	 * Called if the set can no longer be drawn after it started: its context
-	 * was lost and couldn't be restored.
+	 * was lost and couldn't be restored, or the GPU refused its buffers.
 	 */
 	onFail?: () => void;
 }
@@ -210,6 +210,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	let lastExposure = 0;
 	let request: number | undefined;
 	let fallback: number | undefined;
+	let destroyed = false;
 	const pieceCanvas = document.createElement('canvas');
 	const figureCanvas = document.createElement('canvas');
 
@@ -434,7 +435,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		}
 	};
 
-	const render = (): void => {
+	const draw = (): void => {
 		request = undefined;
 		if (gl.isContextLost()) return;
 		if (layoutDirty) {
@@ -465,6 +466,15 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 			textDirty = false;
 		}
 		develop();
+		if (gpuFailed()) throw new Error('The clay set could not draw');
+	};
+	const render = (): void => {
+		if (destroyed) return;
+		try {
+			draw();
+		} catch (error) {
+			fail(error);
+		}
 	};
 
 	// Changes are developed with Blonky's next exposure, so the set moves in
@@ -472,7 +482,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	// view), they're developed straight away; if the next exposure doesn't
 	// come after all, they're developed once it would have.
 	const invalidate = (): void => {
-		if (request !== undefined || fallback !== undefined) return;
+		if (destroyed || request !== undefined || fallback !== undefined) return;
 		const wait = lastExposure + EXPOSURE_WINDOW_MS - performance.now();
 		if (wait <= 0) {
 			request = requestAnimationFrame(render);
@@ -514,6 +524,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	};
 
 	const expose = (nextFrame: number, outline: HTMLCanvasElement): void => {
+		if (destroyed) return;
 		frame = nextFrame;
 		lastExposure = performance.now();
 		const figure = options.figure();
@@ -582,8 +593,8 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 			// wait for an exposure that may not come.
 			if (hasFigure) shadeFigure();
 			cancelScheduled();
-			render();
-			if (gpuFailed()) throw new Error('The clay set could not be restored');
+			draw();
+			if (gl.isContextLost()) throw new Error('The clay set could not be restored');
 		} catch (error) {
 			fail(error);
 		}
@@ -592,6 +603,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	canvas.addEventListener('webglcontextrestored', onContextRestored);
 
 	const destroy = (): void => {
+		destroyed = true;
 		window.clearTimeout(restoreTimer);
 		cancelScheduled();
 		for (const observer of observers) observer.disconnect();
@@ -602,14 +614,10 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 
 	try {
 		setup();
+		draw();
+		if (gl.isContextLost()) throw new Error('The clay set could not draw');
 	} catch (error) {
 		console.error(error);
-		destroy();
-		return;
-	}
-	render();
-	// Report a set that can't draw as a failure rather than show a blank wall.
-	if (gpuFailed()) {
 		destroy();
 		return;
 	}
