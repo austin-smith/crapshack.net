@@ -93,6 +93,8 @@ const MAX_PIXEL_RATIO = 2;
 // The most pixels the set is worked at, a 4K frame's worth; past that it's
 // worked smaller and scaled up to the canvas. The wall is out of focus anyway.
 const MAX_WORK_PIXELS = 3840 * 2160;
+// How soon after one of Blonky's exposures the next is expected.
+const EXPOSURE_WINDOW_MS = 250;
 
 function parseColor(value: string): [number, number, number] {
 	const match = value.match(/rgba?\(([^)]+)\)/);
@@ -202,6 +204,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	let figureRect = { left: 0, top: 0, width: 1, height: 1 };
 	let lastExposure = 0;
 	let request: number | undefined;
+	let fallback: number | undefined;
 	const pieceCanvas = document.createElement('canvas');
 	const figureCanvas = document.createElement('canvas');
 
@@ -453,12 +456,26 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	};
 
 	// Changes are developed with Blonky's next exposure, so the set moves in
-	// his stop-motion steps; if he isn't exposing (paused, or out of view),
-	// they're developed straight away.
+	// his stop-motion steps. If he hasn't exposed lately (paused, or out of
+	// view), they're developed straight away; if the next exposure doesn't
+	// come after all, they're developed once it would have.
 	const invalidate = (): void => {
-		if (request !== undefined) return;
-		const exposing = performance.now() - lastExposure < 250;
-		if (!exposing) request = requestAnimationFrame(render);
+		if (request !== undefined || fallback !== undefined) return;
+		const wait = lastExposure + EXPOSURE_WINDOW_MS - performance.now();
+		if (wait <= 0) {
+			request = requestAnimationFrame(render);
+			return;
+		}
+		fallback = window.setTimeout(() => {
+			fallback = undefined;
+			request = requestAnimationFrame(render);
+		}, wait);
+	};
+	const cancelScheduled = (): void => {
+		if (request !== undefined) cancelAnimationFrame(request);
+		request = undefined;
+		window.clearTimeout(fallback);
+		fallback = undefined;
 	};
 
 	const expose = (nextFrame: number, outline: HTMLCanvasElement): void => {
@@ -490,7 +507,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 			figureShadow = gpu.blur('figure', figureOutline, width, height, [sigma, sigma, sigma]).texture;
 			hasFigure = true;
 		}
-		if (request !== undefined) cancelAnimationFrame(request);
+		cancelScheduled();
 		render();
 	};
 
@@ -519,14 +536,14 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		setup();
 		// Every target was recreated empty, so repaint now rather than wait
 		// for an exposure that may not come.
-		if (request !== undefined) cancelAnimationFrame(request);
+		cancelScheduled();
 		request = requestAnimationFrame(render);
 	};
 	canvas.addEventListener('webglcontextlost', onContextLost);
 	canvas.addEventListener('webglcontextrestored', onContextRestored);
 
 	const destroy = (): void => {
-		if (request !== undefined) cancelAnimationFrame(request);
+		cancelScheduled();
 		for (const observer of observers) observer.disconnect();
 		options.logo.removeEventListener('load', onLayout);
 		canvas.removeEventListener('webglcontextlost', onContextLost);
