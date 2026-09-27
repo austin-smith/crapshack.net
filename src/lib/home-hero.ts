@@ -146,14 +146,22 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 		requestedStyle = next;
 		if (changingStyle) return;
 		changingStyle = true;
-		while (style !== requestedStyle && !listeners.signal.aborted) {
-			const wanted = requestedStyle;
-			style = await setStyle(wanted);
-			// Clay can't run here: settle for what's shown.
-			if (style !== wanted && requestedStyle === wanted) requestedStyle = style;
+		try {
+			while (style !== requestedStyle && !listeners.signal.aborted) {
+				const wanted = requestedStyle;
+				style = await setStyle(wanted);
+				// Clay can't run here: settle for what's shown.
+				if (style !== wanted && requestedStyle === wanted) requestedStyle = style;
+			}
+		} catch (error) {
+			// The clay code failed to load: what's shown stays, and the next
+			// choice tries again.
+			console.error(error);
+			requestedStyle = style;
+		} finally {
+			changingStyle = false;
+			setContextMenuRadioValue(root, 'style', style);
 		}
-		changingStyle = false;
-		setContextMenuRadioValue(root, 'style', style);
 	};
 	let napTimer: number | undefined;
 	let cancelBeat: (() => void) | undefined;
