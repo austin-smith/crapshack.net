@@ -1,4 +1,53 @@
+import { lockScroll } from './scroll-lock';
+
 let initialized = false;
+
+// While a dropdown is open, as with Radix Select, the page behind it can't
+// scroll and doesn't take the pointer: a press outside only closes it.
+const holds = new WeakMap<HTMLElement, () => void>();
+
+function holdPage(dropdown: HTMLElement): void {
+	if (holds.has(dropdown)) return;
+	const releaseScroll = lockScroll();
+	const { body } = document;
+	const bodyPointerEvents = body.style.pointerEvents;
+	body.style.pointerEvents = 'none';
+	dropdown.style.pointerEvents = 'auto';
+	holds.set(dropdown, () => {
+		releaseScroll();
+		body.style.pointerEvents = bodyPointerEvents;
+		dropdown.style.pointerEvents = '';
+	});
+}
+
+function releasePage(dropdown: HTMLElement): void {
+	holds.get(dropdown)?.();
+	holds.delete(dropdown);
+}
+
+// The press that closes a dropdown mustn't reach the page behind it either,
+// so the page takes the pointer back only once that press is over: after its
+// click, which a touch sends only once the finger lifts, or as it ends for a
+// press that won't click.
+function holdPointerUntilPressEnds(button: number): void {
+	const { body } = document;
+	const bodyPointerEvents = body.style.pointerEvents;
+	body.style.pointerEvents = 'none';
+	let fallback = 0;
+	const end = (): void => {
+		document.removeEventListener('click', end, true);
+		document.removeEventListener('pointercancel', end, true);
+		document.removeEventListener('pointerup', ended, true);
+		window.clearTimeout(fallback);
+		body.style.pointerEvents = bodyPointerEvents;
+	};
+	const ended = (): void => {
+		fallback = window.setTimeout(end, button === 0 ? 1000 : 0);
+	};
+	document.addEventListener('click', end, true);
+	document.addEventListener('pointercancel', end, true);
+	document.addEventListener('pointerup', ended, true);
+}
 
 function getTrigger(dropdown: HTMLElement): HTMLButtonElement | null {
 	return dropdown.querySelector<HTMLButtonElement>('[data-dropdown-trigger]');
@@ -20,11 +69,14 @@ function setOpen(dropdown: HTMLElement, open: boolean): void {
 	trigger.setAttribute('aria-expanded', String(open));
 	menu.hidden = !open;
 	if (open) {
+		holdPage(dropdown);
 		const triggerRect = trigger.getBoundingClientRect();
 		const spaceBelow = window.innerHeight - triggerRect.bottom;
 		const needed = menu.offsetHeight + 8;
 		if (spaceBelow < needed && triggerRect.top > spaceBelow) dropdown.dataset.direction = 'up';
 		else delete dropdown.dataset.direction;
+	} else {
+		releasePage(dropdown);
 	}
 }
 
@@ -70,7 +122,11 @@ export function initDropdowns(): void {
 	// otherwise close the menu before the click could choose it.
 	document.addEventListener('pointerdown', (event) => {
 		if (!(event.target instanceof Element)) return;
-		closeOtherDropdowns(event.target.closest<HTMLElement>('[data-dropdown]') ?? undefined);
+		const pressed = event.target.closest<HTMLElement>('[data-dropdown]') ?? undefined;
+		const closing = [...document.querySelectorAll<HTMLElement>('[data-dropdown]')]
+			.some((dropdown) => dropdown !== pressed && holds.has(dropdown));
+		closeOtherDropdowns(pressed);
+		if (closing) holdPointerUntilPressEnds(event.button);
 	});
 
 	document.addEventListener('click', (event) => {

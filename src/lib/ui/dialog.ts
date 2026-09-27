@@ -2,6 +2,8 @@
  * Dialog utility functions for programmatic control
  */
 
+import { lockScroll } from './scroll-lock';
+
 /** Track the element that opened the dialog to return focus */
 const triggerMap = new WeakMap<HTMLElement, HTMLElement>();
 
@@ -10,6 +12,9 @@ const initializedDialogs = new WeakSet<HTMLElement>();
 
 /** Track currently open dialog IDs (stack order) */
 const openDialogStack: string[] = [];
+
+/** Each open dialog's hold on the page's scroll lock */
+const scrollLocks = new WeakMap<HTMLElement, () => void>();
 
 /** Ensure we only bind one global Escape handler */
 let escapeHandlerBound = false;
@@ -76,7 +81,7 @@ export function openDialog(id: string): void {
 	}
 
 	// Prevent body scroll
-	document.body.style.overflow = 'hidden';
+	scrollLocks.set(dialog, lockScroll());
 
 	// Open the dialog
 	dialog.dataset.open = 'true';
@@ -117,9 +122,8 @@ export function closeDialog(id: string): void {
 	}
 
 	// Restore body scroll
-	if (openDialogStack.length === 0) {
-		document.body.style.overflow = '';
-	}
+	scrollLocks.get(dialog)?.();
+	scrollLocks.delete(dialog);
 
 	// Return focus to trigger element
 	const trigger = triggerMap.get(dialog);
