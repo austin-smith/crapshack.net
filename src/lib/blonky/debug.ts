@@ -124,8 +124,10 @@ function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory): (() 
 	});
 	if (!animator) return;
 	// The ink drawing stands in when the requested renderer is unsupported,
-	// without the controls that only the clay answers to.
+	// styled as the ink lab and without the controls that only the clay
+	// answers to.
 	const unsupported = Boolean(painter) && !painted;
+	if (unsupported) root.classList.replace(`blonky-debug--${root.dataset.blonkyRenderer}`, 'blonky-debug--ink');
 	const fallback = root.querySelector<HTMLElement>('[data-blonky-renderer-fallback]');
 	if (fallback) fallback.hidden = !unsupported;
 	for (const controls of root.querySelectorAll<HTMLElement>('[data-blonky-clay-controls]')) {
