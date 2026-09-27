@@ -18,9 +18,11 @@ interface Props {
 const { renderer } = Astro.props;
 const emotes = Object.entries(BLONKY_EMOTES);
 const shadings = Object.entries(BLONKY_SHADINGS).map(([value, label]) => ({ value, label }));
-const restLabel = renderer === 'clay'
-	? 'Blonky as a stop-motion clay figure, at rest'
-	: 'Blonky, a large hand-drawn character';
+const restLabels = {
+	clay: 'Blonky as a stop-motion clay figure, at rest',
+	ink: 'Blonky, a large hand-drawn character',
+};
+const restLabel = restLabels[renderer];
 const renderers = [
 	{ value: 'ink', label: 'ink', href: '/blonky' },
 	{ value: 'clay', label: 'clay', href: '/blonky/clay' },
@@ -51,6 +53,7 @@ const renderers = [
 					height="800"
 					role="img"
 					aria-label={restLabel}
+					data-blonky-fallback-label={renderer === 'ink' ? undefined : restLabels.ink}
 				>
 					{restLabel}.
 				</canvas>
