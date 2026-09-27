@@ -81,7 +81,7 @@ export function openDialog(id: string): void {
 	}
 
 	// Prevent body scroll
-	scrollLocks.set(dialog, lockScroll());
+	scrollLocks.set(dialog, lockScroll(dialog.querySelector('[data-dialog-container]') ?? dialog));
 
 	// Open the dialog
 	dialog.dataset.open = 'true';

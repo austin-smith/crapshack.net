@@ -9,7 +9,7 @@ const holds = new WeakMap<HTMLElement, () => void>();
 
 function holdPage(dropdown: HTMLElement): void {
 	if (holds.has(dropdown)) return;
-	const releaseScroll = lockScroll();
+	const releaseScroll = lockScroll(dropdown);
 	const { body, documentElement: root } = document;
 	const bodyPointerEvents = body.style.pointerEvents;
 	body.style.pointerEvents = 'none';
