@@ -294,6 +294,9 @@ uniform vec2 u_figureOffset;
 uniform float u_hasFigure;
 uniform float u_exposure;
 uniform float u_frame;
+// The drawing buffer's size: each pixel is placed by its own position, so
+// the canvas can be developed in tiles.
+uniform vec2 u_size;
 out vec4 outColor;
 
 // How much of the lamp's light reaches the wall behind him.
@@ -312,9 +315,10 @@ float figureAt(vec2 uv) {
 }
 
 void main() {
-	vec2 p = toPage(v_uv);
-	vec4 sharp = texture(u_lit, v_uv);
-	vec4 soft = texture(u_soft, v_uv);
+	vec2 uv = gl_FragCoord.xy / u_size;
+	vec2 p = toPage(uv);
+	vec4 sharp = texture(u_lit, uv);
+	vec4 soft = texture(u_soft, uv);
 	// The wall is lit a little less than Blonky, who has the lamp's full
 	// attention, and is out of focus; the pieces pressed onto it stay sharp.
 	vec3 wall = soft.a > 1e-3 ? soft.rgb / soft.a * WALL_SPILL : sharp.rgb;
@@ -328,7 +332,7 @@ void main() {
 		color *= (1.0 - 0.48 * smoothstep(0.02, 0.85, thrown)) * (1.0 - 0.2 * smoothstep(0.0, 0.7, near));
 	}
 	color = develop(color, u_exposure);
-	vec2 centered = v_uv - 0.5;
+	vec2 centered = uv - 0.5;
 	color *= 1.0 - 0.22 * dot(centered, centered);
 	float grain = hash12(gl_FragCoord.xy + fract(u_frame * 0.618) * 400.0) - 0.5;
 	outColor = vec4(clamp(color + grain * 0.022, 0.0, 1.0), 1.0);

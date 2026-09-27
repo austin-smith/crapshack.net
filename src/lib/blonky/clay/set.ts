@@ -90,6 +90,9 @@ const TOWARD_KEY = (() => {
 // wall's clay is mixed so it comes out in the page's own colour there.
 const WALL_LIGHT = [0.84, 0.8, 0.77];
 const MAX_PIXEL_RATIO = 2;
+// The most pixels the set is worked at, a 4K frame's worth; past that it's
+// worked smaller and scaled up to the canvas. The wall is out of focus anyway.
+const MAX_WORK_PIXELS = 3840 * 2160;
 
 function parseColor(value: string): [number, number, number] {
 	const match = value.match(/rgba?\(([^)]+)\)/);
@@ -155,9 +158,15 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	let logoVolume: WebGLTexture;
 	// The letters' footprint, softened across their bevel.
 	let textShape: WebGLTexture;
+	// The largest viewport the GPU draws, and the longest side a target can
+	// have and still be drawn to whole.
+	let maxViewport = [0, 0];
+	let maxTargetSize = 0;
 
 	const setup = (): void => {
 		gpu.setup();
+		maxViewport = [...gl.getParameter(gl.MAX_VIEWPORT_DIMS)];
+		maxTargetSize = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), ...maxViewport);
 		roundProgram = program(gl, SET_ROUND_FRAGMENT);
 		heightProgram = program(gl, SET_HEIGHT_FRAGMENT);
 		lightProgram = program(gl, SET_LIGHT_FRAGMENT);
@@ -172,9 +181,13 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		layoutDirty = true;
 	};
 
-	// The page, in CSS pixels, and the canvas's pixels per CSS pixel.
+	// The page, in CSS pixels, and the canvas's pixels per CSS pixel. The set
+	// is worked at a size within the GPU's limits and the pixel budget, with
+	// its own pixels per CSS pixel, and only developed at the canvas's.
 	let viewport = { width: 1, height: 1 };
 	let pixelRatio = 1;
+	let work = { width: 1, height: 1 };
+	let workRatio = 1;
 	// Page pixels per bust unit, from Blonky's size on the page.
 	let unit = 1;
 	let logoDomain: Domain = { left: 0, top: 0, width: 1, height: 1 };
@@ -305,6 +318,13 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		const height = Math.round(viewport.height * pixelRatio);
 		if (canvas.width !== width) canvas.width = width;
 		if (canvas.height !== height) canvas.height = height;
+		const scale = Math.min(
+			1,
+			maxTargetSize / Math.max(width, height),
+			Math.sqrt(MAX_WORK_PIXELS / (width * height)),
+		);
+		work = { width: Math.max(1, Math.floor(width * scale)), height: Math.max(1, Math.floor(height * scale)) };
+		workRatio = pixelRatio * scale;
 		const figure = options.figure();
 		const view = BLONKY_VIEWPORTS.portrait;
 		if (figure) unit = (figure.getBoundingClientRect().width / view.width) * 0.56;
@@ -312,19 +332,18 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		wall = background.map((value, index) => toLinear(value) / WALL_LIGHT[index]) as [number, number, number];
 	};
 
-	/** Shapes and lights the set over a region, in canvas pixels. */
+	/** Shapes and lights the set over a region of the page, if given. */
 	const sculpt = (region?: Domain): void => {
-		const width = canvas.width;
-		const height = canvas.height;
+		const { width, height } = work;
 		const surface = target('surface', width, height, true);
 		const lit = target('lit', width, height);
 		if (region) {
 			gl.enable(gl.SCISSOR_TEST);
 			gl.scissor(
-				Math.floor(region.left * pixelRatio),
-				Math.floor((viewport.height - region.top - region.height) * pixelRatio),
-				Math.ceil(region.width * pixelRatio),
-				Math.ceil(region.height * pixelRatio),
+				Math.floor(region.left * workRatio),
+				Math.floor((viewport.height - region.top - region.height) * workRatio),
+				Math.ceil(region.width * workRatio),
+				Math.ceil(region.height * workRatio),
 			);
 		}
 		const domain = (programRef: WebGLProgram, name: string, value: Domain): void => {
@@ -343,7 +362,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		gl.useProgram(lightProgram);
 		gl.uniform2f(gl.getUniformLocation(lightProgram, 'u_viewport'), viewport.width, viewport.height);
 		gl.uniform2f(gl.getUniformLocation(lightProgram, 'u_texel'), 1 / width, 1 / height);
-		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_pixel'), 1 / pixelRatio);
+		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_pixel'), 1 / workRatio);
 		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_unit'), unit);
 		gl.uniform3f(gl.getUniformLocation(lightProgram, 'u_wall'), ...wall);
 		gl.uniform3f(gl.getUniformLocation(lightProgram, 'u_textColor'), ...textColor.map(toLinear) as [number, number, number]);
@@ -355,13 +374,13 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		soften(lit.texture);
 	};
 
-	/** The lit wall, out of focus, at half the canvas's resolution. */
+	/** The lit wall, out of focus, at half the working resolution. */
 	const soften = (lit: WebGLTexture): void => {
-		const width = Math.ceil(canvas.width / 2);
-		const height = Math.ceil(canvas.height / 2);
+		const width = Math.ceil(work.width / 2);
+		const height = Math.ceil(work.height / 2);
 		const horizontal = target('soft-h', width, height);
 		const vertical = target('soft', width, height);
-		const sigma = (WALL_DEFOCUS * pixelRatio) / 2;
+		const sigma = (WALL_DEFOCUS * workRatio) / 2;
 		gl.useProgram(softenProgram);
 		gl.uniform1f(gl.getUniformLocation(softenProgram, 'u_sigma'), sigma);
 		gl.uniform1i(gl.getUniformLocation(softenProgram, 'u_radius'), Math.ceil(sigma * 3));
@@ -388,10 +407,23 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 			-TOWARD_KEY.x * FIGURE_DISTANCE * unit,
 			-TOWARD_KEY.y * FIGURE_DISTANCE * unit,
 		);
-		bindTexture(developProgram, 'u_lit', 0, target('lit', canvas.width, canvas.height).texture);
+		bindTexture(developProgram, 'u_lit', 0, target('lit', work.width, work.height).texture);
 		bindTexture(developProgram, 'u_figure', 1, figureShadow);
-		bindTexture(developProgram, 'u_soft', 2, target('soft', Math.ceil(canvas.width / 2), Math.ceil(canvas.height / 2)).texture);
-		drawTo(null, canvas.width, canvas.height);
+		bindTexture(developProgram, 'u_soft', 2, target('soft', Math.ceil(work.width / 2), Math.ceil(work.height / 2)).texture);
+		// The canvas's drawing buffer can be larger than one viewport covers,
+		// so it's developed in tiles, each pixel finding its place by its own
+		// position.
+		const bufferWidth = gl.drawingBufferWidth;
+		const bufferHeight = gl.drawingBufferHeight;
+		gl.uniform2f(gl.getUniformLocation(developProgram, 'u_size'), bufferWidth, bufferHeight);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		const [tileWidth, tileHeight] = maxViewport;
+		for (let y = 0; y < bufferHeight; y += tileHeight) {
+			for (let x = 0; x < bufferWidth; x += tileWidth) {
+				gl.viewport(x, y, Math.min(tileWidth, bufferWidth - x), Math.min(tileHeight, bufferHeight - y));
+				gl.drawArrays(gl.TRIANGLES, 0, 3);
+			}
+		}
 	};
 
 	const render = (): void => {
@@ -490,22 +522,29 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	canvas.addEventListener('webglcontextlost', onContextLost);
 	canvas.addEventListener('webglcontextrestored', onContextRestored);
 
+	const destroy = (): void => {
+		if (request !== undefined) cancelAnimationFrame(request);
+		for (const observer of observers) observer.disconnect();
+		options.logo.removeEventListener('load', onLayout);
+		canvas.removeEventListener('webglcontextlost', onContextLost);
+		canvas.removeEventListener('webglcontextrestored', onContextRestored);
+	};
+
 	try {
 		setup();
 	} catch (error) {
 		console.error(error);
+		destroy();
 		return;
 	}
 	render();
+	// The GPU can refuse the set's targets without throwing, leaving it
+	// nothing to draw: report that as a failure rather than show a blank wall.
+	const error = gl.getError();
+	if (gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION) {
+		destroy();
+		return;
+	}
 
-	return {
-		expose,
-		destroy: () => {
-			if (request !== undefined) cancelAnimationFrame(request);
-			for (const observer of observers) observer.disconnect();
-			options.logo.removeEventListener('load', onLayout);
-			canvas.removeEventListener('webglcontextlost', onContextLost);
-			canvas.removeEventListener('webglcontextrestored', onContextRestored);
-		},
-	};
+	return { expose, destroy };
 }
