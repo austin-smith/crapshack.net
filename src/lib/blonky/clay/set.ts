@@ -434,6 +434,13 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		if (gl.isContextLost()) return;
 		if (layoutDirty) {
 			layout();
+			// His shadow was last shaded for the old layout: place it and
+			// soften it again at his new size, from his last outline.
+			const figure = options.figure();
+			if (hasFigure && figure) {
+				placeFigure(figure);
+				shadeFigure();
+			}
 			buildLogo();
 			buildText();
 			sculpt();
@@ -487,21 +494,26 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		figureShadow = gpu.blur('figure', figureOutline, width, height, [sigma, sigma, sigma]).texture;
 	};
 
+	/** Where Blonky's canvas sits on the page, with room for his shadow. */
+	const placeFigure = (figure: HTMLCanvasElement): void => {
+		const page = canvas.getBoundingClientRect();
+		const rect = figure.getBoundingClientRect();
+		const padX = rect.width * FIGURE_PAD;
+		const padY = rect.height * FIGURE_PAD;
+		figureRect = {
+			left: rect.left - page.left - padX,
+			top: rect.top - page.top - padY,
+			width: rect.width + 2 * padX,
+			height: rect.height + 2 * padY,
+		};
+	};
+
 	const expose = (nextFrame: number, outline: HTMLCanvasElement): void => {
 		frame = nextFrame;
 		lastExposure = performance.now();
 		const figure = options.figure();
 		if (figure) {
-			const page = canvas.getBoundingClientRect();
-			const rect = figure.getBoundingClientRect();
-			const padX = rect.width * FIGURE_PAD;
-			const padY = rect.height * FIGURE_PAD;
-			figureRect = {
-				left: rect.left - page.left - padX,
-				top: rect.top - page.top - padY,
-				width: rect.width + 2 * padX,
-				height: rect.height + 2 * padY,
-			};
+			placeFigure(figure);
 			const inner = { width: outline.width * FIGURE_SCALE, height: outline.height * FIGURE_SCALE };
 			const width = Math.max(1, Math.round(inner.width * (1 + 2 * FIGURE_PAD)));
 			const height = Math.max(1, Math.round(inner.height * (1 + 2 * FIGURE_PAD)));
