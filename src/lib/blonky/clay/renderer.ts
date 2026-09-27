@@ -167,7 +167,9 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	let limbTexture: WebGLTexture;
 	const layers: ClayLayers = createClayLayers();
 
-	let maxTextureSize = 0;
+	// The longest side a target can have and still be drawn to whole: within
+	// the texture limit, and within the viewport limit, which may be smaller.
+	let maxTargetSize = 0;
 
 	const setup = (): void => {
 		gpu.setup();
@@ -181,7 +183,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		} = buildPrograms(gl));
 		sources = Array.from({ length: SOURCE_COUNT }, () => createTexture(gl));
 		limbTexture = createTexture(gl);
-		maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+		maxTargetSize = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), ...gl.getParameter(gl.MAX_VIEWPORT_DIMS));
 	};
 
 	const blur = (job: BlurJob, index: number, pxPerUnit: number, width: number, height: number) => {
@@ -279,12 +281,12 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		if (gl.isContextLost()) return;
 		const view = options.view ?? 'bust';
 		const viewport = BLONKY_VIEWPORTS[view];
-		// Worked at a resolution within the GPU's texture limit and the pixel
+		// Worked at a resolution within the GPU's size limit and the pixel
 		// budget: every screen-sized layer and target is this size, and only
 		// the final pass scales it to the canvas.
 		const workScale = Math.min(
 			1,
-			maxTextureSize / Math.max(canvas.width, canvas.height),
+			maxTargetSize / Math.max(canvas.width, canvas.height),
 			Math.sqrt(MAX_WORK_PIXELS / (canvas.width * canvas.height)),
 		);
 		const width = Math.max(1, Math.floor(canvas.width * workScale));
@@ -347,9 +349,8 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 
 		// The surface and lighting are shaded at twice the working
 		// resolution, then averaged down, which antialiases every edge.
-		// Within the GPU's texture limit, which the working size alone can
-		// reach.
-		const shadeScale = Math.min(SUPERSAMPLE, maxTextureSize / Math.max(width, height));
+		// Within the GPU's size limit, which the working size alone can reach.
+		const shadeScale = Math.min(SUPERSAMPLE, maxTargetSize / Math.max(width, height));
 		const shadeWidth = Math.floor(width * shadeScale);
 		const shadeHeight = Math.floor(height * shadeScale);
 		const surface = target('surface', shadeWidth, shadeHeight, true);
