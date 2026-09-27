@@ -98,13 +98,33 @@ export function setContextMenuRadioGroupDisabled(root: HTMLElement, group: strin
 	const radioGroup = getRadioGroup(root, group);
 	const trigger = radioGroup && getRadioGroupTrigger(radioGroup);
 	if (!trigger) return;
-	trigger.toggleAttribute('disabled', disabled);
 	if (disabled) {
-		trigger.setAttribute('aria-disabled', 'true');
+		// Keyboard focus on the trigger or in its submenu would be stranded, so
+		// it moves on to a neighbouring item first.
+		const submenu = getSubmenu(trigger);
+		const focused = document.activeElement;
+		if (focused instanceof Node && (trigger.contains(focused) || submenu?.contains(focused))) {
+			focusNeighbor(trigger);
+		}
 		if (trigger.getAttribute('aria-expanded') === 'true') closeSubmenu(trigger);
+		trigger.setAttribute('aria-disabled', 'true');
 	} else {
 		trigger.removeAttribute('aria-disabled');
 	}
+	trigger.toggleAttribute('disabled', disabled);
+}
+
+/** Focuses the nearest enabled item after `item` in its menu, or else before it, or else the menu. */
+function focusNeighbor(item: HTMLElement): void {
+	const menu = getOwningMenu(item);
+	if (!menu) return;
+	const siblings = Array.from(menu.querySelectorAll<HTMLElement>('[data-context-menu-item]'))
+		.filter((candidate) => getOwningMenu(candidate) === menu);
+	const enabled = getItems(menu);
+	const index = siblings.indexOf(item);
+	const next = siblings.slice(index + 1).find((candidate) => enabled.includes(candidate))
+		?? siblings.slice(0, Math.max(index, 0)).reverse().find((candidate) => enabled.includes(candidate));
+	(next ?? menu).focus({ preventScroll: true });
 }
 
 function dispatchOpenChange(root: HTMLElement, open: boolean): void {
