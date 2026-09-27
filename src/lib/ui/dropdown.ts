@@ -25,11 +25,12 @@ function releasePage(dropdown: HTMLElement): void {
 	holds.delete(dropdown);
 }
 
-// The press that closes a dropdown mustn't reach the page behind it either,
-// so the page takes the pointer back only once that press is over: after its
-// click, which a touch sends only once the finger lifts, or as it ends for a
-// press that won't click.
-function holdPointerUntilPressEnds(button: number): void {
+// The touch that closes a dropdown mustn't reach the page behind it either.
+// A mouse click goes where its press began, on the blocked page, but a tap
+// clicks wherever it lands only once the finger lifts, after the dropdown
+// has closed; so the page takes the pointer back after that click, or once
+// the touch ends without one.
+function holdPointerUntilTapEnds(): void {
 	const { body } = document;
 	const bodyPointerEvents = body.style.pointerEvents;
 	body.style.pointerEvents = 'none';
@@ -42,7 +43,7 @@ function holdPointerUntilPressEnds(button: number): void {
 		body.style.pointerEvents = bodyPointerEvents;
 	};
 	const ended = (): void => {
-		fallback = window.setTimeout(end, button === 0 ? 1000 : 0);
+		fallback = window.setTimeout(end, 1000);
 	};
 	document.addEventListener('click', end, true);
 	document.addEventListener('pointercancel', end, true);
@@ -126,7 +127,7 @@ export function initDropdowns(): void {
 		const closing = [...document.querySelectorAll<HTMLElement>('[data-dropdown]')]
 			.some((dropdown) => dropdown !== pressed && holds.has(dropdown));
 		closeOtherDropdowns(pressed);
-		if (closing) holdPointerUntilPressEnds(event.button);
+		if (closing && event.pointerType !== 'mouse') holdPointerUntilTapEnds();
 	});
 
 	document.addEventListener('click', (event) => {
