@@ -154,9 +154,10 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 				if (style !== wanted && requestedStyle === wanted) requestedStyle = style;
 			}
 		} catch (error) {
-			// The clay code failed to load: what's shown stays, and the next
-			// choice tries again.
+			// The clay code failed to load, or a change failed partway: back to
+			// ink, which always runs, for the next choice to try again.
 			console.error(error);
+			style = await setStyle('ink');
 			requestedStyle = style;
 		} finally {
 			changingStyle = false;

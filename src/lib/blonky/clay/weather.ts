@@ -128,8 +128,10 @@ export function createClayWeather(canvas: HTMLCanvasElement): ClayWeather | unde
 	const sprites = document.createElement('canvas');
 	sprites.width = sheet.width;
 	sprites.height = sheet.height;
-	sprites.getContext('2d')!.drawImage(sheet, 0, 0);
+	const spriteContext = sprites.getContext('2d');
+	spriteContext?.drawImage(sheet, 0, 0);
 	gl.getExtension('WEBGL_lose_context')?.loseContext();
+	if (!spriteContext) return;
 
 	let kind: ClayWeatherKind | undefined;
 	let frame = 0;
