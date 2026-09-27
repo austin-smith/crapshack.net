@@ -73,7 +73,7 @@ function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory): (() 
 	) return;
 
 	const emoteRows = [...root.querySelectorAll<HTMLButtonElement>('[data-blonky-emote]')];
-	const restLabel = canvas.getAttribute('aria-label') ?? 'Blonky at rest';
+	let restLabel = canvas.getAttribute('aria-label') ?? 'Blonky at rest';
 	const listeners = new AbortController();
 	let activeRow: HTMLButtonElement | null = null;
 	let clipEnd = 0;
@@ -123,9 +123,20 @@ function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory): (() 
 		view: 'debug',
 	});
 	if (!animator) return;
-	// The ink drawing stands in when the requested renderer is unsupported.
+	// The ink drawing stands in when the requested renderer is unsupported,
+	// styled and described as the ink lab, and without the controls that
+	// only the clay answers to.
+	const unsupported = Boolean(painter) && !painted;
+	if (unsupported) {
+		root.classList.replace(`blonky-debug--${root.dataset.blonkyRenderer}`, 'blonky-debug--ink');
+		restLabel = canvas.dataset.blonkyFallbackLabel ?? restLabel;
+		canvas.setAttribute('aria-label', restLabel);
+	}
 	const fallback = root.querySelector<HTMLElement>('[data-blonky-renderer-fallback]');
-	if (fallback) fallback.hidden = !painter || painted;
+	if (fallback) fallback.hidden = !unsupported;
+	for (const controls of root.querySelectorAll<HTMLElement>('[data-blonky-clay-controls]')) {
+		controls.hidden = unsupported;
+	}
 	frameAnimator = animator;
 
 	const togglePlayback = (): void => {

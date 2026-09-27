@@ -47,8 +47,12 @@ const SOURCE_COUNT = 11;
 const SHADINGS: BlonkyShading[] = ['lit', 'even', 'clay', 'paint', 'depth', 'normals', 'shadows'];
 // Volume texels per texel of the softened sleeve depth.
 const SLEEVE_SOFTEN_SCALE = 4;
-// Shading samples per canvas pixel, along each axis.
+// Shading samples per working pixel, along each axis.
 const SUPERSAMPLE = 2;
+// The most pixels worked per frame. Each one costs a texel in every
+// screen-sized layer and target, and SUPERSAMPLE squared in the float
+// shading targets, so this bounds the frame's memory whatever the canvas.
+const MAX_WORK_PIXELS = 2048 ** 2;
 
 const BLUR_JOBS: BlurJob[] = [
 	// collar, cuffs, eye whites
@@ -116,8 +120,41 @@ export interface ClayBoardPattern {
 	offset: { x: number; y: number };
 }
 
+/** The clay renderer's own programs, built on a context. Throws if any fails to compile or link. */
+function buildPrograms(gl: WebGL2RenderingContext) {
+	return {
+		height: program(gl, HEIGHT_FRAGMENT),
+		light: program(gl, LIGHT_FRAGMENT),
+		resolve: program(gl, RESOLVE_FRAGMENT),
+		fillet: program(gl, FILLET_FRAGMENT),
+		sleeveDepth: program(gl, SLEEVE_DEPTH_FRAGMENT),
+		terms: program(gl, TERMS_FRAGMENT),
+	};
+}
+
+let programsBuilt: boolean | undefined;
+
+// Build every program once on a throwaway canvas before the visible one is
+// touched: a canvas that has handed out a WebGL context can't fall back to
+// 2D ink, so a failure has to be found here.
+function canBuildPrograms(): boolean {
+	if (programsBuilt !== undefined) return programsBuilt;
+	programsBuilt = false;
+	const probe = document.createElement('canvas').getContext('webgl2');
+	if (!probe) return programsBuilt;
+	try {
+		createGpu(probe).setup();
+		buildPrograms(probe);
+		programsBuilt = true;
+	} catch (error) {
+		console.error(error);
+	}
+	probe.getExtension('WEBGL_lose_context')?.loseContext();
+	return programsBuilt;
+}
+
 export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRendererOptions = {}): ClayRenderer | undefined {
-	if (!supportsClay()) return;
+	if (!supportsClay() || !canBuildPrograms()) return;
 	const transparent = settings.transparent ?? false;
 	const gl = canvas.getContext('webgl2', {
 		alpha: transparent,
@@ -141,21 +178,29 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	let limbTexture: WebGLTexture;
 	const layers: ClayLayers = createClayLayers();
 
+	// The largest viewport the GPU draws, and the longest side a target can
+	// have and still be drawn to whole: within the texture limit, and within
+	// the viewport limit, which may be smaller.
+	let maxViewport = [0, 0];
+	let maxTargetSize = 0;
+
 	const setup = (): void => {
 		gpu.setup();
-		heightProgram = program(gl, HEIGHT_FRAGMENT);
-		lightProgram = program(gl, LIGHT_FRAGMENT);
-		resolveProgram = program(gl, RESOLVE_FRAGMENT);
-		filletProgram = program(gl, FILLET_FRAGMENT);
-		sleeveDepthProgram = program(gl, SLEEVE_DEPTH_FRAGMENT);
-		termsProgram = program(gl, TERMS_FRAGMENT);
+		({
+			height: heightProgram,
+			light: lightProgram,
+			resolve: resolveProgram,
+			fillet: filletProgram,
+			sleeveDepth: sleeveDepthProgram,
+			terms: termsProgram,
+		} = buildPrograms(gl));
 		sources = Array.from({ length: SOURCE_COUNT }, () => createTexture(gl));
 		limbTexture = createTexture(gl);
+		maxViewport = [...gl.getParameter(gl.MAX_VIEWPORT_DIMS)];
+		maxTargetSize = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), ...maxViewport);
 	};
 
-	const blur = (job: BlurJob, index: number, pxPerUnit: number) => {
-		const width = canvas.width;
-		const height = canvas.height;
+	const blur = (job: BlurJob, index: number, pxPerUnit: number, width: number, height: number) => {
 		const scale = Math.max(1, job.unitsPerTexel * pxPerUnit);
 		const blurWidth = Math.max(1, Math.round(width / scale));
 		const blurHeight = Math.max(1, Math.round(height / scale));
@@ -221,8 +266,20 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, LIMB_SAMPLES, rows.length, 0, gl.RGBA, gl.FLOAT, data);
 	};
 
+	// The latest exposure asked for, so a restored context can repaint it
+	// even when nothing is animating.
+	let latest: { time: number; options: BlonkyDrawOptions } | undefined;
+
 	const onContextLost = (event: Event): void => event.preventDefault();
-	const onContextRestored = (): void => setup();
+	const onContextRestored = (): void => {
+		try {
+			setup();
+		} catch (error) {
+			console.error(error);
+			return;
+		}
+		if (latest) draw(latest.time, latest.options);
+	};
 	canvas.addEventListener('webglcontextlost', onContextLost);
 	canvas.addEventListener('webglcontextrestored', onContextRestored);
 
@@ -234,11 +291,20 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	}
 
 	const draw = (time: number, options: BlonkyDrawOptions = {}): void => {
+		latest = { time, options };
 		if (gl.isContextLost()) return;
 		const view = options.view ?? 'bust';
 		const viewport = BLONKY_VIEWPORTS[view];
-		const width = canvas.width;
-		const height = canvas.height;
+		// Worked at a resolution within the GPU's size limit and the pixel
+		// budget: every screen-sized layer and target is this size, and only
+		// the final pass scales it to the canvas.
+		const workScale = Math.min(
+			1,
+			maxTargetSize / Math.max(canvas.width, canvas.height),
+			Math.sqrt(MAX_WORK_PIXELS / (canvas.width * canvas.height)),
+		);
+		const width = Math.max(1, Math.floor(canvas.width * workScale));
+		const height = Math.max(1, Math.floor(canvas.height * workScale));
 		const px = width / viewport.width;
 		// Match the ink drawing's framing for each view.
 		const viewScale = view === 'portrait' ? 0.56 : 1;
@@ -285,7 +351,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 
 		const volume = solveVolumes();
 		const sleeveSwell = softenSleeves(volume);
-		const blurred = BLUR_JOBS.map((job, index) => blur(job, index, pxPerUnit));
+		const blurred = BLUR_JOBS.map((job, index) => blur(job, index, pxPerUnit, width, height));
 
 		const setShared = (programRef: WebGLProgram): void => {
 			gl.uniform2f(gl.getUniformLocation(programRef, 'u_resolution'), width, height);
@@ -295,10 +361,12 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 			gl.uniform2f(gl.getUniformLocation(programRef, 'u_headOffset'), figure.headOffset.x, figure.headOffset.y);
 		};
 
-		// The surface and lighting are shaded at twice the canvas's
+		// The surface and lighting are shaded at twice the working
 		// resolution, then averaged down, which antialiases every edge.
-		const shadeWidth = width * SUPERSAMPLE;
-		const shadeHeight = height * SUPERSAMPLE;
+		// Within the GPU's size limit, which the working size alone can reach.
+		const shadeScale = Math.min(SUPERSAMPLE, maxTargetSize / Math.max(width, height));
+		const shadeWidth = Math.floor(width * shadeScale);
+		const shadeHeight = Math.floor(height * shadeScale);
 		const surface = target('surface', shadeWidth, shadeHeight, true);
 		gl.useProgram(heightProgram);
 		setShared(heightProgram);
@@ -358,7 +426,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 				gl.getUniformLocation(lightProgram, 'u_patternTint'),
 				...pattern.dot.map((value, index) => linear(value) / Math.max(linear(pattern.ground[index]), 1e-4)) as [number, number, number],
 			);
-			gl.uniform2f(gl.getUniformLocation(lightProgram, 'u_patternScale'), cssPerPixel, cssPerPixel / SUPERSAMPLE);
+			gl.uniform2f(gl.getUniformLocation(lightProgram, 'u_patternScale'), cssPerPixel, cssPerPixel / shadeScale);
 		}
 		gl.uniform1i(gl.getUniformLocation(lightProgram, 'u_shading'), SHADINGS.indexOf(options.shading ?? 'lit'));
 		bindTexture(lightProgram, 'u_height', 0, surface.texture);
@@ -367,17 +435,30 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		bindTexture(lightProgram, 'u_silhouette', 2, blurred[6].texture);
 		bindTexture(lightProgram, 'u_outline', 3, sources[SILHOUETTE_SOURCE]);
 		bindTexture(lightProgram, 'u_headMass', 5, blurred[3].texture);
-		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_filletSharpness'), 2.5066 * HEAD_FILLET * pxPerUnit * SUPERSAMPLE);
+		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_filletSharpness'), 2.5066 * HEAD_FILLET * pxPerUnit * shadeScale);
 		bindTexture(lightProgram, 'u_shirtMass', 7, blurred[7].texture);
-		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_shirtSharpness'), 2.5066 * SHIRT_FILLET * pxPerUnit * SUPERSAMPLE);
+		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_shirtSharpness'), 2.5066 * SHIRT_FILLET * pxPerUnit * shadeScale);
 		bindTexture(lightProgram, 'u_terms', 4, terms.texture);
 		gl.uniform2f(gl.getUniformLocation(lightProgram, 'u_texel'), 1 / shadeWidth, 1 / shadeHeight);
 		drawTo(image, shadeWidth, shadeHeight);
 
+		// The canvas's drawing buffer can be larger than one viewport covers
+		// (Firefox doesn't clamp it to the limit), so the resolve paints it in
+		// tiles, each pixel finding its place by its own position.
+		const bufferWidth = gl.drawingBufferWidth;
+		const bufferHeight = gl.drawingBufferHeight;
 		gl.useProgram(resolveProgram);
 		gl.uniform1f(gl.getUniformLocation(resolveProgram, 'u_frame'), frame);
+		gl.uniform2f(gl.getUniformLocation(resolveProgram, 'u_size'), bufferWidth, bufferHeight);
 		bindTexture(resolveProgram, 'u_image', 0, image.texture);
-		drawTo(null, width, height);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		const [tileWidth, tileHeight] = maxViewport;
+		for (let y = 0; y < bufferHeight; y += tileHeight) {
+			for (let x = 0; x < bufferWidth; x += tileWidth) {
+				gl.viewport(x, y, Math.min(tileWidth, bufferWidth - x), Math.min(tileHeight, bufferHeight - y));
+				gl.drawArrays(gl.TRIANGLES, 0, 3);
+			}
+		}
 		settings.onExpose?.(frame, layers.silhouette);
 	};
 

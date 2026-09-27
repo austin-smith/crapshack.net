@@ -1,4 +1,57 @@
+import { lockScroll } from './scroll-lock';
+
 let initialized = false;
+
+// While a dropdown is open, as with Radix Select, the page behind it can't
+// scroll and doesn't take the pointer: a press outside only closes it. Nor
+// does it take keyboard shortcuts, which `data-dropdown-open` holds back.
+const holds = new WeakMap<HTMLElement, () => void>();
+
+function holdPage(dropdown: HTMLElement): void {
+	if (holds.has(dropdown)) return;
+	const releaseScroll = lockScroll(dropdown);
+	const { body, documentElement: root } = document;
+	const bodyPointerEvents = body.style.pointerEvents;
+	body.style.pointerEvents = 'none';
+	dropdown.style.pointerEvents = 'auto';
+	root.setAttribute('data-dropdown-open', '');
+	holds.set(dropdown, () => {
+		releaseScroll();
+		body.style.pointerEvents = bodyPointerEvents;
+		dropdown.style.pointerEvents = '';
+		root.removeAttribute('data-dropdown-open');
+	});
+}
+
+function releasePage(dropdown: HTMLElement): void {
+	holds.get(dropdown)?.();
+	holds.delete(dropdown);
+}
+
+// The touch that closes a dropdown mustn't reach the page behind it either.
+// A mouse click goes where its press began, on the blocked page, but a tap
+// clicks wherever it lands only once the finger lifts, after the dropdown
+// has closed; so the page takes the pointer back after that click, or once
+// the touch ends without one.
+function holdPointerUntilTapEnds(): void {
+	const { body } = document;
+	const bodyPointerEvents = body.style.pointerEvents;
+	body.style.pointerEvents = 'none';
+	let fallback = 0;
+	const end = (): void => {
+		document.removeEventListener('click', end, true);
+		document.removeEventListener('pointercancel', end, true);
+		document.removeEventListener('pointerup', ended, true);
+		window.clearTimeout(fallback);
+		body.style.pointerEvents = bodyPointerEvents;
+	};
+	const ended = (): void => {
+		fallback = window.setTimeout(end, 1000);
+	};
+	document.addEventListener('click', end, true);
+	document.addEventListener('pointercancel', end, true);
+	document.addEventListener('pointerup', ended, true);
+}
 
 function getTrigger(dropdown: HTMLElement): HTMLButtonElement | null {
 	return dropdown.querySelector<HTMLButtonElement>('[data-dropdown-trigger]');
@@ -20,11 +73,14 @@ function setOpen(dropdown: HTMLElement, open: boolean): void {
 	trigger.setAttribute('aria-expanded', String(open));
 	menu.hidden = !open;
 	if (open) {
+		holdPage(dropdown);
 		const triggerRect = trigger.getBoundingClientRect();
 		const spaceBelow = window.innerHeight - triggerRect.bottom;
 		const needed = menu.offsetHeight + 8;
 		if (spaceBelow < needed && triggerRect.top > spaceBelow) dropdown.dataset.direction = 'up';
 		else delete dropdown.dataset.direction;
+	} else {
+		releasePage(dropdown);
 	}
 }
 
@@ -64,12 +120,20 @@ export function initDropdowns(): void {
 	if (initialized) return;
 	initialized = true;
 
-	document.addEventListener('focusout', (event) => {
+	// A new page starts with nothing held.
+	document.addEventListener('astro:before-swap', () => closeOtherDropdowns());
+
+	// An open dropdown closes when an option is chosen, on Escape, from its
+	// trigger, or on a press anywhere outside it, but not when focus leaves
+	// it: Safari doesn't focus a clicked button, so pressing an option would
+	// otherwise close the menu before the click could choose it.
+	document.addEventListener('pointerdown', (event) => {
 		if (!(event.target instanceof Element)) return;
-		const dropdown = event.target.closest<HTMLElement>('[data-dropdown]');
-		if (!dropdown) return;
-		if (event.relatedTarget instanceof Node && dropdown.contains(event.relatedTarget)) return;
-		setOpen(dropdown, false);
+		const pressed = event.target.closest<HTMLElement>('[data-dropdown]') ?? undefined;
+		const closing = [...document.querySelectorAll<HTMLElement>('[data-dropdown]')]
+			.some((dropdown) => dropdown !== pressed && holds.has(dropdown));
+		closeOtherDropdowns(pressed);
+		if (closing && event.pointerType !== 'mouse') holdPointerUntilTapEnds();
 	});
 
 	document.addEventListener('click', (event) => {
@@ -84,6 +148,7 @@ export function initDropdowns(): void {
 			closeOtherDropdowns(dropdown);
 			setOpen(dropdown, open);
 			if (open) focusOption(dropdown, 'selected');
+			else trigger.focus();
 			return;
 		}
 
@@ -94,10 +159,7 @@ export function initDropdowns(): void {
 			selectOption(dropdown, option);
 			setOpen(dropdown, false);
 			getTrigger(dropdown)?.focus();
-			return;
 		}
-
-		closeOtherDropdowns();
 	});
 
 	document.addEventListener('keydown', (event) => {
@@ -125,6 +187,9 @@ export function initDropdowns(): void {
 		const options = getOptions(dropdown);
 		const currentIndex = options.indexOf(target as HTMLButtonElement);
 		if (currentIndex < 0) return;
+
+		// Like a native select, an open list keeps focus until it's closed.
+		if (event.key === 'Tab') event.preventDefault();
 
 		let nextIndex: number | undefined;
 		if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % options.length;
