@@ -531,18 +531,28 @@ export function setBlonkyRenderer(id: string, painter?: BlonkyPainterFactory): b
 	mountedCanvases.delete(root);
 	// A canvas keeps the kind of context it first handed out, so each
 	// renderer draws on a fresh one.
-	const fresh = canvas.cloneNode(true) as HTMLCanvasElement;
-	canvas.replaceWith(fresh);
-	let painted = false;
-	const next = mountBlonkyCanvas(root, painter && ((target) => {
-		const result = painter(target);
-		painted = result !== undefined;
-		return result;
-	}));
-	if (emote) next?.resumeEmote(emote);
-	next?.seek(time);
-	next?.setPlaybackRate(rate);
-	return painter === undefined || painted;
+	const remount = (factory?: BlonkyPainterFactory): { next?: BlonkyAnimator; painted: boolean } => {
+		const previous = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
+		previous?.replaceWith(previous.cloneNode(true));
+		let painted = false;
+		const next = mountBlonkyCanvas(root, factory && ((target) => {
+			const result = factory(target);
+			painted = result !== undefined;
+			return result;
+		}));
+		if (emote) next?.resumeEmote(emote);
+		next?.seek(time);
+		next?.setPlaybackRate(rate);
+		return { next, painted };
+	};
+	const { next, painted } = remount(painter);
+	if (!painter || painted) return true;
+	// The renderer may have taken the canvas before failing, leaving it no use
+	// to ink, so ink starts again on another fresh one.
+	next?.destroy();
+	mountedCanvases.delete(root);
+	remount();
+	return false;
 }
 
 export function unmountBlonkyCanvases(): void {

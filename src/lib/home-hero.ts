@@ -130,7 +130,6 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 			},
 		}));
 		if (!painted) {
-			setBlonkyRenderer(HOME_BLONKY_ID);
 			strikeSet();
 			return 'ink';
 		}
