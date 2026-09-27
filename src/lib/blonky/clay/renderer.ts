@@ -180,9 +180,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
 	};
 
-	const blur = (job: BlurJob, index: number, pxPerUnit: number) => {
-		const width = canvas.width;
-		const height = canvas.height;
+	const blur = (job: BlurJob, index: number, pxPerUnit: number, width: number, height: number) => {
 		const scale = Math.max(1, job.unitsPerTexel * pxPerUnit);
 		const blurWidth = Math.max(1, Math.round(width / scale));
 		const blurHeight = Math.max(1, Math.round(height / scale));
@@ -277,8 +275,12 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		if (gl.isContextLost()) return;
 		const view = options.view ?? 'bust';
 		const viewport = BLONKY_VIEWPORTS[view];
-		const width = canvas.width;
-		const height = canvas.height;
+		// Worked at a resolution within the GPU's texture limit: every
+		// screen-sized layer and target is this size, and only the final pass
+		// scales it to the canvas.
+		const workScale = Math.min(1, maxTextureSize / Math.max(canvas.width, canvas.height));
+		const width = Math.max(1, Math.floor(canvas.width * workScale));
+		const height = Math.max(1, Math.floor(canvas.height * workScale));
 		const px = width / viewport.width;
 		// Match the ink drawing's framing for each view.
 		const viewScale = view === 'portrait' ? 0.56 : 1;
@@ -325,7 +327,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 
 		const volume = solveVolumes();
 		const sleeveSwell = softenSleeves(volume);
-		const blurred = BLUR_JOBS.map((job, index) => blur(job, index, pxPerUnit));
+		const blurred = BLUR_JOBS.map((job, index) => blur(job, index, pxPerUnit, width, height));
 
 		const setShared = (programRef: WebGLProgram): void => {
 			gl.uniform2f(gl.getUniformLocation(programRef, 'u_resolution'), width, height);
@@ -419,7 +421,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		gl.useProgram(resolveProgram);
 		gl.uniform1f(gl.getUniformLocation(resolveProgram, 'u_frame'), frame);
 		bindTexture(resolveProgram, 'u_image', 0, image.texture);
-		drawTo(null, width, height);
+		drawTo(null, gl.drawingBufferWidth, gl.drawingBufferHeight);
 	};
 
 	return {
