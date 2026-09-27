@@ -444,7 +444,14 @@ export function createBlonkyAnimator(
 	});
 
 	configureCanvas();
-	draw(0, true);
+	// A renderer that fails its first frame leaves nothing to show: take
+	// everything down again, and let whoever mounted it recover.
+	try {
+		draw(0, true);
+	} catch (error) {
+		destroy();
+		throw error;
+	}
 	syncPlayback();
 	reportPlayback();
 
@@ -531,7 +538,7 @@ export function setBlonkyRenderer(id: string, painter?: BlonkyPainterFactory): b
 	mountedCanvases.delete(root);
 	// A canvas keeps the kind of context it first handed out, so each
 	// renderer draws on a fresh one.
-	const remount = (factory?: BlonkyPainterFactory): { next?: BlonkyAnimator; painted: boolean } => {
+	const remount = (factory?: BlonkyPainterFactory): boolean => {
 		const previous = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
 		previous?.replaceWith(previous.cloneNode(true));
 		let painted = false;
@@ -543,16 +550,23 @@ export function setBlonkyRenderer(id: string, painter?: BlonkyPainterFactory): b
 		if (emote) next?.resumeEmote(emote);
 		next?.seek(time);
 		next?.setPlaybackRate(rate);
-		return { next, painted };
+		return painted;
 	};
-	const { next, painted } = remount(painter);
-	if (!painter || painted) return true;
-	// The renderer may have taken the canvas before failing, leaving it no use
-	// to ink, so ink starts again on another fresh one.
-	next?.destroy();
-	mountedCanvases.delete(root);
+	if (painter) {
+		try {
+			if (remount(painter)) return true;
+		} catch (error) {
+			// Failing partway, even on its first frame, is no different from
+			// not running at all.
+			console.error(error);
+		}
+		// The renderer may have taken the canvas before failing, leaving it no
+		// use to ink, so ink starts again on another fresh one.
+		mountedCanvases.get(root)?.destroy();
+		mountedCanvases.delete(root);
+	}
 	remount();
-	return false;
+	return !painter;
 }
 
 export function unmountBlonkyCanvases(): void {
