@@ -106,8 +106,41 @@ export interface ClayBoardPattern {
 	offset: { x: number; y: number };
 }
 
+/** The clay renderer's own programs, built on a context. Throws if any fails to compile or link. */
+function buildPrograms(gl: WebGL2RenderingContext) {
+	return {
+		height: program(gl, HEIGHT_FRAGMENT),
+		light: program(gl, LIGHT_FRAGMENT),
+		resolve: program(gl, RESOLVE_FRAGMENT),
+		fillet: program(gl, FILLET_FRAGMENT),
+		sleeveDepth: program(gl, SLEEVE_DEPTH_FRAGMENT),
+		terms: program(gl, TERMS_FRAGMENT),
+	};
+}
+
+let programsBuilt: boolean | undefined;
+
+// Build every program once on a throwaway canvas before the visible one is
+// touched: a canvas that has handed out a WebGL context can't fall back to
+// 2D ink, so a failure has to be found here.
+function canBuildPrograms(): boolean {
+	if (programsBuilt !== undefined) return programsBuilt;
+	programsBuilt = false;
+	const probe = document.createElement('canvas').getContext('webgl2');
+	if (!probe) return programsBuilt;
+	try {
+		createGpu(probe).setup();
+		buildPrograms(probe);
+		programsBuilt = true;
+	} catch (error) {
+		console.error(error);
+	}
+	probe.getExtension('WEBGL_lose_context')?.loseContext();
+	return programsBuilt;
+}
+
 export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRendererOptions = {}): ClayRenderer | undefined {
-	if (!supportsClay()) return;
+	if (!supportsClay() || !canBuildPrograms()) return;
 	const gl = canvas.getContext('webgl2', {
 		alpha: false,
 		antialias: false,
@@ -130,16 +163,21 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	let limbTexture: WebGLTexture;
 	const layers: ClayLayers = createClayLayers();
 
+	let maxTextureSize = 0;
+
 	const setup = (): void => {
 		gpu.setup();
-		heightProgram = program(gl, HEIGHT_FRAGMENT);
-		lightProgram = program(gl, LIGHT_FRAGMENT);
-		resolveProgram = program(gl, RESOLVE_FRAGMENT);
-		filletProgram = program(gl, FILLET_FRAGMENT);
-		sleeveDepthProgram = program(gl, SLEEVE_DEPTH_FRAGMENT);
-		termsProgram = program(gl, TERMS_FRAGMENT);
+		({
+			height: heightProgram,
+			light: lightProgram,
+			resolve: resolveProgram,
+			fillet: filletProgram,
+			sleeveDepth: sleeveDepthProgram,
+			terms: termsProgram,
+		} = buildPrograms(gl));
 		sources = Array.from({ length: SOURCE_COUNT }, () => createTexture(gl));
 		limbTexture = createTexture(gl);
+		maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
 	};
 
 	const blur = (job: BlurJob, index: number, pxPerUnit: number) => {
@@ -210,8 +248,20 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, LIMB_SAMPLES, rows.length, 0, gl.RGBA, gl.FLOAT, data);
 	};
 
+	// The latest exposure asked for, so a restored context can repaint it
+	// even when nothing is animating.
+	let latest: { time: number; options: BlonkyDrawOptions } | undefined;
+
 	const onContextLost = (event: Event): void => event.preventDefault();
-	const onContextRestored = (): void => setup();
+	const onContextRestored = (): void => {
+		try {
+			setup();
+		} catch (error) {
+			console.error(error);
+			return;
+		}
+		if (latest) draw(latest.time, latest.options);
+	};
 	canvas.addEventListener('webglcontextlost', onContextLost);
 	canvas.addEventListener('webglcontextrestored', onContextRestored);
 
@@ -223,6 +273,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	}
 
 	const draw = (time: number, options: BlonkyDrawOptions = {}): void => {
+		latest = { time, options };
 		if (gl.isContextLost()) return;
 		const view = options.view ?? 'bust';
 		const viewport = BLONKY_VIEWPORTS[view];
@@ -286,8 +337,11 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 
 		// The surface and lighting are shaded at twice the canvas's
 		// resolution, then averaged down, which antialiases every edge.
-		const shadeWidth = width * SUPERSAMPLE;
-		const shadeHeight = height * SUPERSAMPLE;
+		// Within the GPU's texture limit: at high densities the canvas alone
+		// can come close to it.
+		const shadeScale = Math.min(SUPERSAMPLE, maxTextureSize / Math.max(width, height));
+		const shadeWidth = Math.floor(width * shadeScale);
+		const shadeHeight = Math.floor(height * shadeScale);
 		const surface = target('surface', shadeWidth, shadeHeight, true);
 		gl.useProgram(heightProgram);
 		setShared(heightProgram);
@@ -346,7 +400,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 				gl.getUniformLocation(lightProgram, 'u_patternTint'),
 				...pattern.dot.map((value, index) => linear(value) / Math.max(linear(pattern.ground[index]), 1e-4)) as [number, number, number],
 			);
-			gl.uniform2f(gl.getUniformLocation(lightProgram, 'u_patternScale'), cssPerPixel, cssPerPixel / SUPERSAMPLE);
+			gl.uniform2f(gl.getUniformLocation(lightProgram, 'u_patternScale'), cssPerPixel, cssPerPixel / shadeScale);
 		}
 		gl.uniform1i(gl.getUniformLocation(lightProgram, 'u_shading'), SHADINGS.indexOf(options.shading ?? 'lit'));
 		bindTexture(lightProgram, 'u_height', 0, surface.texture);
@@ -355,9 +409,9 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		bindTexture(lightProgram, 'u_silhouette', 2, blurred[6].texture);
 		bindTexture(lightProgram, 'u_outline', 3, sources[SILHOUETTE_SOURCE]);
 		bindTexture(lightProgram, 'u_headMass', 5, blurred[3].texture);
-		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_filletSharpness'), 2.5066 * HEAD_FILLET * pxPerUnit * SUPERSAMPLE);
+		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_filletSharpness'), 2.5066 * HEAD_FILLET * pxPerUnit * shadeScale);
 		bindTexture(lightProgram, 'u_shirtMass', 7, blurred[7].texture);
-		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_shirtSharpness'), 2.5066 * SHIRT_FILLET * pxPerUnit * SUPERSAMPLE);
+		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_shirtSharpness'), 2.5066 * SHIRT_FILLET * pxPerUnit * shadeScale);
 		bindTexture(lightProgram, 'u_terms', 4, terms.texture);
 		gl.uniform2f(gl.getUniformLocation(lightProgram, 'u_texel'), 1 / shadeWidth, 1 / shadeHeight);
 		drawTo(image, shadeWidth, shadeHeight);
