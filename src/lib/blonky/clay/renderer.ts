@@ -269,6 +269,18 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	// The latest exposure asked for, so a restored context can repaint it
 	// even when nothing is animating.
 	let latest: { time: number; options: BlonkyDrawOptions } | undefined;
+	// The GPU can refuse the renderer's targets without throwing, leaving
+	// nothing drawn. The first frame reports that, so whoever mounted the
+	// renderer falls back to ink rather than show a blank Blonky.
+	let firstFrame = true;
+	const checkFirstFrame = (): void => {
+		if (!firstFrame) return;
+		firstFrame = false;
+		const error = gl.getError();
+		if (gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION) {
+			throw new Error('The clay renderer could not draw its first frame');
+		}
+	};
 
 	const onContextLost = (event: Event): void => event.preventDefault();
 	const onContextRestored = (): void => {
@@ -292,7 +304,10 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 
 	const draw = (time: number, options: BlonkyDrawOptions = {}): void => {
 		latest = { time, options };
-		if (gl.isContextLost()) return;
+		if (gl.isContextLost()) {
+			checkFirstFrame();
+			return;
+		}
 		const view = options.view ?? 'bust';
 		const viewport = BLONKY_VIEWPORTS[view];
 		// Worked at a resolution within the GPU's size limit and the pixel
@@ -459,6 +474,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 				gl.drawArrays(gl.TRIANGLES, 0, 3);
 			}
 		}
+		checkFirstFrame();
 		settings.onExpose?.(frame, layers.silhouette);
 	};
 

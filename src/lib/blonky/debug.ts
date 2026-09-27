@@ -35,7 +35,7 @@ let mountedPainter: BlonkyPainterFactory | undefined;
 let destroyMountedPage: (() => void) | undefined;
 
 function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory): (() => void) | undefined {
-	const canvas = root.querySelector<HTMLCanvasElement>('[data-blonky-page-canvas]');
+	const pageCanvas = root.querySelector<HTMLCanvasElement>('[data-blonky-page-canvas]');
 	const playbackButton = root.querySelector<HTMLButtonElement>('[data-blonky-playback]');
 	const playIcon = root.querySelector<HTMLElement>('[data-blonky-playback-icon="play"]');
 	const pauseIcon = root.querySelector<HTMLElement>('[data-blonky-playback-icon="pause"]');
@@ -55,7 +55,7 @@ function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory): (() 
 	const surpriseButton = root.querySelector<HTMLButtonElement>('[data-blonky-surprise]');
 	const status = root.querySelector<HTMLElement>('[data-blonky-page-status]');
 	if (
-		!canvas
+		!pageCanvas
 		|| !playbackButton
 		|| !playIcon
 		|| !pauseIcon
@@ -72,6 +72,8 @@ function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory): (() 
 		|| !status
 	) return;
 
+	// Replaced by a fresh canvas if the requested renderer fails.
+	let canvas: HTMLCanvasElement = pageCanvas;
 	const emoteRows = [...root.querySelectorAll<HTMLButtonElement>('[data-blonky-emote]')];
 	let restLabel = canvas.getAttribute('aria-label') ?? 'Blonky at rest';
 	const listeners = new AbortController();
@@ -109,19 +111,38 @@ function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory): (() 
 		status.textContent = playing ? 'Blonky animation playing' : 'Blonky animation paused';
 	};
 
-	let painted = false;
-	const animator = createBlonkyAnimator(canvas, {
+	const animatorOptions = {
 		autoPauseOffscreen: false,
 		onFrame: syncFrame,
 		onPlaybackChange: syncPlayback,
-		painter: painter && ((target) => {
-			const result = painter(target);
-			painted = result !== undefined;
-			return result;
-		}),
 		showArms: true,
 		view: 'debug',
-	});
+	} as const;
+	let painted = false;
+	let animator: BlonkyAnimator | undefined;
+	try {
+		animator = createBlonkyAnimator(canvas, {
+			...animatorOptions,
+			painter: painter && ((target) => {
+				const result = painter(target);
+				painted = result !== undefined;
+				return result;
+			}),
+		});
+	} catch (error) {
+		// Failing partway, even on its first frame, is no different from not
+		// running at all.
+		console.error(error);
+		painted = false;
+	}
+	// The renderer may have taken the canvas before failing, leaving it no use
+	// to ink, so ink starts again on a fresh one.
+	if (!animator && painter) {
+		const fresh = canvas.cloneNode(true) as HTMLCanvasElement;
+		canvas.replaceWith(fresh);
+		canvas = fresh;
+		animator = createBlonkyAnimator(canvas, animatorOptions);
+	}
 	if (!animator) return;
 	// The ink drawing stands in when the requested renderer is unsupported,
 	// styled and described as the ink lab, and without the controls that
