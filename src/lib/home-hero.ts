@@ -69,6 +69,10 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 	weatherWatcher.observe(document.documentElement, { attributes: true, attributeFilter: ['data-effect'] });
 	motion.addEventListener('change', syncWeather);
 	let style: BlonkyStyle = 'ink';
+	// The style asked for most recently. One change runs at a time, and it
+	// keeps going until what's shown is what was asked for last.
+	let requestedStyle: BlonkyStyle = 'ink';
+	let changingStyle = false;
 	let requestSequence = 0;
 
 	/** Takes the clay set down, leaving a fresh canvas for the next one. */
@@ -103,6 +107,8 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 			import('./blonky/clay/set'),
 			import('./blonky/clay/weather'),
 		]);
+		// Asked for ink while clay loaded, or the page has gone: leave it be.
+		if (requestedStyle !== 'clay' || listeners.signal.aborted) return style;
 		// The set stands in for the page's logo and aphorism, so the page only
 		// turns to clay once the set is up; otherwise it stays in ink.
 		if (!setCanvas || !logo) return 'ink';
@@ -136,6 +142,19 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 			syncWeather();
 		}
 		return 'clay';
+	};
+	const requestStyle = async (next: BlonkyStyle): Promise<void> => {
+		requestedStyle = next;
+		if (changingStyle) return;
+		changingStyle = true;
+		while (style !== requestedStyle && !listeners.signal.aborted) {
+			const wanted = requestedStyle;
+			style = await setStyle(wanted);
+			// Clay can't run here: settle for what's shown.
+			if (style !== wanted && requestedStyle === wanted) requestedStyle = style;
+		}
+		changingStyle = false;
+		setContextMenuRadioValue(root, 'style', style);
 	};
 	let napTimer: number | undefined;
 	let cancelBeat: (() => void) | undefined;
@@ -192,12 +211,7 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 			return;
 		}
 		if (event.detail.group === 'style') {
-			const requested = event.detail.value === 'clay' ? 'clay' : 'ink';
-			if (requested === style) return;
-			void setStyle(requested).then((shown) => {
-				style = shown;
-				setContextMenuRadioValue(root, 'style', shown);
-			});
+			void requestStyle(event.detail.value === 'clay' ? 'clay' : 'ink');
 			return;
 		}
 		if (!isBlonkyEmote(event.detail.value)) return;
