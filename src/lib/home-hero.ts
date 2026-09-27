@@ -1,21 +1,14 @@
 import { createAphorismController } from './aphorism';
-import {
-	setContextMenuRadioGroupDisabled,
-	setContextMenuRadioValue,
-	type ContextMenuSelectEvent,
-} from './ui/context-menu';
+import { setContextMenuRadioValue, type ContextMenuSelectEvent } from './ui/context-menu';
 import type { ClaySet } from './blonky/clay/set';
 import type { ClayWeather, ClayWeatherKind } from './blonky/clay/weather';
 import {
-	BLONKY_EMOTING_CHANGE_EVENT,
 	isBlonkyEmote,
-	isBlonkyIdle,
 	playBlonkyEmote,
 	setBlonkyPlaybackRate,
 	setBlonkyRenderer,
 	releaseBlonkyEmote,
 	type BlonkyEmote,
-	type BlonkyEmotingChangeEvent,
 } from './blonky';
 
 const HOME_BLONKY_ID = 'home-blonky';
@@ -77,18 +70,6 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 	motion.addEventListener('change', syncWeather);
 	let style: BlonkyStyle = 'ink';
 	let requestSequence = 0;
-	// The style can only change while Blonky is idle: not while he emotes,
-	// nor between the beats of his reaction to a new aphorism, when he's still
-	// only briefly at rest. The menu item follows both as they change.
-	let emoting = !isBlonkyIdle(HOME_BLONKY_ID);
-	let reacting = false;
-	const syncStyleAvailability = (): void => {
-		setContextMenuRadioGroupDisabled(root, 'style', emoting || reacting);
-	};
-	const setReacting = (next: boolean): void => {
-		reacting = next;
-		syncStyleAvailability();
-	};
 
 	/** Takes the clay set down, leaving a fresh canvas for the next one. */
 	const strikeSet = (): void => {
@@ -183,20 +164,14 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 	const cycleAphorism = async (erase: boolean): Promise<void> => {
 		const request = ++requestSequence;
 		stopWaiting();
-		setReacting(true);
-		try {
-			playBlonkyEmote(HOME_BLONKY_ID, 'notice');
-			const completed = await aphorism.cycle({ erase });
-			if (!completed || request !== requestSequence) return;
-			if (!await waitBeat(READ_BEAT_MS) || request !== requestSequence) return;
-			releaseBlonkyEmote(HOME_BLONKY_ID);
-			if (!await waitBeat(LOOK_BACK_MS) || request !== requestSequence) return;
-			playBlonkyEmote(HOME_BLONKY_ID, pickBlonkyReaction());
-			scheduleNap();
-		} finally {
-			// A newer request owns the reaction now.
-			if (request === requestSequence) setReacting(false);
-		}
+		playBlonkyEmote(HOME_BLONKY_ID, 'notice');
+		const completed = await aphorism.cycle({ erase });
+		if (!completed || request !== requestSequence) return;
+		if (!await waitBeat(READ_BEAT_MS) || request !== requestSequence) return;
+		releaseBlonkyEmote(HOME_BLONKY_ID);
+		if (!await waitBeat(LOOK_BACK_MS) || request !== requestSequence) return;
+		playBlonkyEmote(HOME_BLONKY_ID, pickBlonkyReaction());
+		scheduleNap();
 	};
 
 	aphorismButton.addEventListener('click', () => {
@@ -222,16 +197,11 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 		if (!isBlonkyEmote(event.detail.value)) return;
 		requestSequence += 1;
 		stopWaiting();
-		setReacting(false);
 		playBlonkyEmote(HOME_BLONKY_ID, event.detail.value);
 		scheduleNap();
 	}) as EventListener, { signal: listeners.signal });
 
 	document.addEventListener('visibilitychange', scheduleNap, { signal: listeners.signal });
-	root.addEventListener(BLONKY_EMOTING_CHANGE_EVENT, ((event: BlonkyEmotingChangeEvent) => {
-		emoting = event.detail.emoting;
-		syncStyleAvailability();
-	}) as EventListener, { signal: listeners.signal });
 
 	void cycleAphorism(false);
 

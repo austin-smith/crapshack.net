@@ -1,7 +1,5 @@
 export {
-	BLONKY_EMOTING_CHANGE_EVENT,
 	createBlonkyAnimator,
-	isBlonkyIdle,
 	mountBlonkyCanvases,
 	playBlonkyEmote,
 	releaseBlonkyEmote,
@@ -10,7 +8,6 @@ export {
 	setBlonkyRenderer,
 	unmountBlonkyCanvases,
 	type BlonkyAnimator,
-	type BlonkyEmotingChangeEvent,
 } from './animator';
 export { DEFAULT_BLONKY_PALETTE, drawBlonky } from './drawing';
 export { BLONKY_EMOTES, isBlonkyEmote, sampleBlonkyEmoteOffset } from './emotes';
