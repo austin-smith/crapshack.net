@@ -129,9 +129,10 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 			return 'ink';
 		}
 		root.dataset.homeHeroStyle = 'clay';
-		if (weatherCanvas) {
+		// The page's own weather gives way only to clay weather that's running.
+		weather = weatherCanvas ? createClayWeather(weatherCanvas) : undefined;
+		if (weather && weatherCanvas) {
 			weatherCanvas.hidden = false;
-			weather = createClayWeather(weatherCanvas);
 			syncWeather();
 		}
 		return 'clay';

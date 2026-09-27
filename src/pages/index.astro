@@ -74,7 +74,8 @@ const logo = '/images/crapshack.png';
 		display: none;
 	}
 
-	:global(body:has([data-home-hero-style='clay']) .weather-container) {
+	/* The clay weather replaces the page's own, once it's running. */
+	:global(body:has([data-home-hero-weather]:not([hidden])) .weather-container) {
 		display: none;
 	}
 
