@@ -103,6 +103,19 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 			import('./blonky/clay/set'),
 			import('./blonky/clay/weather'),
 		]);
+		// The set stands in for the page's logo and aphorism, so the page only
+		// turns to clay once the set is up; otherwise it stays in ink.
+		if (!setCanvas || !logo) return 'ink';
+		setCanvas.hidden = false;
+		set = createClaySet(setCanvas, {
+			logo,
+			aphorism: aphorismButton,
+			figure: () => root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]'),
+		});
+		if (!set) {
+			strikeSet();
+			return 'ink';
+		}
 		const painted = setBlonkyRenderer(HOME_BLONKY_ID, (canvas) => createClayRenderer(canvas, {
 			transparent: true,
 			onExpose: (frame, outline) => {
@@ -112,19 +125,11 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 		}));
 		if (!painted) {
 			setBlonkyRenderer(HOME_BLONKY_ID);
+			strikeSet();
 			return 'ink';
 		}
 		root.dataset.homeHeroStyle = 'clay';
-		if (setCanvas && logo) {
-			setCanvas.hidden = false;
-			set = createClaySet(setCanvas, {
-				logo,
-				aphorism: aphorismButton,
-				figure: () => root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]'),
-			});
-			if (!set) strikeSet();
-		}
-		if (set && weatherCanvas) {
+		if (weatherCanvas) {
 			weatherCanvas.hidden = false;
 			weather = createClayWeather(weatherCanvas);
 			syncWeather();
