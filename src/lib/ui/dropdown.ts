@@ -3,20 +3,23 @@ import { lockScroll } from './scroll-lock';
 let initialized = false;
 
 // While a dropdown is open, as with Radix Select, the page behind it can't
-// scroll and doesn't take the pointer: a press outside only closes it.
+// scroll and doesn't take the pointer: a press outside only closes it. Nor
+// does it take keyboard shortcuts, which `data-dropdown-open` holds back.
 const holds = new WeakMap<HTMLElement, () => void>();
 
 function holdPage(dropdown: HTMLElement): void {
 	if (holds.has(dropdown)) return;
 	const releaseScroll = lockScroll();
-	const { body } = document;
+	const { body, documentElement: root } = document;
 	const bodyPointerEvents = body.style.pointerEvents;
 	body.style.pointerEvents = 'none';
 	dropdown.style.pointerEvents = 'auto';
+	root.setAttribute('data-dropdown-open', '');
 	holds.set(dropdown, () => {
 		releaseScroll();
 		body.style.pointerEvents = bodyPointerEvents;
 		dropdown.style.pointerEvents = '';
+		root.removeAttribute('data-dropdown-open');
 	});
 }
 
@@ -116,6 +119,9 @@ function focusOption(dropdown: HTMLElement, direction: 'selected' | 'first' | 'l
 export function initDropdowns(): void {
 	if (initialized) return;
 	initialized = true;
+
+	// A new page starts with nothing held.
+	document.addEventListener('astro:before-swap', () => closeOtherDropdowns());
 
 	// An open dropdown closes when an option is chosen, on Escape, from its
 	// trigger, or on a press anywhere outside it, but not when focus leaves
