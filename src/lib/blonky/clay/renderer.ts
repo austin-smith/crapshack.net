@@ -12,7 +12,7 @@ import {
 	type ClayFigure,
 	type ClayLayers,
 } from './figure';
-import { createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, type Target } from './gpu';
+import { CONTEXT_RESTORE_TIMEOUT_MS, createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, type Target } from './gpu';
 import {
 	FILLET_FRAGMENT,
 	HEIGHT_FRAGMENT,
@@ -288,10 +288,19 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		if (gpuFailed()) throw new Error('The clay renderer could not draw its first frame');
 	};
 
-	const onContextLost = (event: Event): void => event.preventDefault();
-	// A restore that can't rebuild the renderer, or draw with it, leaves it
-	// with nothing to show: its owner is told, to fall back to ink.
+	// A lost context that isn't given back in time, or a restore that can't
+	// rebuild the renderer or draw with it, leaves it with nothing to show:
+	// its owner is told, to fall back to ink.
+	let restoreTimer: number | undefined;
+	const onContextLost = (event: Event): void => {
+		event.preventDefault();
+		restoreTimer = window.setTimeout(() => {
+			console.error(new Error('The clay renderer\'s context was not restored'));
+			settings.onFail?.();
+		}, CONTEXT_RESTORE_TIMEOUT_MS);
+	};
 	const onContextRestored = (): void => {
+		window.clearTimeout(restoreTimer);
 		try {
 			setup();
 			if (latest) draw(latest.time, latest.options);
@@ -490,6 +499,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	return {
 		draw,
 		destroy: () => {
+			window.clearTimeout(restoreTimer);
 			canvas.removeEventListener('webglcontextlost', onContextLost);
 			canvas.removeEventListener('webglcontextrestored', onContextRestored);
 			gl.getExtension('WEBGL_lose_context')?.loseContext();

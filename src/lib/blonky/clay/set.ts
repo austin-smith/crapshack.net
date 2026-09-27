@@ -1,6 +1,6 @@
 import { BLONKY_VIEWPORTS } from '../types';
 import { exposureFlicker } from './figure';
-import { createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, type SolveLevel } from './gpu';
+import { CONTEXT_RESTORE_TIMEOUT_MS, createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, type SolveLevel } from './gpu';
 import {
 	SET_DEVELOP_FRAGMENT,
 	SET_HEIGHT_FRAGMENT,
@@ -554,7 +554,19 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	if (!options.logo.complete) options.logo.addEventListener('load', onLayout, { once: true });
 	void document.fonts?.ready.then(onLayout);
 
-	const onContextLost = (event: Event): void => event.preventDefault();
+	// Without the set the page's own logo and aphorism must show again, so a
+	// lost context that isn't given back in time, or a restore that fails,
+	// takes the set down and tells its owner, to fall back to ink.
+	let restoreTimer: number | undefined;
+	const fail = (error: unknown): void => {
+		console.error(error);
+		destroy();
+		options.onFail?.();
+	};
+	const onContextLost = (event: Event): void => {
+		event.preventDefault();
+		restoreTimer = window.setTimeout(() => fail(new Error('The clay set\'s context was not restored')), CONTEXT_RESTORE_TIMEOUT_MS);
+	};
 	// The GPU can refuse the set's targets without throwing, leaving it
 	// nothing to draw.
 	const gpuFailed = (): boolean => {
@@ -562,6 +574,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		return gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION;
 	};
 	const onContextRestored = (): void => {
+		window.clearTimeout(restoreTimer);
 		try {
 			setup();
 			// Every target was recreated empty, Blonky's shadow among them, so
@@ -572,17 +585,14 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 			render();
 			if (gpuFailed()) throw new Error('The clay set could not be restored');
 		} catch (error) {
-			// Without the set the page's own logo and aphorism must show again:
-			// its owner is told, to fall back to ink.
-			console.error(error);
-			destroy();
-			options.onFail?.();
+			fail(error);
 		}
 	};
 	canvas.addEventListener('webglcontextlost', onContextLost);
 	canvas.addEventListener('webglcontextrestored', onContextRestored);
 
 	const destroy = (): void => {
+		window.clearTimeout(restoreTimer);
 		cancelScheduled();
 		for (const observer of observers) observer.disconnect();
 		options.logo.removeEventListener('load', onLayout);
