@@ -104,12 +104,17 @@ const { id, class: className, maxWidth = 'max-w-2xl', ariaLabel } = Astro.props;
 			justify-content: center;
 			padding: 1.5rem;
 			margin: 0 !important; /* prevent parent margins (e.g., space-y-*) from shifting the overlay */
-			pointer-events: none;
 			visibility: hidden;
 		}
 
+		/* Only a closed dialog passes the pointer through. An open one takes
+		   pointer events from the page, so a dropdown open inside it can
+		   keep them to itself. */
+		.dialog-root:not([data-open="true"]) {
+			pointer-events: none;
+		}
+
 		.dialog-root[data-open="true"] {
-			pointer-events: auto;
 			visibility: visible;
 		}
 

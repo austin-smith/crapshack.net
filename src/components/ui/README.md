@@ -175,3 +175,11 @@ Controls fall back to site theme tokens. A contrasting surface may supply these 
 Define these on the surrounding surface, not separately on each button. The Blonky page demonstrates this mapping.
 Dropdown has one shared size: 36px-high triggers and options with 14px text. It has no size prop. The `default` and `outline` variants control appearance only; consumers can set layout width through `class`.
 Component-specific `--dropdown-*` hooks remain available for cases not covered by the variants; prefer the shared surface properties first.
+
+An open dropdown behaves like [Radix Select](https://www.radix-ui.com/primitives/docs/components/select): choosing an option, Escape, its trigger, or a press anywhere outside closes it, and Tab stays in the list. Until it closes, the page behind it doesn't scroll, take the pointer, or run keyboard shortcuts. While it's open, `html` has `data-dropdown-open`, which the shortcut registry checks.
+
+## Scroll lock
+
+Dialogs and open dropdowns share `lockScroll(content)` from `lib/ui/scroll-lock.ts`, as Radix's overlays share `react-remove-scroll`. It returns the function that releases the hold. The page stays locked until every hold is released, and only the most recent holder's content scrolls; wheel and touch scrolling anywhere else is cancelled. New overlays should hold the lock rather than set `overflow` on the body.
+
+While the page is locked, the body is padded by a classic scrollbar's width, so nothing shifts. A fixed element anchored to the right edge should add `--scroll-lock-gap` to its offset, as the sidebar toggle does: `right-[calc(0.75rem+var(--scroll-lock-gap,0px))]`.
