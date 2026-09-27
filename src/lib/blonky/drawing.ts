@@ -19,7 +19,7 @@ import {
 	type BlonkyPalette,
 } from './types';
 
-type Pt = { x: number; y: number };
+export type Pt = { x: number; y: number };
 
 const H = BLONKY_BUST_HEIGHT;
 const TAU = Math.PI * 2;
@@ -42,7 +42,7 @@ export const DEFAULT_BLONKY_PALETTE: Readonly<BlonkyPalette> = {
 };
 let frame = 0;
 
-function valueNoise(x: number, y: number, seed: number): number {
+export function valueNoise(x: number, y: number, seed: number): number {
 	const x0 = Math.floor(x);
 	const y0 = Math.floor(y);
 	const fx = x - x0;
@@ -77,7 +77,7 @@ function normal(point: Pt): Pt {
 	return { x: -point.y, y: point.x };
 }
 
-function lerp(a: Pt, b: Pt, t: number): Pt {
+export function lerp(a: Pt, b: Pt, t: number): Pt {
 	return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
 
@@ -133,7 +133,7 @@ function polygonBounds(polygon: Pt[]): Bounds {
 	return { minX, maxX, minY, maxY };
 }
 
-function densify(points: Pt[], closed: boolean, step = 5): Pt[] {
+export function densify(points: Pt[], closed: boolean, step = 5): Pt[] {
 	const source = closed ? points.concat(points[0]) : points;
 	const result: Pt[] = [];
 	for (let index = 0; index < source.length - 1; index++) {
@@ -146,7 +146,7 @@ function densify(points: Pt[], closed: boolean, step = 5): Pt[] {
 	return result;
 }
 
-function quadratic(a: Pt, control: Pt, b: Pt, count = 18): Pt[] {
+export function quadratic(a: Pt, control: Pt, b: Pt, count = 18): Pt[] {
 	return Array.from({ length: count + 1 }, (_, index) => {
 		const t = index / count;
 		const u = 1 - t;
@@ -377,7 +377,7 @@ function stipple(
 	ctx.restore();
 }
 
-interface Pose {
+export interface Pose {
 	centerX: number;
 	armTension: number;
 	leftWave: number;
@@ -456,7 +456,7 @@ function breathAt(time: number): number {
 	return 0;
 }
 
-function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
+export function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 	const behavior = idleBehaviorAt(time);
 	const emoteOffset = sampleBlonkyEmoteOffset(emote);
 	const idleBehaviorWeight = 1 - emoteOffset.presence * 0.85;
@@ -548,7 +548,7 @@ function tube(chain: [Pt, Pt, Pt], startRadius: number, endRadius: number): { le
 	return { left, right, center };
 }
 
-function restingSkinContours(arm: ArmGeometry): { outer: Pt[]; inner: Pt[] } {
+export function restingSkinContours(arm: ArmGeometry): { outer: Pt[]; inner: Pt[] } {
 	const { chain, side, startRadius, endRadius } = arm;
 	const cuffEdge = arm.cuffLower;
 	const shape = tube(chain, startRadius, endRadius);
@@ -592,67 +592,57 @@ function drawLimb(ctx: CanvasRenderingContext2D, arm: ArmGeometry, outlineInk: s
 	return polygon;
 }
 
-function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string): void {
-	ctx.save();
-	// Apply head rotation around a body-anchored neck pivot. Excluding the shirt
-	// keeps collar geometry fixed while the jaw overlaps the neck skin.
-	const neckPivot = { x: pose.centerX, y: pose.shoulderY - 10 };
-	ctx.translate(neckPivot.x, neckPivot.y);
-	ctx.rotate(pose.headAngle + pose.headEmoteAngle);
-	ctx.translate(pose.headX - neckPivot.x, pose.headY - neckPivot.y);
-	ctx.scale(2.05, 1.9);
-	const turn = pose.headTurn;
+export interface HeadGeometry {
+	/** Body-anchored neck pivot for head rotation. */
+	pivot: Pt;
+	angle: number;
+	/** Head center relative to the pivot, applied after rotation. */
+	offset: Pt;
+	scale: Pt;
+	/** Face yaw and look offset inside the head's local space. */
+	face: Pt;
+	skull: Pt[];
+	outerHead: Pt[];
+	hairs: { id: number; points: [Pt, Pt] }[];
+	// Face features, in face space.
+	leftEyeCenter: Pt;
+	rightEyeCenter: Pt;
+	leftEyeOpen: Pt[];
+	rightEyeOpen: Pt[];
+	leftEye: Pt[];
+	rightEye: Pt[];
+	leftEyeClosed: boolean;
+	rightEyeClosed: boolean;
+	leftUnderEye: Pt[];
+	rightUnderEye: Pt[];
+	leftBrow: Pt[];
+	rightBrow: Pt[];
+	nose: Pt[];
+	mouthLine: Pt[];
+	mouth: Pt[];
+	lowerLip: Pt[];
+	chin: Pt[];
+	lowerChin: Pt[];
+}
 
-	const skull: Pt[] = [
-		{ x: -84, y: -45 }, { x: -76, y: -78 }, { x: -55, y: -99 }, { x: -28, y: -109 },
-		{ x: 2, y: -111 }, { x: 35, y: -106 }, { x: 63, y: -91 }, { x: 81, y: -66 },
-		{ x: 88, y: -36 }, { x: 85, y: -8 }, { x: 84, y: 5 }, { x: 84, y: 24 },
-		{ x: 78, y: 43 }, { x: 65, y: 59 }, { x: 46, y: 71 }, { x: 23, y: 78 },
-		{ x: -2, y: 79 }, { x: -27, y: 75 }, { x: -49, y: 66 }, { x: -68, y: 51 },
-		{ x: -81, y: 30 }, { x: -83, y: -8 },
-	];
-	const outerHead = [
-		skull[21],
-		...skull.slice(0, 10),
-	];
-	fill(ctx, skull, SKIN, 1);
-	fill(ctx, skull, WASH, 0.11);
-	stroke(ctx, outerHead, 611, { width: 1.82, boil: 0.46, color: outlineInk });
+const SKULL: readonly Pt[] = [
+	{ x: -84, y: -45 }, { x: -76, y: -78 }, { x: -55, y: -99 }, { x: -28, y: -109 },
+	{ x: 2, y: -111 }, { x: 35, y: -106 }, { x: 63, y: -91 }, { x: 81, y: -66 },
+	{ x: 88, y: -36 }, { x: 85, y: -8 }, { x: 84, y: 5 }, { x: 84, y: 24 },
+	{ x: 78, y: 43 }, { x: 65, y: 59 }, { x: 46, y: 71 }, { x: 23, y: 78 },
+	{ x: -2, y: 79 }, { x: -27, y: 75 }, { x: -49, y: 66 }, { x: -68, y: 51 },
+	{ x: -81, y: 30 }, { x: -83, y: -8 },
+];
 
-	const crown = densify(skull.slice(1, 9), false, 8);
-	for (let index = 1; index < crown.length - 1; index++) {
-		const cluster = valueNoise(index * 0.24, 0, 617);
-		if (hash(617, index, 1) < 0.26 + (1 - cluster) * 0.42) continue;
-		const point = crown[index];
-		const direction = norm({
-			x: point.x * 0.2 + (hash(617, index, 2) - 0.5) * 16,
-			y: point.y + 27 + (hash(617, index, 3) - 0.5) * 8,
-		});
-		const length = 2.8 + hash(617, index, 4) * 4.6;
-		stroke(ctx, [point, add(point, mul(direction, length))], 620 + index, {
-			width: 0.72,
-			passes: 1,
-			boil: 0.35,
-			color: outlineInk,
-		});
-	}
-
-	ctx.save();
-	// Apply base yaw to the full face. Add per-feature parallax below for depth.
-	ctx.translate(turn * 1.15, pose.faceLookY);
-	const leftEyeTurn = turn * -0.1;
-	const rightEyeTurn = turn * 0.55;
-	const leftEyeCenter = { x: -34 + leftEyeTurn, y: -56.5 + turn * 0.18 + pose.eyeLookY };
-	const rightEyeCenter = { x: 30 + rightEyeTurn, y: -49 - turn * 0.12 + pose.eyeLookY };
-	const underEyeFollow = pose.eyeLookY * 0.1;
-	const blink = (
-		points: Pt[],
-		center: Pt,
-		openness: number,
-		upperLid = 0,
-		wink = 0,
-		radius = 12,
-	): Pt[] => points.map((point) => {
+function blinkEye(
+	points: Pt[],
+	center: Pt,
+	openness: number,
+	upperLid = 0,
+	wink = 0,
+	radius = 12,
+): Pt[] {
+	return points.map((point) => {
 		const y = center.y + (point.y - center.y) * openness;
 		const upperDistance = Math.max(0, center.y - y);
 		// A wink closes against the lifted cheek. Both eye contours converge
@@ -663,7 +653,40 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 			y: y + upperDistance * upperLid + wink * (2 - 5 * (1 - along * along)),
 		};
 	});
-	const leftEye = blink([
+}
+
+export function headGeometry(pose: Pose): HeadGeometry {
+	// Apply head rotation around a body-anchored neck pivot. Excluding the shirt
+	// keeps collar geometry fixed while the jaw overlaps the neck skin.
+	const pivot = { x: pose.centerX, y: pose.shoulderY - 10 };
+	const turn = pose.headTurn;
+	const skull = SKULL.slice();
+	const outerHead = [
+		skull[21],
+		...skull.slice(0, 10),
+	];
+
+	const hairs: HeadGeometry['hairs'] = [];
+	const crown = densify(skull.slice(1, 9), false, 8);
+	for (let index = 1; index < crown.length - 1; index++) {
+		const cluster = valueNoise(index * 0.24, 0, 617);
+		if (hash(617, index, 1) < 0.26 + (1 - cluster) * 0.42) continue;
+		const point = crown[index];
+		const direction = norm({
+			x: point.x * 0.2 + (hash(617, index, 2) - 0.5) * 16,
+			y: point.y + 27 + (hash(617, index, 3) - 0.5) * 8,
+		});
+		const length = 2.8 + hash(617, index, 4) * 4.6;
+		hairs.push({ id: 620 + index, points: [point, add(point, mul(direction, length))] });
+	}
+
+	// Apply base yaw to the full face. Add per-feature parallax below for depth.
+	const leftEyeTurn = turn * -0.1;
+	const rightEyeTurn = turn * 0.55;
+	const leftEyeCenter = { x: -34 + leftEyeTurn, y: -56.5 + turn * 0.18 + pose.eyeLookY };
+	const rightEyeCenter = { x: 30 + rightEyeTurn, y: -49 - turn * 0.12 + pose.eyeLookY };
+	const underEyeFollow = pose.eyeLookY * 0.1;
+	const leftEyeOpen = [
 		{ x: leftEyeCenter.x - 12, y: leftEyeCenter.y - 2 },
 		{ x: leftEyeCenter.x - 9, y: leftEyeCenter.y - 8 },
 		{ x: leftEyeCenter.x - 3, y: leftEyeCenter.y - 12 },
@@ -674,8 +697,8 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: leftEyeCenter.x, y: leftEyeCenter.y + 12 },
 		{ x: leftEyeCenter.x - 7, y: leftEyeCenter.y + 9 },
 		{ x: leftEyeCenter.x - 12, y: leftEyeCenter.y + 4 },
-	], leftEyeCenter, pose.leftEyeOpen, pose.leftUpperLid, pose.leftWink);
-	const rightEye = blink([
+	];
+	const rightEyeOpen = [
 		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y - 3 },
 		{ x: rightEyeCenter.x - 6, y: rightEyeCenter.y - 9 },
 		{ x: rightEyeCenter.x + 1, y: rightEyeCenter.y - 11 },
@@ -685,21 +708,126 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		{ x: rightEyeCenter.x + 1, y: rightEyeCenter.y + 10 },
 		{ x: rightEyeCenter.x - 6, y: rightEyeCenter.y + 8 },
 		{ x: rightEyeCenter.x - 10, y: rightEyeCenter.y + 2 },
-	], rightEyeCenter, pose.rightEyeOpen, pose.rightUpperLid, pose.rightWink, 10);
-	const leftEyeClosed = pose.leftEyeOpen <= 0.2;
-	const rightEyeClosed = pose.rightEyeOpen <= 0.2;
-	if (!leftEyeClosed) fill(ctx, leftEye, EYE_WHITE, 1);
-	if (!rightEyeClosed) fill(ctx, rightEye, EYE_WHITE, 1);
-	const tearWellAt = (delayFrames: number, holdFrames: number): number => (
-		pose.cryElapsed === undefined
-			? 0
-			: heldEnvelope(
-				pose.cryElapsed,
-				INK_FRAME_SECONDS * delayFrames,
-				INK_FRAME_SECONDS * 4,
-				INK_FRAME_SECONDS * holdFrames,
-				INK_FRAME_SECONDS * 5,
-			)
+	];
+	const leftEye = blinkEye(leftEyeOpen, leftEyeCenter, pose.leftEyeOpen, pose.leftUpperLid, pose.leftWink);
+	const rightEye = blinkEye(rightEyeOpen, rightEyeCenter, pose.rightEyeOpen, pose.rightUpperLid, pose.rightWink, 10);
+	const leftCheek = pose.leftWink * 2 + pose.mouthSmile * 0.6;
+	const rightCheek = pose.rightWink * 2 + pose.mouthSmile * 0.6;
+	const noseBridgeX = 9 + turn * 0.35;
+	const noseTipX = -6 + turn * 2.6;
+	const mouthPurse = pose.mouthPurse;
+	const mouthFrown = pose.mouthFrown;
+	const mouthSmile = pose.mouthSmile;
+	const leftMouthCurl = Math.max(0, -pose.mouthCurl);
+	const rightMouthCurl = Math.max(0, pose.mouthCurl);
+	const mouthLine: Pt[] = [
+		{ x: -38 + turn * 0.65 + mouthPurse * 10 + leftMouthCurl * 4, y: 15 + pose.mouthTension * 0.8 + mouthFrown * 4.4 - leftMouthCurl * 3.2 },
+		{ x: -17 + turn * 0.8 + mouthPurse * 2 + leftMouthCurl * 1.4, y: 13 - mouthFrown * 1.2 - leftMouthCurl * 1.2 },
+		{ x: 1 + turn - mouthPurse * 2 - rightMouthCurl * 1.4, y: 12 - mouthFrown * 1.4 - rightMouthCurl * 1.2 },
+		{ x: 17 + turn * 1.2 - mouthPurse * 8 - rightMouthCurl * 4, y: 14 - pose.mouthTension * 1.15 + mouthFrown * 4.4 - rightMouthCurl * 3.2 },
+	];
+	// Bend the whole mouth into a shallow smile. Moving only its four anchors
+	// makes a sharp notch; pulling a corner inward makes it hook into the nose.
+	const mouth = mouthSmile > 0 ? densify(mouthLine, false, 4).map((point) => {
+		const t = (point.x - mouthLine[0].x) / (mouthLine.at(-1)!.x - mouthLine[0].x);
+		const u = 1 - t;
+		const smileY = u * u * (14 - leftMouthCurl * 4)
+			+ 2 * u * t * 24
+			+ t * t * (13 - rightMouthCurl * 4);
+		return { x: point.x, y: point.y + (smileY - point.y) * mouthSmile };
+	}) : mouthLine;
+
+	return {
+		pivot,
+		angle: pose.headAngle + pose.headEmoteAngle,
+		offset: { x: pose.headX - pivot.x, y: pose.headY - pivot.y },
+		scale: { x: 2.05, y: 1.9 },
+		face: { x: turn * 1.15, y: pose.faceLookY },
+		skull,
+		outerHead,
+		hairs,
+		leftEyeCenter,
+		rightEyeCenter,
+		leftEyeOpen,
+		rightEyeOpen,
+		leftEye,
+		rightEye,
+		leftEyeClosed: pose.leftEyeOpen <= 0.2,
+		rightEyeClosed: pose.rightEyeOpen <= 0.2,
+		leftUnderEye: [
+			{ x: -47 + leftEyeTurn, y: -40 + underEyeFollow - leftCheek * 0.6 },
+			{ x: -38 + leftEyeTurn, y: -35 + underEyeFollow - leftCheek },
+			{ x: -28 + leftEyeTurn, y: -35 + underEyeFollow - leftCheek },
+			{ x: -20 + leftEyeTurn, y: -40 + underEyeFollow - leftCheek * 0.6 },
+		],
+		rightUnderEye: [
+			{ x: 21 + rightEyeTurn, y: -35 + underEyeFollow - rightCheek * 0.6 },
+			{ x: 28 + rightEyeTurn, y: -32 + underEyeFollow - rightCheek },
+			{ x: 36 + rightEyeTurn, y: -33 + underEyeFollow - rightCheek },
+			{ x: 41 + rightEyeTurn, y: -37 + underEyeFollow - rightCheek * 0.6 },
+		],
+		leftBrow: [
+			{ x: -49 + leftEyeTurn, y: -67 - pose.leftBrowLift * 0.5 - pose.leftBrowArch * 0.75 },
+			{ x: -41 + leftEyeTurn, y: -75 - pose.leftBrowLift - pose.leftBrowArch },
+			{ x: -30 + leftEyeTurn, y: -78 - pose.leftBrowLift * 0.7 - pose.leftBrowArch * 0.2 },
+		],
+		rightBrow: [
+			{ x: 25 + rightEyeTurn, y: -70 - pose.rightBrowLift * 0.7 - pose.rightBrowArch * 0.2 },
+			{ x: 35 + rightEyeTurn, y: -73 - pose.rightBrowLift - pose.rightBrowArch },
+			{ x: 46 + rightEyeTurn, y: -66 - pose.rightBrowLift * 0.5 - pose.rightBrowArch * 0.75 },
+		],
+		nose: [
+			{ x: noseBridgeX, y: -42 },
+			{ x: noseBridgeX + 1 + turn * 0.35, y: -22 },
+			{ x: noseBridgeX + 1 + turn * 0.8, y: -5 },
+			{ x: 7 + turn * 1.8, y: 1 },
+			{ x: noseTipX, y: 4 },
+			{ x: -16 + turn * 2.25, y: 2 },
+			{ x: -25 + turn * 2.15, y: -2 },
+		],
+		mouthLine,
+		mouth,
+		lowerLip: [{ x: -18, y: 22 + mouthSmile * 3 }, { x: -5, y: 21 + mouthSmile * 3 }],
+		chin: [{ x: -55, y: 32 }, { x: -39, y: 44 }, { x: -12, y: 51 }, { x: 14, y: 49 }, { x: 43, y: 33 }],
+		lowerChin: [{ x: -42, y: 49 }, { x: -20, y: 58 }, { x: 2, y: 61 }, { x: 22, y: 56 }, { x: 36, y: 48 }],
+	};
+}
+
+export const TEAR_BEAD_RADIUS = 1.65;
+export const TEAR_FRONT_RADIUS = 1.15;
+
+export interface TearWell {
+	/** The open eye the water is clipped to. */
+	eye: Pt[];
+	amount: number;
+	innerSide: -1 | 1;
+	outerX: number;
+	innerX: number;
+	/** Lowest point of the eye. */
+	bottom: number;
+	/** Quadratic waterline: start, control, end. */
+	waterline: [Pt, Pt, Pt];
+	bead: Pt;
+}
+
+export interface TearTrack {
+	mark: Pt[];
+	front: Pt;
+}
+
+/** Tears in face space. Track edges tremble with the ink frame. */
+export function tearGeometry(pose: Pose, head: HeadGeometry, inkFrame: number): { wells: TearWell[]; tracks: TearTrack[] } {
+	const wells: TearWell[] = [];
+	const tracks: TearTrack[] = [];
+	if (pose.cryElapsed === undefined) return { wells, tracks };
+	const cryElapsed = pose.cryElapsed;
+	const { leftEye, leftEyeCenter, leftEyeClosed, rightEye, rightEyeCenter, rightEyeClosed } = head;
+	const tearWellAt = (delayFrames: number, holdFrames: number): number => heldEnvelope(
+		cryElapsed,
+		INK_FRAME_SECONDS * delayFrames,
+		INK_FRAME_SECONDS * 4,
+		INK_FRAME_SECONDS * holdFrames,
+		INK_FRAME_SECONDS * 5,
 	);
 	const leftTearsLead = pose.cryDirection === -1;
 	const leftTearWell = tearWellAt(
@@ -711,54 +839,162 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		(leftTearsLead ? 15 : 16) + CRY_LINGER_FRAMES,
 	);
 	const visibleRightTearWell = Math.min(1.1, rightTearWell * 1.1);
-	const drawTearWell = (
-		eye: Pt[],
-		center: Pt,
-		amount: number,
-		innerSide: -1 | 1,
-	): void => {
+	const addWell = (eye: Pt[], center: Pt, amount: number, innerSide: -1 | 1): void => {
 		if (amount <= 0.01) return;
 		const bounds = polygonBounds(eye);
 		const lowerDepth = Math.max(0.8, bounds.maxY - center.y);
 		const waterlineY = bounds.maxY - 0.45 - lowerDepth * amount * 0.68;
 		const outerX = center.x - innerSide * 7.5;
 		const innerX = center.x + innerSide * 10.5;
-		ctx.save();
-		polygonPath(ctx, eye);
-		ctx.clip();
-		ctx.fillStyle = TEAR_WASH;
-		ctx.globalAlpha = amount * 0.5;
-		ctx.beginPath();
-		ctx.moveTo(outerX, bounds.maxY + 1);
-		ctx.lineTo(outerX, waterlineY + 0.65);
-		ctx.quadraticCurveTo(
-			center.x + innerSide * 2,
-			waterlineY + 0.15,
+		wells.push({
+			eye,
+			amount,
+			innerSide,
+			outerX,
 			innerX,
-			waterlineY - 0.7,
-		);
-		ctx.lineTo(innerX + innerSide, bounds.maxY + 1);
-		ctx.closePath();
-		ctx.fill();
-		ctx.globalAlpha = amount * 0.58;
-		ctx.beginPath();
-		ctx.arc(innerX - innerSide * 0.7, waterlineY + 0.4, 1.65, 0, TAU);
-		ctx.fill();
-		ctx.restore();
+			bottom: bounds.maxY,
+			waterline: [
+				{ x: outerX, y: waterlineY + 0.65 },
+				{ x: center.x + innerSide * 2, y: waterlineY + 0.15 },
+				{ x: innerX, y: waterlineY - 0.7 },
+			],
+			bead: { x: innerX - innerSide * 0.7, y: waterlineY + 0.4 },
+		});
 	};
-	if (!leftEyeClosed) drawTearWell(leftEye, leftEyeCenter, leftTearWell, 1);
-	if (!rightEyeClosed) drawTearWell(rightEye, rightEyeCenter, visibleRightTearWell, -1);
-	const drawWinkLid = (center: Pt, radius: number, side: -1 | 1, id: number): void => {
-		// One open stroke: tracing both edges of a collapsed eye makes an ink
-		// wedge. Keep the lid light enough to match the rest of the face.
-		stroke(ctx, quadratic(
+	if (!leftEyeClosed) addWell(leftEye, leftEyeCenter, leftTearWell, 1);
+	if (!rightEyeClosed) addWell(rightEye, rightEyeCenter, visibleRightTearWell, -1);
+
+	const addTrack = (
+		origin: Pt,
+		delayFrames: number,
+		durationFrames: number,
+		side: -1 | 1,
+		route: number,
+		id: number,
+	): void => {
+		const duration = INK_FRAME_SECONDS * durationFrames;
+		const age = cryElapsed - INK_FRAME_SECONDS * delayFrames;
+		if (age < 0 || age > duration) return;
+		const progress = Math.min(1, age / duration);
+		const travel = progress ** 1.25;
+		const path = quadratic(
+			origin,
+			{ x: origin.x + side * (1.8 + route * 1.5), y: origin.y + 52 },
+			{ x: origin.x + side * (9.5 + route * 4), y: origin.y + 108 },
+			32,
+		);
+		const frontIndex = Math.max(1, Math.round(travel * (path.length - 1)));
+		const backIndex = Math.max(0, frontIndex - 2);
+		const visibleTrack = path.slice(backIndex, frontIndex + 1);
+		const leftEdge: Pt[] = [];
+		const rightEdge: Pt[] = [];
+		visibleTrack.forEach((point, index) => {
+			const before = visibleTrack[Math.max(0, index - 1)];
+			const after = visibleTrack[Math.min(visibleTrack.length - 1, index + 1)];
+			const n = normal(norm(sub(after, before)));
+			const along = visibleTrack.length === 1 ? 1 : index / (visibleTrack.length - 1);
+			const liveWobble = (valueNoise(index * 0.7, inkFrame * 0.38, id) - 0.5) * 0.32;
+			const radius = Math.max(0.22, 0.3 + along ** 1.5 * 1.15 + liveWobble);
+			leftEdge.push(add(point, mul(n, radius)));
+			rightEdge.push(add(point, mul(n, -radius)));
+		});
+		tracks.push({ mark: leftEdge.concat(rightEdge.reverse()), front: visibleTrack.at(-1)! });
+	};
+	const leftTearOrigin = {
+		x: leftEyeCenter.x + 3.2,
+		y: Math.max(...leftEye.map((point) => point.y)) - 0.35,
+	};
+	const rightTearOrigin = {
+		x: rightEyeCenter.x - 3.2,
+		y: Math.max(...rightEye.map((point) => point.y)) - 0.35,
+	};
+	const leadingTears = [
+		{ delay: 3, duration: 12, route: 0.45, id: 645 },
+		{ delay: 12, duration: 11, route: -0.65, id: 646 },
+	];
+	const followingTears = [
+		{ delay: 6, duration: 10, route: -0.2, id: 648 },
+	];
+	const addSequence = (origin: Pt, side: -1 | 1, sequence: typeof leadingTears): void => {
+		for (const tear of sequence) addTrack(origin, tear.delay, tear.duration, side, tear.route, tear.id);
+	};
+	addSequence(leftTearOrigin, -1, leftTearsLead ? leadingTears : followingTears);
+	addSequence(rightTearOrigin, 1, leftTearsLead ? followingTears : leadingTears);
+	return { wells, tracks };
+}
+
+/** A winked eye: one lid arch, plus a crease at the outer corner. */
+export function winkLid(center: Pt, radius: number, side: -1 | 1): { lid: Pt[]; tick: [Pt, Pt] } {
+	const corner = { x: center.x + side * radius * 0.92, y: center.y + 2 };
+	return {
+		lid: quadratic(
 			{ x: center.x - radius * 0.92, y: center.y + 2 },
 			{ x: center.x, y: center.y - 8 },
 			{ x: center.x + radius * 0.92, y: center.y + 2 },
 			8,
-		), id, { width: 1.7, passes: 1, alpha: 0.94, wobble: 0.35 });
-		const corner = { x: center.x + side * radius * 0.92, y: center.y + 2 };
-		stroke(ctx, [corner, { x: corner.x + side * 3, y: corner.y + 3 }], id + 30, {
+		),
+		tick: [corner, { x: corner.x + side * 3, y: corner.y + 3 }],
+	};
+}
+
+function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string): void {
+	const head = headGeometry(pose);
+	ctx.save();
+	ctx.translate(head.pivot.x, head.pivot.y);
+	ctx.rotate(head.angle);
+	ctx.translate(head.offset.x, head.offset.y);
+	ctx.scale(head.scale.x, head.scale.y);
+
+	fill(ctx, head.skull, SKIN, 1);
+	fill(ctx, head.skull, WASH, 0.11);
+	stroke(ctx, head.outerHead, 611, { width: 1.82, boil: 0.46, color: outlineInk });
+	for (const hair of head.hairs) {
+		stroke(ctx, hair.points, hair.id, {
+			width: 0.72,
+			passes: 1,
+			boil: 0.35,
+			color: outlineInk,
+		});
+	}
+
+	ctx.save();
+	ctx.translate(head.face.x, head.face.y);
+	const {
+		leftEye,
+		leftEyeCenter,
+		leftEyeClosed,
+		rightEye,
+		rightEyeCenter,
+		rightEyeClosed,
+	} = head;
+	if (!leftEyeClosed) fill(ctx, leftEye, EYE_WHITE, 1);
+	if (!rightEyeClosed) fill(ctx, rightEye, EYE_WHITE, 1);
+	const tears = tearGeometry(pose, head, frame);
+	for (const well of tears.wells) {
+		ctx.save();
+		polygonPath(ctx, well.eye);
+		ctx.clip();
+		ctx.fillStyle = TEAR_WASH;
+		ctx.globalAlpha = well.amount * 0.5;
+		ctx.beginPath();
+		ctx.moveTo(well.outerX, well.bottom + 1);
+		ctx.lineTo(well.outerX, well.waterline[0].y);
+		ctx.quadraticCurveTo(well.waterline[1].x, well.waterline[1].y, well.waterline[2].x, well.waterline[2].y);
+		ctx.lineTo(well.innerX + well.innerSide, well.bottom + 1);
+		ctx.closePath();
+		ctx.fill();
+		ctx.globalAlpha = well.amount * 0.58;
+		ctx.beginPath();
+		ctx.arc(well.bead.x, well.bead.y, TEAR_BEAD_RADIUS, 0, TAU);
+		ctx.fill();
+		ctx.restore();
+	}
+	const drawWinkLid = (center: Pt, radius: number, side: -1 | 1, id: number): void => {
+		// One open stroke: tracing both edges of a collapsed eye makes an ink
+		// wedge. Keep the lid light enough to match the rest of the face.
+		const { lid, tick } = winkLid(center, radius, side);
+		stroke(ctx, lid, id, { width: 1.7, passes: 1, alpha: 0.94, wobble: 0.35 });
+		stroke(ctx, tick, id + 30, {
 			width: 0.9, passes: 1, alpha: 0.65, wobble: 0.25,
 		});
 	};
@@ -782,157 +1018,26 @@ function drawHead(ctx: CanvasRenderingContext2D, pose: Pose, outlineInk: string)
 		fillRule: rightEyeClosed ? 'nonzero' : 'evenodd',
 		roundedClosedStroke: pose.cryElapsed !== undefined && !rightEyeClosed,
 	});
-	const drawTearTrack = (
-		origin: Pt,
-		elapsed: number,
-		delayFrames: number,
-		durationFrames: number,
-		side: -1 | 1,
-		route: number,
-		id: number,
-	): void => {
-		const duration = INK_FRAME_SECONDS * durationFrames;
-		const age = elapsed - INK_FRAME_SECONDS * delayFrames;
-		if (age < 0 || age > duration) return;
-		const progress = Math.min(1, age / duration);
-		const travel = progress ** 1.25;
-		const path = quadratic(
-			origin,
-			{ x: origin.x + side * (1.8 + route * 1.5), y: origin.y + 52 },
-			{ x: origin.x + side * (9.5 + route * 4), y: origin.y + 108 },
-			32,
-		);
-		const frontIndex = Math.max(1, Math.round(travel * (path.length - 1)));
-		const backIndex = Math.max(0, frontIndex - 2);
-		const visibleTrack = path.slice(backIndex, frontIndex + 1);
-		const leftEdge: Pt[] = [];
-		const rightEdge: Pt[] = [];
-		visibleTrack.forEach((point, index) => {
-			const before = visibleTrack[Math.max(0, index - 1)];
-			const after = visibleTrack[Math.min(visibleTrack.length - 1, index + 1)];
-			const n = normal(norm(sub(after, before)));
-			const along = visibleTrack.length === 1 ? 1 : index / (visibleTrack.length - 1);
-			const liveWobble = (valueNoise(index * 0.7, frame * 0.38, id) - 0.5) * 0.32;
-			const radius = Math.max(0.22, 0.3 + along ** 1.5 * 1.15 + liveWobble);
-			leftEdge.push(add(point, mul(n, radius)));
-			rightEdge.push(add(point, mul(n, -radius)));
-		});
-		const wetMark = leftEdge.concat(rightEdge.reverse());
-		fill(ctx, wetMark, TEAR_WASH, 0.56);
-		const front = visibleTrack.at(-1)!;
+	for (const track of tears.tracks) {
+		fill(ctx, track.mark, TEAR_WASH, 0.56);
 		ctx.save();
 		ctx.fillStyle = TEAR_WASH;
 		ctx.globalAlpha = 0.52;
 		ctx.beginPath();
-		ctx.arc(front.x, front.y, 1.15, 0, TAU);
+		ctx.arc(track.front.x, track.front.y, TEAR_FRONT_RADIUS, 0, TAU);
 		ctx.fill();
 		ctx.restore();
-	};
-	if (pose.cryElapsed !== undefined) {
-		const cryElapsed = pose.cryElapsed;
-		const leftTearOrigin = {
-			x: leftEyeCenter.x + 3.2,
-			y: Math.max(...leftEye.map((point) => point.y)) - 0.35,
-		};
-		const rightTearOrigin = {
-			x: rightEyeCenter.x - 3.2,
-			y: Math.max(...rightEye.map((point) => point.y)) - 0.35,
-		};
-		const leadingTears = [
-			{ delay: 3, duration: 12, route: 0.45, id: 645 },
-			{ delay: 12, duration: 11, route: -0.65, id: 646 },
-		];
-		const followingTears = [
-			{ delay: 6, duration: 10, route: -0.2, id: 648 },
-		];
-		const drawTearSequence = (
-			origin: Pt,
-			side: -1 | 1,
-			sequence: typeof leadingTears,
-		): void => {
-			sequence.forEach((tear) => {
-				drawTearTrack(
-					origin,
-					cryElapsed,
-					tear.delay,
-					tear.duration,
-					side,
-					tear.route,
-					tear.id,
-				);
-			});
-		};
-		drawTearSequence(
-			leftTearOrigin,
-			-1,
-			leftTearsLead ? leadingTears : followingTears,
-		);
-		drawTearSequence(
-			rightTearOrigin,
-			1,
-			leftTearsLead ? followingTears : leadingTears,
-		);
 	}
-	const leftCheek = pose.leftWink * 2 + pose.mouthSmile * 0.6;
-	const rightCheek = pose.rightWink * 2 + pose.mouthSmile * 0.6;
-	stroke(ctx, [
-		{ x: -47 + leftEyeTurn, y: -40 + underEyeFollow - leftCheek * 0.6 },
-		{ x: -38 + leftEyeTurn, y: -35 + underEyeFollow - leftCheek },
-		{ x: -28 + leftEyeTurn, y: -35 + underEyeFollow - leftCheek },
-		{ x: -20 + leftEyeTurn, y: -40 + underEyeFollow - leftCheek * 0.6 },
-	], 632, { width: 1.12, alpha: 0.82 * (1 - pose.leftWink * 0.15), passes: 1, boil: 0.28 });
-	stroke(ctx, [
-		{ x: 21 + rightEyeTurn, y: -35 + underEyeFollow - rightCheek * 0.6 },
-		{ x: 28 + rightEyeTurn, y: -32 + underEyeFollow - rightCheek },
-		{ x: 36 + rightEyeTurn, y: -33 + underEyeFollow - rightCheek },
-		{ x: 41 + rightEyeTurn, y: -37 + underEyeFollow - rightCheek * 0.6 },
-	], 633, { width: 1.02, alpha: 0.76 * (1 - pose.rightWink * 0.15), passes: 1, boil: 0.28 });
-	stroke(ctx, [
-		{ x: -49 + leftEyeTurn, y: -67 - pose.leftBrowLift * 0.5 - pose.leftBrowArch * 0.75 },
-		{ x: -41 + leftEyeTurn, y: -75 - pose.leftBrowLift - pose.leftBrowArch },
-		{ x: -30 + leftEyeTurn, y: -78 - pose.leftBrowLift * 0.7 - pose.leftBrowArch * 0.2 },
-	], 634, { width: 1.55, boil: 0.36 });
-	stroke(ctx, [
-		{ x: 25 + rightEyeTurn, y: -70 - pose.rightBrowLift * 0.7 - pose.rightBrowArch * 0.2 },
-		{ x: 35 + rightEyeTurn, y: -73 - pose.rightBrowLift - pose.rightBrowArch },
-		{ x: 46 + rightEyeTurn, y: -66 - pose.rightBrowLift * 0.5 - pose.rightBrowArch * 0.75 },
-	], 635, { width: 1.38, boil: 0.36 });
-	const noseBridgeX = 9 + turn * 0.35;
-	const noseTipX = -6 + turn * 2.6;
-	stroke(ctx, [
-		{ x: noseBridgeX, y: -42 },
-		{ x: noseBridgeX + 1 + turn * 0.35, y: -22 },
-		{ x: noseBridgeX + 1 + turn * 0.8, y: -5 },
-		{ x: 7 + turn * 1.8, y: 1 },
-		{ x: noseTipX, y: 4 },
-		{ x: -16 + turn * 2.25, y: 2 },
-		{ x: -25 + turn * 2.15, y: -2 },
-	], 636, { width: 1.7, boil: 0.4 });
-	const mouthPurse = pose.mouthPurse;
-	const mouthFrown = pose.mouthFrown;
+	stroke(ctx, head.leftUnderEye, 632, { width: 1.12, alpha: 0.82 * (1 - pose.leftWink * 0.15), passes: 1, boil: 0.28 });
+	stroke(ctx, head.rightUnderEye, 633, { width: 1.02, alpha: 0.76 * (1 - pose.rightWink * 0.15), passes: 1, boil: 0.28 });
+	stroke(ctx, head.leftBrow, 634, { width: 1.55, boil: 0.36 });
+	stroke(ctx, head.rightBrow, 635, { width: 1.38, boil: 0.36 });
+	stroke(ctx, head.nose, 636, { width: 1.7, boil: 0.4 });
 	const mouthSmile = pose.mouthSmile;
-	const leftMouthCurl = Math.max(0, -pose.mouthCurl);
-	const rightMouthCurl = Math.max(0, pose.mouthCurl);
-	const mouthLine: Pt[] = [
-		{ x: -38 + turn * 0.65 + mouthPurse * 10 + leftMouthCurl * 4, y: 15 + pose.mouthTension * 0.8 + mouthFrown * 4.4 - leftMouthCurl * 3.2 },
-		{ x: -17 + turn * 0.8 + mouthPurse * 2 + leftMouthCurl * 1.4, y: 13 - mouthFrown * 1.2 - leftMouthCurl * 1.2 },
-		{ x: 1 + turn - mouthPurse * 2 - rightMouthCurl * 1.4, y: 12 - mouthFrown * 1.4 - rightMouthCurl * 1.2 },
-		{ x: 17 + turn * 1.2 - mouthPurse * 8 - rightMouthCurl * 4, y: 14 - pose.mouthTension * 1.15 + mouthFrown * 4.4 - rightMouthCurl * 3.2 },
-	];
-	// Bend the whole mouth into a shallow smile. Moving only its four anchors
-	// makes a sharp notch; pulling a corner inward makes it hook into the nose.
-	const smilingMouth = mouthSmile > 0 ? densify(mouthLine, false, 4).map((point) => {
-		const t = (point.x - mouthLine[0].x) / (mouthLine.at(-1)!.x - mouthLine[0].x);
-		const u = 1 - t;
-		const smileY = u * u * (14 - leftMouthCurl * 4)
-			+ 2 * u * t * 24
-			+ t * t * (13 - rightMouthCurl * 4);
-		return { x: point.x, y: point.y + (smileY - point.y) * mouthSmile };
-	}) : mouthLine;
-	stroke(ctx, smilingMouth, 637, { width: 1.62, boil: 0.36, wobble: 1 - mouthSmile * 0.35 });
-	stroke(ctx, [{ x: -18, y: 22 + mouthSmile * 3 }, { x: -5, y: 21 + mouthSmile * 3 }], 638, { width: 1.08, alpha: 0.7 * (1 - mouthSmile * 0.35), passes: 1 });
-	stroke(ctx, [{ x: -55, y: 32 }, { x: -39, y: 44 }, { x: -12, y: 51 }, { x: 14, y: 49 }, { x: 43, y: 33 }], 639, { width: 1.5, alpha: 0.7, boil: 0.34 });
-	stroke(ctx, [{ x: -42, y: 49 }, { x: -20, y: 58 }, { x: 2, y: 61 }, { x: 22, y: 56 }, { x: 36, y: 48 }], 640, { width: 1.12, alpha: 0.54, passes: 1, boil: 0.3 });
+	stroke(ctx, head.mouth, 637, { width: 1.62, boil: 0.36, wobble: 1 - mouthSmile * 0.35 });
+	stroke(ctx, head.lowerLip, 638, { width: 1.08, alpha: 0.7 * (1 - mouthSmile * 0.35), passes: 1 });
+	stroke(ctx, head.chin, 639, { width: 1.5, alpha: 0.7, boil: 0.34 });
+	stroke(ctx, head.lowerChin, 640, { width: 1.12, alpha: 0.54, passes: 1, boil: 0.3 });
 	ctx.restore();
 
 	ctx.restore();
@@ -949,24 +1054,30 @@ function drawCuffBand(
 ): void {
 	stroke(ctx, [upperStart, upperEnd], id, { width: 2.1, alpha: 0.82, boil: 0.38, color });
 	stroke(ctx, [lowerStart, lowerEnd], id + 1, { width: 2.1, alpha: 0.82, boil: 0.38, color });
+	stroke(ctx, cuffZigzag(upperStart, upperEnd, lowerStart, lowerEnd), id + 2, { width: 1.4, alpha: 0.76, passes: 1, boil: 0.32, color });
+}
+
+export function cuffZigzag(upperStart: Pt, upperEnd: Pt, lowerStart: Pt, lowerEnd: Pt): Pt[] {
 	const zigzag: Pt[] = [];
 	const teeth = 10;
 	for (let index = 0; index <= teeth * 2; index++) {
 		const t = index / (teeth * 2);
 		zigzag.push(lerp(index % 2 === 0 ? upperStart : lowerStart, index % 2 === 0 ? upperEnd : lowerEnd, t));
 	}
-	stroke(ctx, zigzag, id + 2, { width: 1.4, alpha: 0.76, passes: 1, boil: 0.32, color });
+	return zigzag;
 }
 
-interface CollarGeometry {
+export interface CollarGeometry {
 	chestSkin: Pt[];
+	/** Top of the exposed chest skin, from the left collar contact to the right. */
+	skinTop: Pt[];
 	edge: Pt[];
 	leftContact: Pt;
 	rightContact: Pt;
 	seam: Pt[];
 }
 
-function collarGeometry(pose: Pose): CollarGeometry {
+export function collarGeometry(pose: Pose): CollarGeometry {
 	const shoulderTravel = pose.shoulderY - pose.torsoY;
 	const anchoredY = (offset: number, shoulderWeight: number): number => (
 		pose.torsoY + offset + shoulderTravel * shoulderWeight
@@ -1029,7 +1140,7 @@ function collarGeometry(pose: Pose): CollarGeometry {
 		).slice(1),
 	);
 	const chestSkin = skinTop.concat(edge.slice(1, -1).reverse());
-	return { chestSkin, edge, leftContact, rightContact, seam };
+	return { chestSkin, edge, leftContact, rightContact, seam, skinTop };
 }
 
 const WAVE_FOREARM_LENGTH = 190;
@@ -1037,7 +1148,7 @@ const WAVE_FOREARM_LENGTH = 190;
 const WAVE_WRIST_RADIUS = 72;
 const WAVE_BEND = 2;
 
-interface WaveArm {
+export interface WaveArm {
 	restArm: ArmGeometry;
 	shoulder: Pt;
 	shoulderAngle: number;
@@ -1046,7 +1157,7 @@ interface WaveArm {
 	fingers: number;
 }
 
-interface ArmGeometry {
+export interface ArmGeometry {
 	wave?: WaveArm;
 	attachmentEdge: Pt[];
 	chain: [Pt, Pt, Pt];
@@ -1065,7 +1176,7 @@ interface ArmGeometry {
 	startRadius: number;
 }
 
-function tensionArmGeometry(arm: ArmGeometry, tension: number): ArmGeometry {
+export function tensionArmGeometry(arm: ArmGeometry, tension: number): ArmGeometry {
 	if (tension === 0) return arm;
 	const shiftX = -arm.side * tension * 220;
 	const translate = (point: Pt): Pt => ({ x: point.x + shiftX, y: point.y });
@@ -1102,7 +1213,7 @@ function waveShoulderPoint(point: Pt, shoulder: Pt, angle: number, lift: number)
 	return { x: rotated.x, y: shoulder.y + (rotated.y - shoulder.y) * Math.cos(smoothstep((lift - 0.2) / 0.8) * 0.85) };
 }
 
-function wavingArmGeometry(arm: ArmGeometry, pose: Pose): ArmGeometry {
+export function wavingArmGeometry(arm: ArmGeometry, pose: Pose): ArmGeometry {
 	const lift = arm.side < 0 ? pose.leftWave : pose.rightWave;
 	if (lift <= 0) return arm;
 	const shoulderY = arm.side < 0 ? pose.leftShoulderY : pose.rightShoulderY;
@@ -1134,7 +1245,7 @@ function wavingArmGeometry(arm: ArmGeometry, pose: Pose): ArmGeometry {
 	};
 }
 
-interface WaveGeometry {
+export interface WaveGeometry {
 	upperOuter: Pt[];
 	upperInnerOutline: Pt[];
 	forearmFold: Pt[];
@@ -1145,7 +1256,7 @@ interface WaveGeometry {
 	upperSkin: Pt[];
 }
 
-function waveForearmGeometry(arm: ArmGeometry): WaveGeometry {
+export function waveForearmGeometry(arm: ArmGeometry): WaveGeometry {
 	const { lift, swing, fingers, restArm, shoulder, shoulderAngle } = arm.wave!;
 	const skin = restingSkinContours(restArm);
 	const atY = (points: Pt[], y: number): Pt => {
@@ -1231,7 +1342,7 @@ function clipOutside(ctx: CanvasRenderingContext2D, polygon: Pt[]): void {
 // Above the bust edge, the whole canvas is available to the moving hand.
 // Portraits also expose the source arm's uneven lower edge: preserve that
 // silhouette there without extending its diagonal crop through the scene.
-function clipWaveToBust(ctx: CanvasRenderingContext2D, arm: ArmGeometry): void {
+export function clipWaveToBust(ctx: CanvasRenderingContext2D, arm: ArmGeometry): void {
 	const { restArm, shoulder, shoulderAngle } = arm.wave!;
 	const skin = restingSkinContours(restArm);
 	const lowerSilhouette = skin.outer.concat(skin.inner.slice().reverse())
@@ -1288,13 +1399,13 @@ function drawWavingForearm(ctx: CanvasRenderingContext2D, arm: ArmGeometry, pale
 	ctx.restore();
 }
 
-interface TorsoGeometry {
+export interface TorsoGeometry {
 	collar: CollarGeometry;
 	outline: Pt[];
 	surface: Pt[];
 }
 
-function armGeometry(
+export function armGeometry(
 	pose: Pose,
 	side: -1 | 1,
 ): ArmGeometry {
@@ -1442,7 +1553,7 @@ function armGeometry(
 	};
 }
 
-function torsoGeometry(
+export function torsoGeometry(
 	pose: Pose,
 	collar: CollarGeometry,
 	leftArm: ArmGeometry,
@@ -1550,6 +1661,24 @@ function drawShirtSurface(
 	});
 }
 
+export function bellyFolds(pose: Pose): [Pt[], Pt[]] {
+	const belly = pose.bellySpread;
+	return [
+		quadratic(
+			{ x: pose.centerX - 72 - belly * 0.3, y: pose.torsoY + 296 - pose.breath * 1.1 },
+			{ x: pose.centerX - 18, y: pose.torsoY + 284 - pose.breath * 1.45 },
+			{ x: pose.centerX + 58 + belly * 0.25, y: pose.torsoY + 299 - pose.breath * 0.9 },
+			18,
+		),
+		quadratic(
+			{ x: pose.centerX - 150 - belly * 0.65, y: pose.torsoY + 354 + pose.breath * 0.65 },
+			{ x: pose.centerX + 10, y: pose.torsoY + 327 - pose.breath * 0.35 },
+			{ x: pose.centerX + 138 + belly * 0.55, y: pose.torsoY + 360 + pose.breath * 0.8 },
+			18,
+		),
+	];
+}
+
 function drawTorso(
 	ctx: CanvasRenderingContext2D,
 	pose: Pose,
@@ -1581,19 +1710,9 @@ function drawTorso(
 		color: palette.outlineInk,
 	});
 
-	const belly = pose.bellySpread;
-	stroke(ctx, quadratic(
-		{ x: pose.centerX - 72 - belly * 0.3, y: pose.torsoY + 296 - pose.breath * 1.1 },
-		{ x: pose.centerX - 18, y: pose.torsoY + 284 - pose.breath * 1.45 },
-		{ x: pose.centerX + 58 + belly * 0.25, y: pose.torsoY + 299 - pose.breath * 0.9 },
-		18,
-	), 762, { width: 1.55, alpha: 0.5, boil: 0.24, color: palette.outlineInk });
-	stroke(ctx, quadratic(
-		{ x: pose.centerX - 150 - belly * 0.65, y: pose.torsoY + 354 + pose.breath * 0.65 },
-		{ x: pose.centerX + 10, y: pose.torsoY + 327 - pose.breath * 0.35 },
-		{ x: pose.centerX + 138 + belly * 0.55, y: pose.torsoY + 360 + pose.breath * 0.8 },
-		18,
-	), 763, { width: 1.9, alpha: 0.6, boil: 0.26, color: palette.outlineInk });
+	const [upperFold, lowerFold] = bellyFolds(pose);
+	stroke(ctx, upperFold, 762, { width: 1.55, alpha: 0.5, boil: 0.24, color: palette.outlineInk });
+	stroke(ctx, lowerFold, 763, { width: 1.9, alpha: 0.6, boil: 0.26, color: palette.outlineInk });
 }
 
 function drawArm(

@@ -1,0 +1,26 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import BlonkyLab from '../../components/BlonkyLab.astro';
+---
+
+<Layout title="crapshack (clay blonky)" noIndex={true} fullBleed={true}>
+	<BlonkyLab renderer="clay" />
+</Layout>
+
+<script>
+	import { labStagePattern, registerBlonkyDebugLifecycle } from '../../lib/blonky/debug';
+	import { createClayRenderer } from '../../lib/blonky/clay/renderer';
+
+	registerBlonkyDebugLifecycle({
+		painters: {
+			// The set's board carries the stage's dot grid.
+			clay: (canvas) => createClayRenderer(canvas, { pattern: labStagePattern(canvas) }),
+		},
+	});
+</script>
+
+<style>
+	:global(.weather-container) {
+		display: none;
+	}
+</style>
