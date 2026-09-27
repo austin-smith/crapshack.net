@@ -34,7 +34,11 @@ let mountedRoot: HTMLElement | null = null;
 let mountedPainter: BlonkyPainterFactory | undefined;
 let destroyMountedPage: (() => void) | undefined;
 
-function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory): (() => void) | undefined {
+/**
+ * Mounts the lab on its page, drawn with the painter if given, or with ink
+ * and its fallback note if the painter can't run or has already failed.
+ */
+function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory, failed = false): (() => void) | undefined {
 	const pageCanvas = root.querySelector<HTMLCanvasElement>('[data-blonky-page-canvas]');
 	const playbackButton = root.querySelector<HTMLButtonElement>('[data-blonky-playback]');
 	const playIcon = root.querySelector<HTMLElement>('[data-blonky-playback-icon="play"]');
@@ -120,20 +124,22 @@ function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory): (() 
 	} as const;
 	let painted = false;
 	let animator: BlonkyAnimator | undefined;
-	try {
-		animator = createBlonkyAnimator(canvas, {
-			...animatorOptions,
-			painter: painter && ((target) => {
-				const result = painter(target);
-				painted = result !== undefined;
-				return result;
-			}),
-		});
-	} catch (error) {
-		// Failing partway, even on its first frame, is no different from not
-		// running at all.
-		console.error(error);
-		painted = false;
+	if (!failed) {
+		try {
+			animator = createBlonkyAnimator(canvas, {
+				...animatorOptions,
+				painter: painter && ((target) => {
+					const result = painter(target);
+					painted = result !== undefined;
+					return result;
+				}),
+			});
+		} catch (error) {
+			// Failing partway, even on its first frame, is no different from
+			// not running at all.
+			console.error(error);
+			painted = false;
+		}
 	}
 	// The renderer may have taken the canvas before failing, leaving it no use
 	// to ink, so ink starts again on a fresh one.
@@ -286,6 +292,17 @@ function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory): (() 
 		listeners.abort();
 		animator.destroy();
 	};
+}
+
+/**
+ * Puts the lab's ink fallback in place of a renderer that stopped working
+ * after it started, as when its context couldn't be restored.
+ */
+export function fallBackToInk(canvas: HTMLCanvasElement): void {
+	const root = canvas.closest<HTMLElement>('[data-blonky-page-root]');
+	if (!root || root !== mountedRoot) return;
+	destroyMountedPage?.();
+	destroyMountedPage = initBlonkyPage(root, mountedPainter, true);
 }
 
 const unmountBlonkyPage = (): void => {

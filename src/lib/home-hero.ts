@@ -113,10 +113,14 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 		// turns to clay once the set is up; otherwise it stays in ink.
 		if (!setCanvas || !logo) return 'ink';
 		setCanvas.hidden = false;
+		// If the set or Blonky's clay renderer stops working later (its context
+		// can't be restored), the page goes back to ink.
+		const onFail = (): void => void requestStyle('ink');
 		set = createClaySet(setCanvas, {
 			logo,
 			aphorism: aphorismButton,
 			figure: () => root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]'),
+			onFail,
 		});
 		if (!set) {
 			strikeSet();
@@ -128,6 +132,7 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 				set?.expose(frame, outline);
 				weather?.expose(frame);
 			},
+			onFail,
 		}));
 		if (!painted) {
 			strikeSet();

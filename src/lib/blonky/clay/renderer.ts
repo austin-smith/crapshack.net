@@ -101,6 +101,11 @@ export interface ClayRendererOptions {
 	 */
 	onExpose?: (frame: number, outline: HTMLCanvasElement) => void;
 	/**
+	 * Called if the renderer can no longer draw after it started: its context
+	 * was lost and couldn't be restored.
+	 */
+	onFail?: () => void;
+	/**
 	 * A dot grid on the page behind the canvas, to paint onto the board so the
 	 * set carries the page's pattern. Read each exposure, so it follows the
 	 * canvas as the page lays out.
@@ -272,25 +277,29 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	// The GPU can refuse the renderer's targets without throwing, leaving
 	// nothing drawn. The first frame reports that, so whoever mounted the
 	// renderer falls back to ink rather than show a blank Blonky.
+	const gpuFailed = (): boolean => {
+		const error = gl.getError();
+		return gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION;
+	};
 	let firstFrame = true;
 	const checkFirstFrame = (): void => {
 		if (!firstFrame) return;
 		firstFrame = false;
-		const error = gl.getError();
-		if (gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION) {
-			throw new Error('The clay renderer could not draw its first frame');
-		}
+		if (gpuFailed()) throw new Error('The clay renderer could not draw its first frame');
 	};
 
 	const onContextLost = (event: Event): void => event.preventDefault();
+	// A restore that can't rebuild the renderer, or draw with it, leaves it
+	// with nothing to show: its owner is told, to fall back to ink.
 	const onContextRestored = (): void => {
 		try {
 			setup();
+			if (latest) draw(latest.time, latest.options);
+			if (gpuFailed()) throw new Error('The clay renderer could not be restored');
 		} catch (error) {
 			console.error(error);
-			return;
+			settings.onFail?.();
 		}
-		if (latest) draw(latest.time, latest.options);
 	};
 	canvas.addEventListener('webglcontextlost', onContextLost);
 	canvas.addEventListener('webglcontextrestored', onContextRestored);

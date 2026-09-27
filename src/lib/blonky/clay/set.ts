@@ -24,6 +24,11 @@ export interface ClaySetOptions {
 	aphorism: HTMLElement;
 	/** Blonky's current canvas: his shadow falls from where it sits. */
 	figure: () => HTMLCanvasElement | null;
+	/**
+	 * Called if the set can no longer be drawn after it started: its context
+	 * was lost and couldn't be restored.
+	 */
+	onFail?: () => void;
 }
 
 export interface ClaySet {
@@ -550,14 +555,29 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	void document.fonts?.ready.then(onLayout);
 
 	const onContextLost = (event: Event): void => event.preventDefault();
+	// The GPU can refuse the set's targets without throwing, leaving it
+	// nothing to draw.
+	const gpuFailed = (): boolean => {
+		const error = gl.getError();
+		return gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION;
+	};
 	const onContextRestored = (): void => {
-		setup();
-		// Every target was recreated empty, Blonky's shadow among them, so
-		// shade it again from his last outline and repaint now rather than
-		// wait for an exposure that may not come.
-		if (hasFigure) shadeFigure();
-		cancelScheduled();
-		request = requestAnimationFrame(render);
+		try {
+			setup();
+			// Every target was recreated empty, Blonky's shadow among them, so
+			// shade it again from his last outline and repaint now rather than
+			// wait for an exposure that may not come.
+			if (hasFigure) shadeFigure();
+			cancelScheduled();
+			render();
+			if (gpuFailed()) throw new Error('The clay set could not be restored');
+		} catch (error) {
+			// Without the set the page's own logo and aphorism must show again:
+			// its owner is told, to fall back to ink.
+			console.error(error);
+			destroy();
+			options.onFail?.();
+		}
 	};
 	canvas.addEventListener('webglcontextlost', onContextLost);
 	canvas.addEventListener('webglcontextrestored', onContextRestored);
@@ -578,10 +598,8 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		return;
 	}
 	render();
-	// The GPU can refuse the set's targets without throwing, leaving it
-	// nothing to draw: report that as a failure rather than show a blank wall.
-	const error = gl.getError();
-	if (gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION) {
+	// Report a set that can't draw as a failure rather than show a blank wall.
+	if (gpuFailed()) {
 		destroy();
 		return;
 	}
