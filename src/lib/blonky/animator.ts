@@ -31,6 +31,8 @@ interface BlonkyAnimatorOptions {
 	initiallyPaused?: boolean;
 	onFrame?: (time: number) => void;
 	onPlaybackChange?: (playing: boolean) => void;
+	/** When an emote, or the ease back from one, starts or ends on screen. */
+	onEmotingChange?: (emoting: boolean) => void;
 	showArms?: boolean;
 	showBody?: boolean;
 	showHead?: boolean;
@@ -48,6 +50,8 @@ export interface BlonkyAnimator {
 	isHeadVisible: () => boolean;
 	getShading: () => BlonkyShading;
 	isPlaying: () => boolean;
+	/** Whether an emote, or the ease back from one, is on screen. */
+	isEmoting: () => boolean;
 	pause: () => void;
 	play: () => void;
 	playEmote: (kind: BlonkyEmote) => void;
@@ -71,6 +75,9 @@ interface ActiveEmote {
 
 const mountedCanvases = new Map<HTMLElement, BlonkyAnimator>();
 const BLONKY_EMOTE_EVENT = 'blonky:emote';
+/** Dispatched from a mounted Blonky's root when he starts or stops emoting. */
+export const BLONKY_EMOTING_CHANGE_EVENT = 'blonky:emoting-change';
+export type BlonkyEmotingChangeEvent = CustomEvent<{ emoting: boolean }>;
 const MAX_CANVAS_DIMENSION = 4096;
 const MAX_CANVAS_PIXELS = MAX_CANVAS_DIMENSION ** 2;
 let lifecycleRegistered = false;
@@ -122,6 +129,7 @@ export function createBlonkyAnimator(
 	let resizeObserver: ResizeObserver | undefined;
 	let themeObserver: MutationObserver | undefined;
 	let reportedPlayback: boolean | undefined;
+	let reportedEmoting: boolean | undefined;
 	let palette = resolveBlonkyPalette(canvas);
 	let bodyVisible = options.showBody ?? true;
 	let armsVisible = options.showArms ?? bodyVisible;
@@ -198,6 +206,10 @@ export function createBlonkyAnimator(
 		// Keep the last performance so the lab can seek back through it. Sample
 		// the pose on the same clock as the ink for reproducible exported frames.
 		const emotePose = emotePoseAt(nextFrame / BLONKY_FPS);
+		if ((emotePose !== undefined) !== reportedEmoting) {
+			reportedEmoting = emotePose !== undefined;
+			options.onEmotingChange?.(reportedEmoting);
+		}
 
 		if (painter) {
 			painter.draw(time, {
@@ -448,6 +460,7 @@ export function createBlonkyAnimator(
 		destroy,
 		getPlaybackRate: () => playbackRate,
 		getTime: () => animationTime(),
+		isEmoting: () => emotePoseAt(Math.floor(animationTime() * BLONKY_FPS) / BLONKY_FPS) !== undefined,
 		isArmsVisible: () => armsVisible,
 		isBodyVisible: () => bodyVisible,
 		isHeadVisible: () => headVisible,
@@ -468,33 +481,78 @@ export function createBlonkyAnimator(
 	};
 }
 
+type BlonkyPainterFactory = NonNullable<BlonkyAnimatorOptions['painter']>;
+
+function mountBlonkyCanvas(root: HTMLElement, painter?: BlonkyPainterFactory): BlonkyAnimator | undefined {
+	const canvas = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
+	if (!canvas) return;
+	const view = canvas.dataset.blonkyView === 'bust' ? 'bust' : 'portrait';
+	const animator = createBlonkyAnimator(canvas, {
+		painter,
+		showHead: canvas.dataset.blonkyShowHead !== 'false',
+		view,
+		onEmotingChange: (emoting) => {
+			const change: BlonkyEmotingChangeEvent = new CustomEvent(BLONKY_EMOTING_CHANGE_EVENT, {
+				detail: { emoting },
+				bubbles: true,
+			});
+			root.dispatchEvent(change);
+		},
+	});
+	if (!animator) return;
+
+	const handleEmote = (event: Event): void => {
+		if (!(event instanceof CustomEvent)) return;
+		const kind = event.detail?.kind;
+		if (isBlonkyEmote(kind)) animator.playEmote(kind);
+	};
+	root.addEventListener(BLONKY_EMOTE_EVENT, handleEmote);
+
+	const mounted = {
+		...animator,
+		destroy: () => {
+			root.removeEventListener(BLONKY_EMOTE_EVENT, handleEmote);
+			animator.destroy();
+		},
+	};
+	mountedCanvases.set(root, mounted);
+	return mounted;
+}
+
 export function mountBlonkyCanvases(scope: ParentNode = document): void {
 	for (const root of scope.querySelectorAll<HTMLElement>('[data-blonky-root]')) {
-		if (mountedCanvases.has(root)) continue;
-		const canvas = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
-		if (!canvas) continue;
-		const view = canvas.dataset.blonkyView === 'bust' ? 'bust' : 'portrait';
-		const animator = createBlonkyAnimator(canvas, {
-			showHead: canvas.dataset.blonkyShowHead !== 'false',
-			view,
-		});
-		if (!animator) continue;
-
-		const handleEmote = (event: Event): void => {
-			if (!(event instanceof CustomEvent)) return;
-			const kind = event.detail?.kind;
-			if (isBlonkyEmote(kind)) animator.playEmote(kind);
-		};
-		root.addEventListener(BLONKY_EMOTE_EVENT, handleEmote);
-
-		mountedCanvases.set(root, {
-			...animator,
-			destroy: () => {
-				root.removeEventListener(BLONKY_EMOTE_EVENT, handleEmote);
-				animator.destroy();
-			},
-		});
+		if (!mountedCanvases.has(root)) mountBlonkyCanvas(root);
 	}
+}
+
+/**
+ * Redraws a mounted Blonky with another renderer (ink when `painter` is
+ * omitted), picking up where he was. Only while he's idle: an emote in
+ * progress would be cut short. Returns whether the new renderer took over;
+ * if it can't run here, he stays in ink.
+ */
+export function setBlonkyRenderer(id: string, painter?: BlonkyPainterFactory): boolean {
+	const root = document.querySelector<HTMLElement>(`[data-blonky-id="${CSS.escape(id)}"]`);
+	const current = root && mountedCanvases.get(root);
+	const canvas = root?.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
+	if (!root || !current || !canvas || current.isEmoting()) return false;
+	const time = current.getTime();
+	const rate = current.getPlaybackRate();
+	current.destroy();
+	mountedCanvases.delete(root);
+	// A canvas keeps the kind of context it first handed out, so each
+	// renderer draws on a fresh one.
+	const fresh = canvas.cloneNode(true) as HTMLCanvasElement;
+	canvas.replaceWith(fresh);
+	let painted = false;
+	const next = mountBlonkyCanvas(root, painter && ((target) => {
+		const result = painter(target);
+		painted = result !== undefined;
+		return result;
+	}));
+	next?.seek(time);
+	next?.setPlaybackRate(rate);
+	return painter === undefined || painted;
 }
 
 export function unmountBlonkyCanvases(): void {
@@ -511,6 +569,12 @@ export function setBlonkyPlaybackRate(id: string, rate: number): void {
 	const root = document.querySelector<HTMLElement>(`[data-blonky-id="${CSS.escape(id)}"]`);
 	if (!root) return;
 	mountedCanvases.get(root)?.setPlaybackRate(rate);
+}
+
+export function isBlonkyIdle(id: string): boolean {
+	const root = document.querySelector<HTMLElement>(`[data-blonky-id="${CSS.escape(id)}"]`);
+	const animator = root && mountedCanvases.get(root);
+	return animator ? !animator.isEmoting() : false;
 }
 
 export function releaseBlonkyEmote(id: string): void {

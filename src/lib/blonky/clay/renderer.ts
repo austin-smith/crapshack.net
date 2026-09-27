@@ -87,6 +87,16 @@ const VOLUME_LEVELS = [
 
 export interface ClayRendererOptions {
 	/**
+	 * Draw only the figure, over a clear background, so it sits on the page
+	 * like the ink drawing: no set behind it, and no vignette.
+	 */
+	transparent?: boolean;
+	/**
+	 * After each exposure: its frame number, and the figure's outline (red)
+	 * over the canvas, in its pixels.
+	 */
+	onExpose?: (frame: number, outline: HTMLCanvasElement) => void;
+	/**
 	 * A dot grid on the page behind the canvas, to paint onto the board so the
 	 * set carries the page's pattern. Read each exposure, so it follows the
 	 * canvas as the page lays out.
@@ -108,12 +118,13 @@ export interface ClayBoardPattern {
 
 export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRendererOptions = {}): ClayRenderer | undefined {
 	if (!supportsClay()) return;
+	const transparent = settings.transparent ?? false;
 	const gl = canvas.getContext('webgl2', {
-		alpha: false,
+		alpha: transparent,
 		antialias: false,
 		depth: false,
 		preserveDrawingBuffer: false,
-		premultipliedAlpha: false,
+		premultipliedAlpha: true,
 		stencil: false,
 	});
 	if (!gl || !REQUIRED_EXTENSIONS.every((name) => gl.getExtension(name) !== null)) return;
@@ -335,6 +346,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		gl.useProgram(lightProgram);
 		setShared(lightProgram);
 		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_exposure'), exposureFlicker(frame));
+		gl.uniform1i(gl.getUniformLocation(lightProgram, 'u_transparent'), transparent ? 1 : 0);
 		const pattern = settings.pattern?.();
 		gl.uniform1i(gl.getUniformLocation(lightProgram, 'u_hasPattern'), pattern ? 1 : 0);
 		if (pattern) {
@@ -366,6 +378,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		gl.uniform1f(gl.getUniformLocation(resolveProgram, 'u_frame'), frame);
 		bindTexture(resolveProgram, 'u_image', 0, image.texture);
 		drawTo(null, width, height);
+		settings.onExpose?.(frame, layers.silhouette);
 	};
 
 	return {

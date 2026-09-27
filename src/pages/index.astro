@@ -9,6 +9,9 @@ const logo = '/images/crapshack.png';
 
 <Layout fullBleed lockScroll>
 	<div class="home-hero" data-home-hero-root>
+		<!-- In clay, the page is a set: the wall, logo, and aphorism in clay. -->
+		<canvas class="home-hero__set" data-home-hero-set aria-hidden="true" hidden></canvas>
+		<canvas class="home-hero__weather" data-home-hero-weather aria-hidden="true" hidden></canvas>
 		<div class="home-hero__copy">
 			<img src={logo} alt="crapshack" class="home-hero__logo" width="390" />
 			<Aphorism />
@@ -44,6 +47,58 @@ const logo = '/images/crapshack.png';
 		min-height: 100dvh;
 		overflow: clip;
 		text-align: center;
+	}
+
+	.home-hero__set {
+		position: absolute;
+		z-index: 0;
+		inset: 0;
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	/* In clay, the weather falls in front of everything, as in ink. */
+	.home-hero__weather {
+		position: absolute;
+		z-index: 3;
+		inset: 0;
+		display: block;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
+	}
+
+	.home-hero__set[hidden],
+	.home-hero__weather[hidden] {
+		display: none;
+	}
+
+	:global(body:has([data-home-hero-style='clay']) .weather-container) {
+		display: none;
+	}
+
+	/* In clay, the set draws the logo and aphorism; the page's own stay in
+	   place, unseen, to be read and clicked. */
+	.home-hero[data-home-hero-style='clay'] .home-hero__logo {
+		opacity: 0;
+	}
+
+	.home-hero[data-home-hero-style='clay'] :global([data-aphorism]) {
+		-webkit-text-fill-color: transparent;
+	}
+
+	.home-hero[data-home-hero-style='clay'] :global([data-aphorism] > span) {
+		visibility: hidden;
+	}
+
+	/* His shadow falls on the set's wall instead. */
+	.home-hero[data-home-hero-style='clay'] .home-hero__character {
+		filter: none;
+	}
+
+	.home-hero[data-home-hero-style='clay'] .home-hero__character:focus-visible {
+		filter: drop-shadow(0 0 0.45rem var(--color-subtle));
 	}
 
 	.home-hero__copy {

@@ -1,5 +1,5 @@
 ---
-import { FlaskConical, Gauge, Smile } from '@lucide/astro';
+import { FlaskConical, Gauge, Palette, Smile } from '@lucide/astro';
 import { BLONKY_EMOTES, type BlonkyEmote } from '../lib/blonky';
 import ContextMenu from './ui/ContextMenu.astro';
 
@@ -23,6 +23,10 @@ const emoteItems = Object.entries(BLONKY_EMOTES)
 		label: info.label,
 		value,
 	}));
+const styleItems = [
+	{ label: 'ink', value: 'ink' },
+	{ label: 'clay', value: 'clay' },
+];
 const speedItems = [
 	{ label: '0.25x', value: '0.25' },
 	{ label: '0.50x', value: '0.5' },
@@ -43,6 +47,13 @@ const speedItems = [
 					icon: Gauge,
 					label: 'speed',
 					radioGroup: { name: 'speed', defaultValue: '1', items: speedItems },
+				},
+				// home-hero owns the style: it can only change while Blonky is
+				// idle, and falls back to ink where clay can't run.
+				{
+					icon: Palette,
+					label: 'style',
+					radioGroup: { name: 'style', value: 'ink', items: styleItems },
 				},
 			],
 		},
