@@ -14,9 +14,17 @@ import { DEFAULT_BLONKY_PALETTE, drawBlonky } from './drawing';
 import {
 	BLONKY_FPS,
 	BLONKY_VIEWPORTS,
+	type BlonkyDrawOptions,
 	type BlonkyPalette,
+	type BlonkyShading,
 	type BlonkyView,
 } from './types';
+
+/** An alternate renderer that owns the canvas instead of the ink drawing. */
+export interface BlonkyPainter {
+	destroy: () => void;
+	draw: (time: number, options: BlonkyDrawOptions) => void;
+}
 
 interface BlonkyAnimatorOptions {
 	autoPauseOffscreen?: boolean;
@@ -26,6 +34,8 @@ interface BlonkyAnimatorOptions {
 	showArms?: boolean;
 	showBody?: boolean;
 	showHead?: boolean;
+	/** Replaces the ink drawing; ink remains the fallback if this returns nothing. */
+	painter?: (canvas: HTMLCanvasElement) => BlonkyPainter | undefined;
 	view?: BlonkyView;
 }
 
@@ -36,6 +46,7 @@ export interface BlonkyAnimator {
 	isArmsVisible: () => boolean;
 	isBodyVisible: () => boolean;
 	isHeadVisible: () => boolean;
+	getShading: () => BlonkyShading;
 	isPlaying: () => boolean;
 	pause: () => void;
 	play: () => void;
@@ -46,6 +57,7 @@ export interface BlonkyAnimator {
 	setArmsVisible: (visible: boolean) => void;
 	setBodyVisible: (visible: boolean) => void;
 	setHeadVisible: (visible: boolean) => void;
+	setShading: (shading: BlonkyShading) => void;
 	setPlaybackRate: (rate: number) => void;
 	step: (frames: number) => void;
 }
@@ -85,8 +97,9 @@ export function createBlonkyAnimator(
 	canvas: HTMLCanvasElement,
 	options: BlonkyAnimatorOptions = {},
 ): BlonkyAnimator | undefined {
-	const context = canvas.getContext('2d');
-	if (!context) return;
+	const painter = options.painter?.(canvas);
+	const context = painter ? null : canvas.getContext('2d');
+	if (!painter && !context) return;
 
 	const view = options.view ?? 'bust';
 	const viewport = BLONKY_VIEWPORTS[view];
@@ -114,6 +127,7 @@ export function createBlonkyAnimator(
 	let armsVisible = options.showArms ?? bodyVisible;
 	let armsVisibilityOverridden = options.showArms !== undefined;
 	let headVisible = options.showHead ?? true;
+	let shading: BlonkyShading = 'lit';
 
 	const reportPlayback = (): void => {
 		if (reportedPlayback === running) return;
@@ -185,15 +199,26 @@ export function createBlonkyAnimator(
 		// the pose on the same clock as the ink for reproducible exported frames.
 		const emotePose = emotePoseAt(nextFrame / BLONKY_FPS);
 
-		context.setTransform(canvas.width / viewport.width, 0, 0, canvas.height / viewport.height, 0, 0);
-		drawBlonky(context, time, {
-			palette,
-			emote: emotePose,
-			showArms: armsVisible,
-			showBody: bodyVisible,
-			showHead: headVisible,
-			view,
-		});
+		if (painter) {
+			painter.draw(time, {
+				emote: emotePose,
+				showArms: armsVisible,
+				showBody: bodyVisible,
+				showHead: headVisible,
+				shading,
+				view,
+			});
+		} else if (context) {
+			context.setTransform(canvas.width / viewport.width, 0, 0, canvas.height / viewport.height, 0, 0);
+			drawBlonky(context, time, {
+				palette,
+				emote: emotePose,
+				showArms: armsVisible,
+				showBody: bodyVisible,
+				showHead: headVisible,
+				view,
+			});
+		}
 		lastFrame = nextFrame;
 		options.onFrame?.(time);
 	};
@@ -302,6 +327,13 @@ export function createBlonkyAnimator(
 		draw(animationTime(), true);
 	};
 
+	const setShading = (nextShading: BlonkyShading): void => {
+		if (shading === nextShading) return;
+		shading = nextShading;
+		lastFrame = -1;
+		draw(animationTime(), true);
+	};
+
 	const step = (frames: number): void => {
 		pause();
 		const nextTime = Math.max(0, animationTime() + frames / BLONKY_FPS);
@@ -361,6 +393,7 @@ export function createBlonkyAnimator(
 		resizeObserver?.disconnect();
 		themeObserver?.disconnect();
 		listeners.abort();
+		painter?.destroy();
 	};
 
 	motionPreference.addEventListener('change', (event) => {
@@ -418,6 +451,7 @@ export function createBlonkyAnimator(
 		isArmsVisible: () => armsVisible,
 		isBodyVisible: () => bodyVisible,
 		isHeadVisible: () => headVisible,
+		getShading: () => shading,
 		isPlaying: () => running,
 		pause,
 		play,
@@ -428,6 +462,7 @@ export function createBlonkyAnimator(
 		setArmsVisible,
 		setBodyVisible,
 		setHeadVisible,
+		setShading,
 		setPlaybackRate,
 		step,
 	};

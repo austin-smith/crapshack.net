@@ -11,6 +11,26 @@ export const BLONKY_VIEWPORTS = {
 
 export type BlonkyView = keyof typeof BLONKY_VIEWPORTS;
 
+/**
+ * How a painter shades its figure, for inspecting it: fully lit, or one
+ * part of the picture on its own.
+ */
+export const BLONKY_SHADINGS = {
+	lit: 'lit',
+	even: 'even light',
+	clay: 'grey clay',
+	paint: 'paint',
+	depth: 'depth',
+	normals: 'normals',
+	shadows: 'shadows',
+} as const;
+
+export type BlonkyShading = keyof typeof BLONKY_SHADINGS;
+
+export function isBlonkyShading(value: unknown): value is BlonkyShading {
+	return typeof value === 'string' && Object.hasOwn(BLONKY_SHADINGS, value);
+}
+
 export type BlonkyEmote = 'confirm' | 'cry' | 'deny' | 'nod-off' | 'notice' | 'shrug' | 'shudder' | 'sigh' | 'skeptical' | 'smh' | 'wink' | 'wave';
 
 export interface BlonkyEmoteInfo {
@@ -80,5 +100,7 @@ export interface BlonkyDrawOptions {
 	showArms?: boolean;
 	showBody?: boolean;
 	showHead?: boolean;
+	/** How a painter shades its figure; lit by default. */
+	shading?: BlonkyShading;
 	view?: BlonkyView;
 }
