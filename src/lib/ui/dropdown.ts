@@ -64,21 +64,13 @@ export function initDropdowns(): void {
 	if (initialized) return;
 	initialized = true;
 
-	document.addEventListener('focusout', (event) => {
+	// An open dropdown closes when an option is chosen, on Escape, from its
+	// trigger, or on a press anywhere outside it, but not when focus leaves
+	// it: Safari doesn't focus a clicked button, so pressing an option would
+	// otherwise close the menu before the click could choose it.
+	document.addEventListener('pointerdown', (event) => {
 		if (!(event.target instanceof Element)) return;
-		const dropdown = event.target.closest<HTMLElement>('[data-dropdown]');
-		if (!dropdown) return;
-		if (event.relatedTarget instanceof Node && dropdown.contains(event.relatedTarget)) return;
-		setOpen(dropdown, false);
-	});
-
-	// A press inside an open dropdown keeps focus where it is. Safari, for
-	// one, doesn't focus a clicked button, so the press would otherwise move
-	// focus out of the dropdown and close it before the click lands.
-	document.addEventListener('mousedown', (event) => {
-		if (!(event.target instanceof Element)) return;
-		const dropdown = event.target.closest<HTMLElement>('[data-dropdown]');
-		if (dropdown && getTrigger(dropdown)?.getAttribute('aria-expanded') === 'true') event.preventDefault();
+		closeOtherDropdowns(event.target.closest<HTMLElement>('[data-dropdown]') ?? undefined);
 	});
 
 	document.addEventListener('click', (event) => {
@@ -104,10 +96,7 @@ export function initDropdowns(): void {
 			selectOption(dropdown, option);
 			setOpen(dropdown, false);
 			getTrigger(dropdown)?.focus();
-			return;
 		}
-
-		closeOtherDropdowns();
 	});
 
 	document.addEventListener('keydown', (event) => {
@@ -135,6 +124,9 @@ export function initDropdowns(): void {
 		const options = getOptions(dropdown);
 		const currentIndex = options.indexOf(target as HTMLButtonElement);
 		if (currentIndex < 0) return;
+
+		// Like a native select, an open list keeps focus until it's closed.
+		if (event.key === 'Tab') event.preventDefault();
 
 		let nextIndex: number | undefined;
 		if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % options.length;
