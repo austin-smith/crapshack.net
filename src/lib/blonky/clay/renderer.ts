@@ -49,6 +49,9 @@ const SHADINGS: BlonkyShading[] = ['lit', 'even', 'clay', 'paint', 'depth', 'nor
 const SLEEVE_SOFTEN_SCALE = 4;
 // Shading samples per canvas pixel, along each axis.
 const SUPERSAMPLE = 2;
+// The most pixels shaded per frame: the most the animator gives a canvas, so
+// supersampling gives way before the float targets outgrow graphics memory.
+const MAX_SHADED_PIXELS = 4096 ** 2;
 
 const BLUR_JOBS: BlurJob[] = [
 	// collar, cuffs, eye whites
@@ -339,9 +342,13 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 
 		// The surface and lighting are shaded at twice the canvas's
 		// resolution, then averaged down, which antialiases every edge.
-		// Within the GPU's texture limit: at high densities the canvas alone
-		// can come close to it.
-		const shadeScale = Math.min(SUPERSAMPLE, maxTextureSize / Math.max(width, height));
+		// Within the GPU's texture limit and the pixel budget: at high
+		// densities the canvas alone can come close to either.
+		const shadeScale = Math.min(
+			SUPERSAMPLE,
+			maxTextureSize / Math.max(width, height),
+			Math.sqrt(MAX_SHADED_PIXELS / (width * height)),
+		);
 		const shadeWidth = Math.floor(width * shadeScale);
 		const shadeHeight = Math.floor(height * shadeScale);
 		const surface = target('surface', shadeWidth, shadeHeight, true);
