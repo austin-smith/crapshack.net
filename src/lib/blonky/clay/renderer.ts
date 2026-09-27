@@ -167,8 +167,10 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	let limbTexture: WebGLTexture;
 	const layers: ClayLayers = createClayLayers();
 
-	// The longest side a target can have and still be drawn to whole: within
-	// the texture limit, and within the viewport limit, which may be smaller.
+	// The largest viewport the GPU draws, and the longest side a target can
+	// have and still be drawn to whole: within the texture limit, and within
+	// the viewport limit, which may be smaller.
+	let maxViewport = [0, 0];
 	let maxTargetSize = 0;
 
 	const setup = (): void => {
@@ -183,7 +185,8 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		} = buildPrograms(gl));
 		sources = Array.from({ length: SOURCE_COUNT }, () => createTexture(gl));
 		limbTexture = createTexture(gl);
-		maxTargetSize = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), ...gl.getParameter(gl.MAX_VIEWPORT_DIMS));
+		maxViewport = [...gl.getParameter(gl.MAX_VIEWPORT_DIMS)];
+		maxTargetSize = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE), ...maxViewport);
 	};
 
 	const blur = (job: BlurJob, index: number, pxPerUnit: number, width: number, height: number) => {
@@ -427,10 +430,23 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		gl.uniform2f(gl.getUniformLocation(lightProgram, 'u_texel'), 1 / shadeWidth, 1 / shadeHeight);
 		drawTo(image, shadeWidth, shadeHeight);
 
+		// The canvas's drawing buffer can be larger than one viewport covers
+		// (Firefox doesn't clamp it to the limit), so the resolve paints it in
+		// tiles, each pixel finding its place by its own position.
+		const bufferWidth = gl.drawingBufferWidth;
+		const bufferHeight = gl.drawingBufferHeight;
 		gl.useProgram(resolveProgram);
 		gl.uniform1f(gl.getUniformLocation(resolveProgram, 'u_frame'), frame);
+		gl.uniform2f(gl.getUniformLocation(resolveProgram, 'u_size'), bufferWidth, bufferHeight);
 		bindTexture(resolveProgram, 'u_image', 0, image.texture);
-		drawTo(null, gl.drawingBufferWidth, gl.drawingBufferHeight);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		const [tileWidth, tileHeight] = maxViewport;
+		for (let y = 0; y < bufferHeight; y += tileHeight) {
+			for (let x = 0; x < bufferWidth; x += tileWidth) {
+				gl.viewport(x, y, Math.min(tileWidth, bufferWidth - x), Math.min(tileHeight, bufferHeight - y));
+				gl.drawArrays(gl.TRIANGLES, 0, 3);
+			}
+		}
 	};
 
 	return {

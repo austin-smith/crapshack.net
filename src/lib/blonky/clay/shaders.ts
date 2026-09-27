@@ -1064,13 +1064,14 @@ export const TERMS_FRAGMENT = `#version 300 es
  * Resolves the supersampled frame to the canvas. Sampling the bilinear
  * texture midway between four shading samples averages them, which smooths
  * every edge, inside the figure as well as at its outline. Film grain goes
- * on here, at the canvas's own pixels.
+ * on here, at the canvas's own pixels. Each pixel is placed by its own
+ * position on the canvas, so the canvas can be painted in tiles.
  */
 export const RESOLVE_FRAGMENT = /* glsl */ `#version 300 es
 precision highp float;
 uniform sampler2D u_image;
 uniform float u_frame;
-in vec2 v_uv;
+uniform vec2 u_size;
 out vec4 outColor;
 
 float hash12(vec2 p) {
@@ -1080,7 +1081,7 @@ float hash12(vec2 p) {
 }
 
 void main() {
-	vec3 color = texture(u_image, v_uv).rgb;
+	vec3 color = texture(u_image, gl_FragCoord.xy / u_size).rgb;
 	float grain = hash12(gl_FragCoord.xy + fract(u_frame * 0.618) * 400.0) - 0.5;
 	outColor = vec4(clamp(color + grain * 0.022, 0.0, 1.0), 1.0);
 }
