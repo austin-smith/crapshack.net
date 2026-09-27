@@ -12,7 +12,7 @@ import {
 	type ClayFigure,
 	type ClayLayers,
 } from './figure';
-import { createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, type Target } from './gpu';
+import { CONTEXT_RESTORE_TIMEOUT_MS, createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, type Target } from './gpu';
 import {
 	FILLET_FRAGMENT,
 	HEIGHT_FRAGMENT,
@@ -91,6 +91,21 @@ const VOLUME_LEVELS = [
 
 export interface ClayRendererOptions {
 	/**
+	 * Draw only the figure, over a clear background, so it sits on the page
+	 * like the ink drawing: no set behind it, and no vignette.
+	 */
+	transparent?: boolean;
+	/**
+	 * After each exposure: its frame number, and the figure's outline (red)
+	 * over the canvas, in its pixels.
+	 */
+	onExpose?: (frame: number, outline: HTMLCanvasElement) => void;
+	/**
+	 * Called if the renderer can no longer draw after it started: its context
+	 * was lost and couldn't be restored, or the GPU refused its buffers.
+	 */
+	onFail?: () => void;
+	/**
 	 * A dot grid on the page behind the canvas, to paint onto the board so the
 	 * set carries the page's pattern. Read each exposure, so it follows the
 	 * canvas as the page lays out.
@@ -145,12 +160,13 @@ function canBuildPrograms(): boolean {
 
 export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRendererOptions = {}): ClayRenderer | undefined {
 	if (!supportsClay() || !canBuildPrograms()) return;
+	const transparent = settings.transparent ?? false;
 	const gl = canvas.getContext('webgl2', {
-		alpha: false,
+		alpha: transparent,
 		antialias: false,
 		depth: false,
 		preserveDrawingBuffer: false,
-		premultipliedAlpha: false,
+		premultipliedAlpha: true,
 		stencil: false,
 	});
 	if (!gl || !REQUIRED_EXTENSIONS.every((name) => gl.getExtension(name) !== null)) return;
@@ -258,16 +274,50 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	// The latest exposure asked for, so a restored context can repaint it
 	// even when nothing is animating.
 	let latest: { time: number; options: BlonkyDrawOptions } | undefined;
+	// The GPU can refuse the renderer's targets without throwing, leaving
+	// nothing drawn. Every frame uploads textures, and resizing reallocates
+	// targets, so check after every draw, not just the first one.
+	const gpuFailed = (): boolean => {
+		const error = gl.getError();
+		return gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION;
+	};
+	let firstFrame = true;
+	let failed = false;
+	const checkFrame = (): boolean => {
+		const initial = firstFrame;
+		firstFrame = false;
+		if (!gpuFailed()) return true;
+		const error = new Error('The clay renderer could not draw');
+		if (initial) throw error;
+		fail(error);
+		return false;
+	};
 
-	const onContextLost = (event: Event): void => event.preventDefault();
+	// A lost context that isn't given back in time, or a restore that can't
+	// rebuild the renderer or draw with it, leaves it with nothing to show:
+	// its owner is told, to fall back to ink.
+	let restoreTimer: number | undefined;
+	const fail = (error: unknown): void => {
+		if (failed) return;
+		failed = true;
+		window.clearTimeout(restoreTimer);
+		console.error(error);
+		settings.onFail?.();
+	};
+	const onContextLost = (event: Event): void => {
+		event.preventDefault();
+		restoreTimer = window.setTimeout(() => fail(new Error('The clay renderer\'s context was not restored')), CONTEXT_RESTORE_TIMEOUT_MS);
+	};
 	const onContextRestored = (): void => {
+		window.clearTimeout(restoreTimer);
 		try {
 			setup();
+			firstFrame = true;
+			if (latest) draw(latest.time, latest.options);
+			if (gpuFailed()) throw new Error('The clay renderer could not be restored');
 		} catch (error) {
-			console.error(error);
-			return;
+			fail(error);
 		}
-		if (latest) draw(latest.time, latest.options);
 	};
 	canvas.addEventListener('webglcontextlost', onContextLost);
 	canvas.addEventListener('webglcontextrestored', onContextRestored);
@@ -280,8 +330,12 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	}
 
 	const draw = (time: number, options: BlonkyDrawOptions = {}): void => {
+		if (failed) return;
 		latest = { time, options };
-		if (gl.isContextLost()) return;
+		if (gl.isContextLost()) {
+			if (firstFrame) checkFrame();
+			return;
+		}
 		const view = options.view ?? 'bust';
 		const viewport = BLONKY_VIEWPORTS[view];
 		// Worked at a resolution within the GPU's size limit and the pixel
@@ -403,6 +457,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		gl.useProgram(lightProgram);
 		setShared(lightProgram);
 		gl.uniform1f(gl.getUniformLocation(lightProgram, 'u_exposure'), exposureFlicker(frame));
+		gl.uniform1i(gl.getUniformLocation(lightProgram, 'u_transparent'), transparent ? 1 : 0);
 		const pattern = settings.pattern?.();
 		gl.uniform1i(gl.getUniformLocation(lightProgram, 'u_hasPattern'), pattern ? 1 : 0);
 		if (pattern) {
@@ -447,11 +502,15 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 				gl.drawArrays(gl.TRIANGLES, 0, 3);
 			}
 		}
+		if (!checkFrame()) return;
+		settings.onExpose?.(frame, layers.silhouette);
 	};
 
 	return {
 		draw,
 		destroy: () => {
+			failed = true;
+			window.clearTimeout(restoreTimer);
 			canvas.removeEventListener('webglcontextlost', onContextLost);
 			canvas.removeEventListener('webglcontextrestored', onContextRestored);
 			gl.getExtension('WEBGL_lose_context')?.loseContext();

@@ -28,6 +28,10 @@ export interface SolveLevel {
 // Float targets hold the solved volumes and the surface; filtering them
 // keeps the clay smooth between texels.
 export const REQUIRED_EXTENSIONS = ['EXT_color_buffer_float', 'OES_texture_float_linear'];
+// How long a lost context is waited for. Browsers usually give it back well
+// within a second, but can refuse, as after repeated GPU resets; past this,
+// clay gives way to ink rather than stay blank.
+export const CONTEXT_RESTORE_TIMEOUT_MS = 3000;
 let claySupport: boolean | undefined;
 
 // Probe once on a throwaway canvas: a canvas that has handed out a WebGL

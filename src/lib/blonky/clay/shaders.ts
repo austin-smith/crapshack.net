@@ -722,6 +722,9 @@ uniform float u_filletSharpness;
 uniform sampler2D u_shirtMass;
 uniform float u_shirtSharpness;
 uniform float u_exposure;
+// Draw only the figure, over a clear background, for placing on a page:
+// no set behind it, and no vignette. Output is premultiplied.
+uniform bool u_transparent;
 // A dot grid painted on the board: spacing, dot radius, and the canvas's
 // offset on the grid, in CSS pixels; how the dots tint the board; and CSS
 // pixels per canvas pixel and per shading sample.
@@ -986,6 +989,8 @@ void main() {
 		return;
 	}
 	vec3 color;
+	// How much of this pixel the figure covers, when drawn on its own.
+	float alpha = 1.0;
 
 	if (u_shading == SHADING_EVEN) {
 		// Even light from all around the front of the set. Each surface gets
@@ -1004,7 +1009,9 @@ void main() {
 			color = mix(wall, lit, coverageAt());
 		}
 	} else if (id < 0.5) {
-		color = backdrop(p);
+		// Drawn on its own, the figure leaves the background clear.
+		color = u_transparent ? vec3(0.0) : backdrop(p);
+		alpha = 0.0;
 	} else {
 		bool eye = id == ${float(PIECE.eye)};
 		bool dark = id == ${float(PIECE.brow)} || id == ${float(PIECE.hair)};
@@ -1045,10 +1052,15 @@ void main() {
 		float rim = open ? pow(1.0 - n.z, 3.0) * max(0.0, dot(normalize(n.xy + 1e-4), normalize(vec2(0.9, 0.2)))) : 0.0;
 		lit += FILL * rim * 0.35 * ao;
 		// Blend the clay's edge into the board by its true coverage.
-		color = mix(backdrop(p), lit, coverageAt());
+		alpha = coverageAt();
+		color = u_transparent ? lit : mix(backdrop(p), lit, alpha);
 	}
 
 	color = develop(color, u_exposure);
+	if (u_transparent) {
+		outColor = vec4(clamp(color, 0.0, 1.0) * alpha, alpha);
+		return;
+	}
 	vec2 centered = v_uv - 0.5;
 	color *= 1.0 - 0.28 * dot(centered, centered);
 	outColor = vec4(clamp(color, 0.0, 1.0), 1.0);
@@ -1081,8 +1093,9 @@ float hash12(vec2 p) {
 }
 
 void main() {
-	vec3 color = texture(u_image, gl_FragCoord.xy / u_size).rgb;
+	// Premultiplied: opaque but for a figure drawn on its own.
+	vec4 color = texture(u_image, gl_FragCoord.xy / u_size);
 	float grain = hash12(gl_FragCoord.xy + fract(u_frame * 0.618) * 400.0) - 0.5;
-	outColor = vec4(clamp(color + grain * 0.022, 0.0, 1.0), 1.0);
+	outColor = vec4(clamp(color.rgb + grain * 0.022 * color.a, 0.0, color.a), color.a);
 }
 `;

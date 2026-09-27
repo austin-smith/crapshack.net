@@ -48,6 +48,10 @@ export interface BlonkyAnimator {
 	isHeadVisible: () => boolean;
 	getShading: () => BlonkyShading;
 	isPlaying: () => boolean;
+	/** The emote in progress, if any, so another animator can take it up. */
+	getEmote: () => ActiveEmote | undefined;
+	/** Takes up an emote from another animator, just as it was. */
+	resumeEmote: (emote: ActiveEmote) => void;
 	pause: () => void;
 	play: () => void;
 	playEmote: (kind: BlonkyEmote) => void;
@@ -440,7 +444,14 @@ export function createBlonkyAnimator(
 	});
 
 	configureCanvas();
-	draw(0, true);
+	// A renderer that fails its first frame leaves nothing to show: take
+	// everything down again, and let whoever mounted it recover.
+	try {
+		draw(0, true);
+	} catch (error) {
+		destroy();
+		throw error;
+	}
 	syncPlayback();
 	reportPlayback();
 
@@ -448,6 +459,11 @@ export function createBlonkyAnimator(
 		destroy,
 		getPlaybackRate: () => playbackRate,
 		getTime: () => animationTime(),
+		getEmote: () => emote && { ...emote },
+		resumeEmote: (next) => {
+			emote = { ...next };
+			emoteDirection = next.direction;
+		},
 		isArmsVisible: () => armsVisible,
 		isBodyVisible: () => bodyVisible,
 		isHeadVisible: () => headVisible,
@@ -468,33 +484,89 @@ export function createBlonkyAnimator(
 	};
 }
 
+type BlonkyPainterFactory = NonNullable<BlonkyAnimatorOptions['painter']>;
+
+function mountBlonkyCanvas(root: HTMLElement, painter?: BlonkyPainterFactory): BlonkyAnimator | undefined {
+	const canvas = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
+	if (!canvas) return;
+	const view = canvas.dataset.blonkyView === 'bust' ? 'bust' : 'portrait';
+	const animator = createBlonkyAnimator(canvas, {
+		painter,
+		showHead: canvas.dataset.blonkyShowHead !== 'false',
+		view,
+	});
+	if (!animator) return;
+
+	const handleEmote = (event: Event): void => {
+		if (!(event instanceof CustomEvent)) return;
+		const kind = event.detail?.kind;
+		if (isBlonkyEmote(kind)) animator.playEmote(kind);
+	};
+	root.addEventListener(BLONKY_EMOTE_EVENT, handleEmote);
+
+	const mounted = {
+		...animator,
+		destroy: () => {
+			root.removeEventListener(BLONKY_EMOTE_EVENT, handleEmote);
+			animator.destroy();
+		},
+	};
+	mountedCanvases.set(root, mounted);
+	return mounted;
+}
+
 export function mountBlonkyCanvases(scope: ParentNode = document): void {
 	for (const root of scope.querySelectorAll<HTMLElement>('[data-blonky-root]')) {
-		if (mountedCanvases.has(root)) continue;
-		const canvas = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
-		if (!canvas) continue;
-		const view = canvas.dataset.blonkyView === 'bust' ? 'bust' : 'portrait';
-		const animator = createBlonkyAnimator(canvas, {
-			showHead: canvas.dataset.blonkyShowHead !== 'false',
-			view,
-		});
-		if (!animator) continue;
-
-		const handleEmote = (event: Event): void => {
-			if (!(event instanceof CustomEvent)) return;
-			const kind = event.detail?.kind;
-			if (isBlonkyEmote(kind)) animator.playEmote(kind);
-		};
-		root.addEventListener(BLONKY_EMOTE_EVENT, handleEmote);
-
-		mountedCanvases.set(root, {
-			...animator,
-			destroy: () => {
-				root.removeEventListener(BLONKY_EMOTE_EVENT, handleEmote);
-				animator.destroy();
-			},
-		});
+		if (!mountedCanvases.has(root)) mountBlonkyCanvas(root);
 	}
+}
+
+/**
+ * Redraws a mounted Blonky with another renderer (ink when `painter` is
+ * omitted), picking up where he was, mid-emote included. Returns whether the
+ * new renderer took over; if it can't run here, he stays in ink.
+ */
+export function setBlonkyRenderer(id: string, painter?: BlonkyPainterFactory): boolean {
+	const root = document.querySelector<HTMLElement>(`[data-blonky-id="${CSS.escape(id)}"]`);
+	const current = root && mountedCanvases.get(root);
+	const canvas = root?.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
+	if (!root || !current || !canvas) return false;
+	const time = current.getTime();
+	const rate = current.getPlaybackRate();
+	const emote = current.getEmote();
+	current.destroy();
+	mountedCanvases.delete(root);
+	// A canvas keeps the kind of context it first handed out, so each
+	// renderer draws on a fresh one.
+	const remount = (factory?: BlonkyPainterFactory): boolean => {
+		const previous = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
+		previous?.replaceWith(previous.cloneNode(true));
+		let painted = false;
+		const next = mountBlonkyCanvas(root, factory && ((target) => {
+			const result = factory(target);
+			painted = result !== undefined;
+			return result;
+		}));
+		if (emote) next?.resumeEmote(emote);
+		next?.seek(time);
+		next?.setPlaybackRate(rate);
+		return painted;
+	};
+	if (painter) {
+		try {
+			if (remount(painter)) return true;
+		} catch (error) {
+			// Failing partway, even on its first frame, is no different from
+			// not running at all.
+			console.error(error);
+		}
+		// The renderer may have taken the canvas before failing, leaving it no
+		// use to ink, so ink starts again on another fresh one.
+		mountedCanvases.get(root)?.destroy();
+		mountedCanvases.delete(root);
+	}
+	remount();
+	return !painter;
 }
 
 export function unmountBlonkyCanvases(): void {

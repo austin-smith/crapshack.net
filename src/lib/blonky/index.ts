@@ -5,6 +5,7 @@ export {
 	releaseBlonkyEmote,
 	registerBlonkyCanvasLifecycle,
 	setBlonkyPlaybackRate,
+	setBlonkyRenderer,
 	unmountBlonkyCanvases,
 	type BlonkyAnimator,
 } from './animator';
