@@ -47,11 +47,12 @@ const SOURCE_COUNT = 11;
 const SHADINGS: BlonkyShading[] = ['lit', 'even', 'clay', 'paint', 'depth', 'normals', 'shadows'];
 // Volume texels per texel of the softened sleeve depth.
 const SLEEVE_SOFTEN_SCALE = 4;
-// Shading samples per canvas pixel, along each axis.
+// Shading samples per working pixel, along each axis.
 const SUPERSAMPLE = 2;
-// The most pixels shaded per frame: the most the animator gives a canvas, so
-// supersampling gives way before the float targets outgrow graphics memory.
-const MAX_SHADED_PIXELS = 4096 ** 2;
+// The most pixels worked per frame. Each one costs a texel in every
+// screen-sized layer and target, and SUPERSAMPLE squared in the float
+// shading targets, so this bounds the frame's memory whatever the canvas.
+const MAX_WORK_PIXELS = 2048 ** 2;
 
 const BLUR_JOBS: BlurJob[] = [
 	// collar, cuffs, eye whites
@@ -278,10 +279,14 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		if (gl.isContextLost()) return;
 		const view = options.view ?? 'bust';
 		const viewport = BLONKY_VIEWPORTS[view];
-		// Worked at a resolution within the GPU's texture limit: every
-		// screen-sized layer and target is this size, and only the final pass
-		// scales it to the canvas.
-		const workScale = Math.min(1, maxTextureSize / Math.max(canvas.width, canvas.height));
+		// Worked at a resolution within the GPU's texture limit and the pixel
+		// budget: every screen-sized layer and target is this size, and only
+		// the final pass scales it to the canvas.
+		const workScale = Math.min(
+			1,
+			maxTextureSize / Math.max(canvas.width, canvas.height),
+			Math.sqrt(MAX_WORK_PIXELS / (canvas.width * canvas.height)),
+		);
 		const width = Math.max(1, Math.floor(canvas.width * workScale));
 		const height = Math.max(1, Math.floor(canvas.height * workScale));
 		const px = width / viewport.width;
@@ -340,15 +345,11 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 			gl.uniform2f(gl.getUniformLocation(programRef, 'u_headOffset'), figure.headOffset.x, figure.headOffset.y);
 		};
 
-		// The surface and lighting are shaded at twice the canvas's
+		// The surface and lighting are shaded at twice the working
 		// resolution, then averaged down, which antialiases every edge.
-		// Within the GPU's texture limit and the pixel budget: at high
-		// densities the canvas alone can come close to either.
-		const shadeScale = Math.min(
-			SUPERSAMPLE,
-			maxTextureSize / Math.max(width, height),
-			Math.sqrt(MAX_SHADED_PIXELS / (width * height)),
-		);
+		// Within the GPU's texture limit, which the working size alone can
+		// reach.
+		const shadeScale = Math.min(SUPERSAMPLE, maxTextureSize / Math.max(width, height));
 		const shadeWidth = Math.floor(width * shadeScale);
 		const shadeHeight = Math.floor(height * shadeScale);
 		const surface = target('surface', shadeWidth, shadeHeight, true);
