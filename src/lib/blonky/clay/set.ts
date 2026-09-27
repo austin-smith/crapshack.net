@@ -517,7 +517,10 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	const onContextLost = (event: Event): void => event.preventDefault();
 	const onContextRestored = (): void => {
 		setup();
-		invalidate();
+		// Every target was recreated empty, so repaint now rather than wait
+		// for an exposure that may not come.
+		if (request !== undefined) cancelAnimationFrame(request);
+		request = requestAnimationFrame(render);
 	};
 	canvas.addEventListener('webglcontextlost', onContextLost);
 	canvas.addEventListener('webglcontextrestored', onContextRestored);
