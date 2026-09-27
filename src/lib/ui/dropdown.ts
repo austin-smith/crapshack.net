@@ -72,6 +72,15 @@ export function initDropdowns(): void {
 		setOpen(dropdown, false);
 	});
 
+	// A press inside an open dropdown keeps focus where it is. Safari, for
+	// one, doesn't focus a clicked button, so the press would otherwise move
+	// focus out of the dropdown and close it before the click lands.
+	document.addEventListener('mousedown', (event) => {
+		if (!(event.target instanceof Element)) return;
+		const dropdown = event.target.closest<HTMLElement>('[data-dropdown]');
+		if (dropdown && getTrigger(dropdown)?.getAttribute('aria-expanded') === 'true') event.preventDefault();
+	});
+
 	document.addEventListener('click', (event) => {
 		const target = event.target;
 		if (!(target instanceof Element)) return;
@@ -84,6 +93,7 @@ export function initDropdowns(): void {
 			closeOtherDropdowns(dropdown);
 			setOpen(dropdown, open);
 			if (open) focusOption(dropdown, 'selected');
+			else trigger.focus();
 			return;
 		}
 
