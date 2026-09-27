@@ -478,6 +478,15 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		fallback = undefined;
 	};
 
+	/** Blurs Blonky's outline, as last exposed, into his shadow on the wall. */
+	const shadeFigure = (): void => {
+		const { width, height } = figureCanvas;
+		upload(figureOutline, figureCanvas);
+		// Soften by his size on the page.
+		const sigma = (FIGURE_SOFTNESS * unit * width) / Math.max(1, figureRect.width);
+		figureShadow = gpu.blur('figure', figureOutline, width, height, [sigma, sigma, sigma]).texture;
+	};
+
 	const expose = (nextFrame: number, outline: HTMLCanvasElement): void => {
 		frame = nextFrame;
 		lastExposure = performance.now();
@@ -501,10 +510,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 			const ctx = figureCanvas.getContext('2d')!;
 			ctx.clearRect(0, 0, width, height);
 			ctx.drawImage(outline, inner.width * FIGURE_PAD, inner.height * FIGURE_PAD, inner.width, inner.height);
-			upload(figureOutline, figureCanvas);
-			// Soften by his size on the page.
-			const sigma = (FIGURE_SOFTNESS * unit * width) / Math.max(1, figureRect.width);
-			figureShadow = gpu.blur('figure', figureOutline, width, height, [sigma, sigma, sigma]).texture;
+			shadeFigure();
 			hasFigure = true;
 		}
 		cancelScheduled();
@@ -534,8 +540,10 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	const onContextLost = (event: Event): void => event.preventDefault();
 	const onContextRestored = (): void => {
 		setup();
-		// Every target was recreated empty, so repaint now rather than wait
-		// for an exposure that may not come.
+		// Every target was recreated empty, Blonky's shadow among them, so
+		// shade it again from his last outline and repaint now rather than
+		// wait for an exposure that may not come.
+		if (hasFigure) shadeFigure();
 		cancelScheduled();
 		request = requestAnimationFrame(render);
 	};
