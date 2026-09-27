@@ -108,6 +108,51 @@ Native Enter/Space activation is retained. The delegated listener initializes on
 Toggle is a button, not a form checkbox; use a checkbox for submitted boolean form values.
 The existing `ToggleGroup` is a separate radio selector with its own sliding indicator and `{ value }` change event. It is not interchangeable with independent toggles.
 
+## ContextMenu
+
+```astro
+<ContextMenu
+  id="character-menu"
+  ariaLabel="Character actions"
+  groups={[{
+    items: [
+      // Owns its state.
+      { label: 'speed', radioGroup: { name: 'speed', defaultValue: '1', items: speedItems } },
+      // The page controller owns its state.
+      { label: 'style', radioGroup: { name: 'style', value: 'ink', items: styleItems } },
+    ],
+  }]}
+>
+  <button slot="trigger" type="button">Character</button>
+</ContextMenu>
+```
+
+Choosing an item that has a value dispatches `context-menu-select` from that item. It bubbles, is cancelable, and has `detail: { value, group }`, where `group` names the item's radio group, if any.
+A radio group with `defaultValue` selects the requested value after dispatch unless the event was canceled.
+A radio group with `value` is controlled: the prop supplies the initial selection, and the controller selects values with `setContextMenuRadioValue`. As with `Toggle`, `value` opts into controlled behavior, not client reactivity.
+
+`context-menu-open-change` bubbles from the menu's root with `detail: { open }`. It fires before the menu is shown, so a controller can update items first, and again after the menu closes.
+`setContextMenuRadioGroupDisabled` enables or disables the submenu that holds a radio group. Items can also be disabled statically with `disabled`.
+
+```ts
+import {
+  setContextMenuRadioGroupDisabled,
+  setContextMenuRadioValue,
+  type ContextMenuOpenChangeEvent,
+  type ContextMenuSelectEvent,
+} from '../../lib/ui/context-menu';
+
+root.addEventListener('context-menu-select', ((event: ContextMenuSelectEvent) => {
+  if (event.detail.group !== 'style') return;
+  // Apply the requested application state, then reflect what was applied.
+  setContextMenuRadioValue(root, 'style', applyStyle(event.detail.value));
+}) as EventListener);
+
+root.addEventListener('context-menu-open-change', ((event: ContextMenuOpenChangeEvent) => {
+  if (event.detail.open) setContextMenuRadioGroupDisabled(root, 'style', isBusy());
+}) as EventListener);
+```
+
 ## Slider
 
 ```astro
