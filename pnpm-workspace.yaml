@@ -1,2 +1,6 @@
 minimumReleaseAge: 4320
 blockExoticSubdeps: true
+
+overrides:
+  # serve 14.2.6 pins compression 1.8.1 (GHSA memory leak DoS); drop once serve ships a fix
+  compression: ^1.8.2
