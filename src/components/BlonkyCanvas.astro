@@ -6,6 +6,8 @@ import {
 
 interface Props {
 	class?: string;
+	/** Looks at the pointer, or what the keyboard focuses. */
+	followGaze?: boolean;
 	id: string;
 	label?: string;
 	showHead?: boolean;
@@ -14,6 +16,7 @@ interface Props {
 
 const {
 	class: className,
+	followGaze = false,
 	id,
 	label = 'Blonky, a hand-drawn character at rest',
 	showHead = true,
@@ -26,6 +29,7 @@ const viewport = BLONKY_VIEWPORTS[view];
 	<canvas
 		class="blonky__canvas"
 		data-blonky-canvas
+		data-blonky-gaze={followGaze ? 'true' : undefined}
 		data-blonky-show-head={String(showHead)}
 		data-blonky-view={view}
 		width={viewport.width}

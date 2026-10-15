@@ -1,4 +1,4 @@
-import { BLONKY_VIEWPORTS } from '../types';
+import { BLONKY_VIEW_FRAMING, BLONKY_VIEWPORTS } from '../types';
 import { exposureFlicker } from './figure';
 import { CONTEXT_RESTORE_TIMEOUT_MS, createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, type SolveLevel } from './gpu';
 import {
@@ -335,8 +335,10 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 		work = { width: Math.max(1, Math.floor(width * scale)), height: Math.max(1, Math.floor(height * scale)) };
 		workRatio = pixelRatio * scale;
 		const figure = options.figure();
-		const view = BLONKY_VIEWPORTS.portrait;
-		if (figure) unit = (figure.getBoundingClientRect().width / view.width) * 0.56;
+		if (figure) {
+			unit = (figure.getBoundingClientRect().width / BLONKY_VIEWPORTS.portrait.width)
+				* BLONKY_VIEW_FRAMING.portrait.scale;
+		}
 		const background = parseColor(getComputedStyle(document.body).backgroundColor);
 		wall = background.map((value, index) => toLinear(value) / WALL_LIGHT[index]) as [number, number, number];
 	};

@@ -7,7 +7,7 @@ import {
 	smoothstep,
 } from '../motion';
 import { hash } from '../noise';
-import type { BlonkyEmotePose } from '../types';
+import type { BlonkyEmotePose, BlonkyGaze } from '../types';
 import type { Pt } from './points';
 
 const BEHAVIOR_PHRASE_SECONDS = 16.25;
@@ -15,6 +15,17 @@ const BREATH_CYCLE_SECONDS = 4.5;
 const BREATH_INHALE_SECONDS = 1.5;
 const BREATH_HOLD_SECONDS = 0.25;
 const BREATH_EXHALE_SECONDS = 2.25;
+// How far he moves to look at something at the edge of his view. His eyes
+// have no pupils, so he looks with his whole face: it slides across his head
+// toward what he's watching, in one piece and without turning, so every
+// feature keeps its drawn shape and its distance from the others.
+const GAZE_SHIFT = 3;
+const GAZE_FACE_SHIFT = 9;
+const GAZE_RAISE = 4;
+const GAZE_FACE_RAISE = 4;
+const GAZE_EYE_RAISE = 3.5;
+// Looking up, his brows lift clear of his eyes.
+const GAZE_BROW_RAISE = 3;
 
 export interface Pose {
 	centerX: number;
@@ -34,6 +45,7 @@ export interface Pose {
 	headAngle: number;
 	headEmoteAngle: number;
 	headTurn: number;
+	faceLookX: number;
 	faceLookY: number;
 	eyeLookY: number;
 	breath: number;
@@ -95,9 +107,13 @@ function breathAt(time: number): number {
 	return 0;
 }
 
-export function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
+export function poseAtRest(time: number, emote?: BlonkyEmotePose, gaze?: BlonkyGaze): Pose {
 	const behavior = idleBehaviorAt(time);
 	const emoteOffset = sampleBlonkyEmoteOffset(emote);
+	// An emote has his whole attention; he looks about again as it ends.
+	const attention = Math.max(0, 1 - emoteOffset.presence);
+	const lookX = (gaze?.x ?? 0) * attention;
+	const lookY = (gaze?.y ?? 0) * attention;
 	const idleBehaviorWeight = 1 - emoteOffset.presence * 0.85;
 	const breathDepth = 1 + behavior.deepBreath * 0.45 * idleBehaviorWeight;
 	const breath = breathAt(time) * breathDepth;
@@ -140,21 +156,22 @@ export function poseAtRest(time: number, emote?: BlonkyEmotePose): Pose {
 		torsoY,
 		leftShoulderY,
 		rightShoulderY,
-		headX: centerX - 5 + Math.sin(swayPhase - 0.43) * 1.45 + behavior.headCorrection * 1.2 * idleBehaviorWeight + emoteOffset.headX,
-		headY: 295 - shoulderBreath * 0.35 + emoteOffset.headY,
+		headX: centerX - 5 + Math.sin(swayPhase - 0.43) * 1.45 + behavior.headCorrection * 1.2 * idleBehaviorWeight + emoteOffset.headX + lookX * GAZE_SHIFT,
+		headY: 295 - shoulderBreath * 0.35 + emoteOffset.headY + lookY * GAZE_RAISE,
 		headAngle: -0.024 + Math.sin(swayPhase - 0.48) * 0.009 + behavior.headCorrection * 0.008 * idleBehaviorWeight,
 		headEmoteAngle: emoteOffset.headAngle,
 		headTurn: Math.sin(time * 0.7 - 0.4) * 0.24 + behavior.headCorrection * 0.82 * idleBehaviorWeight + emoteOffset.headTurn,
-		faceLookY: emoteOffset.faceLookY,
-		eyeLookY: emoteOffset.eyeLookY,
+		faceLookX: lookX * GAZE_FACE_SHIFT,
+		faceLookY: emoteOffset.faceLookY + lookY * GAZE_FACE_RAISE,
+		eyeLookY: emoteOffset.eyeLookY + lookY * GAZE_EYE_RAISE,
 		breath: breath * 1.5,
 		bellySpread: breath * 6.2 + emoteOffset.bellySpread,
 		mouthPurse: emoteOffset.mouthPurse,
 		mouthTension: behavior.mouthSet * idleBehaviorWeight + emoteOffset.mouthTension,
 		mouthFrown: emoteOffset.mouthFrown,
 		mouthSmile: emoteOffset.mouthSmile,
-		leftBrowLift: emoteOffset.leftBrowLift,
-		rightBrowLift: emoteOffset.rightBrowLift,
+		leftBrowLift: emoteOffset.leftBrowLift + Math.max(0, -lookY) * GAZE_BROW_RAISE,
+		rightBrowLift: emoteOffset.rightBrowLift + Math.max(0, -lookY) * GAZE_BROW_RAISE,
 		leftBrowArch: emoteOffset.leftBrowArch,
 		rightBrowArch: emoteOffset.rightBrowArch,
 		mouthCurl: emoteOffset.mouthCurl,

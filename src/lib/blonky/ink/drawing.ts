@@ -1,7 +1,7 @@
 import { poseAtRest } from '../geometry';
 import {
-	BLONKY_BUST_WIDTH,
 	BLONKY_FPS,
+	BLONKY_VIEW_FRAMING,
 	BLONKY_VIEWPORTS,
 	type BlonkyDrawOptions,
 } from '../types';
@@ -19,16 +19,13 @@ export function drawBlonky(ctx: CanvasRenderingContext2D, time: number, options:
 	const viewport = BLONKY_VIEWPORTS[view];
 	const palette = options.palette ?? DEFAULT_BLONKY_PALETTE;
 	ctx.clearRect(0, 0, viewport.width, viewport.height);
-	const pose = poseAtRest(inkTime, options.emote);
+	const pose = poseAtRest(inkTime, options.emote, options.gaze);
 	const showBody = options.showBody !== false;
 	const showArms = options.showArms ?? showBody;
+	const framing = BLONKY_VIEW_FRAMING[view];
 	ctx.save();
-	if (view === 'debug') {
-		ctx.translate((viewport.width - BLONKY_BUST_WIDTH) / 2, 0);
-	} else if (view === 'portrait') {
-		ctx.translate(8, -5);
-		ctx.scale(0.56, 0.56);
-	}
+	ctx.translate(framing.x, framing.y);
+	ctx.scale(framing.scale, framing.scale);
 	const foreground = showArms || showBody ? drawUpperBody(ctx, pose, palette, showArms, showBody) : undefined;
 	if (options.showHead !== false) drawHead(ctx, pose, palette.outlineInk);
 	foreground?.();

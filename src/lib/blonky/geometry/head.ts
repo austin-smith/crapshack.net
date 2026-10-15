@@ -152,7 +152,7 @@ export function headGeometry(pose: Pose): HeadGeometry {
 		angle: pose.headAngle + pose.headEmoteAngle,
 		offset: { x: pose.headX - pivot.x, y: pose.headY - pivot.y },
 		scale: { x: 2.05, y: 1.9 },
-		face: { x: turn * 1.15, y: pose.faceLookY },
+		face: { x: turn * 1.15 + pose.faceLookX, y: pose.faceLookY },
 		skull,
 		outerHead,
 		hairs,

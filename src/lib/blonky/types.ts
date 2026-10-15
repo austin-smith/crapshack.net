@@ -13,6 +13,13 @@ export const BLONKY_VIEWPORTS = {
 
 export type BlonkyView = keyof typeof BLONKY_VIEWPORTS;
 
+/** Where the bust sits in each view: its offset, in view units, and its scale. */
+export const BLONKY_VIEW_FRAMING: Readonly<Record<BlonkyView, { x: number; y: number; scale: number }>> = {
+	bust: { x: 0, y: 0, scale: 1 },
+	debug: { x: (BLONKY_VIEWPORTS.debug.width - BLONKY_BUST_WIDTH) / 2, y: 0, scale: 1 },
+	portrait: { x: 8, y: -5, scale: 0.56 },
+};
+
 /**
  * How a painter shades its figure, for inspecting it: fully lit, or one
  * part of the picture on its own.
@@ -111,9 +118,19 @@ export interface BlonkyPalette {
 	shirtTextureInk: string;
 }
 
+/**
+ * Which way Blonky is looking, from straight out at the viewer (0, 0): x
+ * across the screen and y down it, each from -1 to 1.
+ */
+export interface BlonkyGaze {
+	x: number;
+	y: number;
+}
+
 export interface BlonkyDrawOptions {
 	palette?: BlonkyPalette;
 	emote?: BlonkyEmotePose;
+	gaze?: BlonkyGaze;
 	showArms?: boolean;
 	showBody?: boolean;
 	showHead?: boolean;

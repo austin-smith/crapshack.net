@@ -1,5 +1,5 @@
 import type { BlonkyPainter } from '../animator';
-import { BLONKY_BUST_WIDTH, BLONKY_FPS, BLONKY_VIEWPORTS, type BlonkyDrawOptions, type BlonkyShading } from '../types';
+import { BLONKY_FPS, BLONKY_VIEW_FRAMING, BLONKY_VIEWPORTS, type BlonkyDrawOptions, type BlonkyShading } from '../types';
 import {
 	createClayLayers,
 	HEAD_FILLET,
@@ -349,19 +349,16 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		const width = Math.max(1, Math.floor(canvas.width * workScale));
 		const height = Math.max(1, Math.floor(canvas.height * workScale));
 		const px = width / viewport.width;
-		// Match the ink drawing's framing for each view.
-		const viewScale = view === 'portrait' ? 0.56 : 1;
-		const viewOffset = view === 'debug'
-			? { x: (viewport.width - BLONKY_BUST_WIDTH) / 2, y: 0 }
-			: view === 'portrait' ? { x: 8, y: -5 } : { x: 0, y: 0 };
-		const pxPerUnit = px * viewScale;
-		const origin = { x: viewOffset.x * px, y: viewOffset.y * px };
+		const framing = BLONKY_VIEW_FRAMING[view];
+		const pxPerUnit = px * framing.scale;
+		const origin = { x: framing.x * px, y: framing.y * px };
 		const frame = Math.floor(time * BLONKY_FPS);
 
 		// The clay figure is one sculpture, so it ignores the ink lab's
 		// part-by-part visibility.
 		const figure = sculptBlonky(layers, frame / BLONKY_FPS, {
 			emote: options.emote,
+			gaze: options.gaze,
 			origin,
 			pxPerUnit,
 			width,

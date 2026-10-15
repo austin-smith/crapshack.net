@@ -19,7 +19,7 @@ import {
 	type Pt,
 } from '../geometry';
 import { valueNoise } from '../noise';
-import { BLONKY_BUST_HEIGHT, type BlonkyEmotePose } from '../types';
+import { BLONKY_BUST_HEIGHT, type BlonkyEmotePose, type BlonkyGaze } from '../types';
 
 /**
  * Blonky as a clay puppet, rebuilt from the ink pose every exposure.
@@ -608,6 +608,7 @@ function ellipse(center: Pt, rx: number, ry: number, count = 20): Pt[] {
 
 interface SculptOptions {
 	emote?: BlonkyEmotePose;
+	gaze?: BlonkyGaze;
 	/** Bust-space origin and scale for the current view, in canvas pixels. */
 	origin: Pt;
 	pxPerUnit: number;
@@ -618,7 +619,7 @@ interface SculptOptions {
 
 export function sculptBlonky(layers: ClayLayers, time: number, options: SculptOptions): ClayFigure {
 	const { frame, origin, pxPerUnit: k, width, height } = options;
-	const pose: Pose = poseAtRest(time, options.emote);
+	const pose: Pose = poseAtRest(time, options.emote, options.gaze);
 	const { collar, leftArm, rightArm, torso } = bodyGeometry(pose);
 	const head = headGeometry(pose);
 
