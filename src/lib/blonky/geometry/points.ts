@@ -103,14 +103,23 @@ export function quadratic(a: Pt, control: Pt, b: Pt, count = 18): Pt[] {
 	});
 }
 
-export function throughJoint(chain: [Pt, Pt, Pt]): Pt[] {
+/**
+ * Samples a limb through its joint. Each straight part gets a fixed number of
+ * segments, so a limb whose length breathes keeps the same samples from one
+ * drawing to the next.
+ */
+export function throughJoint(chain: [Pt, Pt, Pt], segments: [number, number]): Pt[] {
 	const [start, joint, end] = chain;
 	const intoJoint = lerp(start, joint, 0.72);
 	const outOfJoint = lerp(joint, end, 0.28);
-	return densify([start, intoJoint], false, 5)
+	const divide = (a: Pt, b: Pt, count: number): Pt[] => [
+		...Array.from({ length: count }, (_, index) => lerp(a, b, index / count)),
+		b,
+	];
+	return divide(start, intoJoint, segments[0])
 		.slice(0, -1)
 		.concat(quadratic(intoJoint, joint, outOfJoint, 8))
-		.concat(densify([outOfJoint, end], false, 5).slice(1));
+		.concat(divide(outOfJoint, end, segments[1]).slice(1));
 }
 
 export function rotateAbout(point: Pt, pivot: Pt, angle: number): Pt {
