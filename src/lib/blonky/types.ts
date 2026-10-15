@@ -5,10 +5,13 @@ export const BLONKY_BUST_HEIGHT = 800;
 export const BLONKY_FPS = 8;
 export const BLONKY_EMOTE_TRANSITION_FRAMES = 2;
 
+// His forearms bow out past his sleeves, so his ink reaches about 21 units
+// beyond either side of the bust. The debug and portrait views leave room
+// for it, so neither crops his arms.
 export const BLONKY_VIEWPORTS = {
 	bust: { width: BLONKY_BUST_WIDTH, height: BLONKY_BUST_HEIGHT },
-	debug: { width: 940, height: BLONKY_BUST_HEIGHT },
-	portrait: { width: 520, height: 520 },
+	debug: { width: 980, height: BLONKY_BUST_HEIGHT },
+	portrait: { width: 544, height: 520 },
 } as const;
 
 export type BlonkyView = keyof typeof BLONKY_VIEWPORTS;
@@ -17,7 +20,7 @@ export type BlonkyView = keyof typeof BLONKY_VIEWPORTS;
 export const BLONKY_VIEW_FRAMING: Readonly<Record<BlonkyView, { x: number; y: number; scale: number }>> = {
 	bust: { x: 0, y: 0, scale: 1 },
 	debug: { x: (BLONKY_VIEWPORTS.debug.width - BLONKY_BUST_WIDTH) / 2, y: 0, scale: 1 },
-	portrait: { x: 8, y: -5, scale: 0.56 },
+	portrait: { x: 20, y: -5, scale: 0.56 },
 };
 
 /**
