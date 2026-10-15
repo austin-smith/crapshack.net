@@ -3,8 +3,10 @@ import BlonkyCanvas from '../components/BlonkyCanvas.astro';
 import BlonkyContextMenu from '../components/BlonkyContextMenu.astro';
 import Aphorism from '../components/Aphorism.astro';
 import Layout from '../layouts/Layout.astro';
+import { BLONKY_VIEWPORTS } from '../lib/blonky/types';
 
 const logo = '/images/crapshack.png';
+const portrait = BLONKY_VIEWPORTS.portrait;
 ---
 
 <Layout fullBleed lockScroll>
@@ -24,6 +26,7 @@ const logo = '/images/crapshack.png';
 				class="home-hero__character"
 				data-home-hero-character
 				aria-label="Give Blonky another thought"
+				style={`--home-hero-character-aspect: ${portrait.width / portrait.height}`}
 			>
 				<BlonkyCanvas
 					id="home-blonky"
@@ -125,12 +128,13 @@ const logo = '/images/crapshack.png';
 		z-index: 1;
 		bottom: 0;
 		left: 50%;
-		/* Account for the portrait canvas's transparent padding as the viewport grows. */
-		width: clamp(
+		/* Account for the portrait canvas's transparent padding as the viewport grows.
+		   These sizes are the canvas's height; its width follows its aspect. */
+		width: calc(clamp(
 			46rem,
 			max(92svh, calc(139svh - 34.25rem)),
 			114rem
-		);
+		) * var(--home-hero-character-aspect));
 		margin: 0;
 		padding: 0;
 		transform: translate(-50%, 21%);
@@ -183,7 +187,7 @@ const logo = '/images/crapshack.png';
 			bottom: auto;
 			left: auto;
 			flex: none;
-			width: min(44rem, 170vw);
+			width: calc(min(44rem, 170vw) * var(--home-hero-character-aspect));
 			margin-top: -1.5rem;
 			transform: none;
 		}
@@ -217,7 +221,7 @@ const logo = '/images/crapshack.png';
 			top: clamp(12rem, 38svh, 15.5rem);
 			bottom: auto;
 			left: 50%;
-			width: min(60rem, 110svh, calc(33svh + 30rem));
+			width: calc(min(60rem, 110svh, calc(33svh + 30rem)) * var(--home-hero-character-aspect));
 			margin-top: 0;
 			transform: translate(-50%, -7%);
 		}

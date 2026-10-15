@@ -8,7 +8,7 @@ import Dropdown from './ui/Dropdown.astro';
 import Tooltip from './ui/Tooltip.astro';
 import { buttonVariants } from './ui/button';
 import { BLONKY_EMOTES } from '../lib/blonky';
-import { BLONKY_SHADINGS } from '../lib/blonky/types';
+import { BLONKY_SHADINGS, BLONKY_VIEWPORTS } from '../lib/blonky/types';
 
 interface Props {
 	/** Ink draws on a 2D canvas; clay renders the same poses in WebGL. */
@@ -23,6 +23,7 @@ const restLabels = {
 	ink: 'Blonky, a large hand-drawn character',
 };
 const restLabel = restLabels[renderer];
+const viewport = BLONKY_VIEWPORTS.debug;
 const renderers = [
 	{ value: 'ink', label: 'ink', href: '/blonky' },
 	{ value: 'clay', label: 'clay', href: '/blonky/clay' },
@@ -49,8 +50,9 @@ const renderers = [
 				<canvas
 					id="blonky-drawing"
 					data-blonky-page-canvas
-					width="940"
-					height="800"
+					width={viewport.width}
+					height={viewport.height}
+					style={`aspect-ratio: ${viewport.width} / ${viewport.height}`}
 					role="img"
 					aria-label={restLabel}
 					data-blonky-fallback-label={renderer === 'ink' ? undefined : restLabels.ink}
@@ -340,7 +342,6 @@ const renderers = [
 		display: block;
 		width: 100%;
 		height: auto;
-		aspect-ratio: 47 / 40;
 	}
 
 	fieldset {
