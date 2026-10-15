@@ -17,18 +17,19 @@
     "tag:version": "v=$(node -p \"require('./package.json').version\") && git tag v$v && git push origin v$v"
   },
   "dependencies": {
-    "@lucide/astro": "^1.28.0",
-    "astro": "^7.1.6",
+    "@lucide/astro": "^1.52.0",
+    "astro": "^7.3.7",
     "serve": "^14.2.6"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
-    "@tailwindcss/vite": "^4.3.0",
-    "@typescript-eslint/eslint-plugin": "^8.65.0",
-    "@typescript-eslint/parser": "^8.65.0",
-    "eslint": "^10.4.0",
-    "eslint-plugin-astro": "^3.0.1",
-    "tailwindcss": "^4.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.19.1",
+    "@typescript-eslint/eslint-plugin": "^8.71.1",
+    "@typescript-eslint/parser": "^8.71.1",
+    "eslint": "^10.12.0",
+    "eslint-plugin-astro": "^3.2.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@10.27.0+sha512.72d699da16b1179c14ba9e64dc71c9a40988cbdc65c264cb0e489db7de917f20dcf4d64d8723625f2969ba52d4b7e2a1170682d9ac2a5dcaeaab732b7e16f04a"
