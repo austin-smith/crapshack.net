@@ -1,10 +1,10 @@
 import { heldEnvelope, INK_FRAME_SECONDS } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import { BLONKY_FPS, type BlonkyEmoteDefinition, type BlonkyEmoteSample } from '../types';
 
 export const CRY_LINGER_FRAMES = 8;
-export const CRY_DURATION_FRAMES = 26 + CRY_LINGER_FRAMES;
+const CRY_DURATION_FRAMES = 26 + CRY_LINGER_FRAMES;
 
-export function sampleCryEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleCryEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	// The expression crumples before the body gives way. One eye wells up a frame
 	// before the other, then two uneven catches in the breath lift the shoulders.
 	const grief = heldEnvelope(
@@ -63,3 +63,10 @@ export function sampleCryEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteO
 		rightEyeOpen: 1 - grief * 0.72 - catchBreath * 0.05,
 	};
 }
+
+export const cryEmote: BlonkyEmoteDefinition = {
+	label: 'cry',
+	duration: CRY_DURATION_FRAMES / BLONKY_FPS,
+	menuIcon: '😢',
+	sample: sampleCryEmote,
+};

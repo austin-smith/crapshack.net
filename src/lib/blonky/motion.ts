@@ -1,3 +1,4 @@
+import { hash } from './noise';
 import { BLONKY_FPS } from './types';
 
 export const INK_FRAME_SECONDS = 1 / BLONKY_FPS;
@@ -7,12 +8,6 @@ const BLINK_PHRASE_SECONDS = 8.75;
 export interface BlinkPose {
 	leftEyeOpen: number;
 	rightEyeOpen: number;
-}
-
-export function hash(seed: number, a: number, b = 0): number {
-	let n = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) + Math.imul(a, 0xc2b2ae35) + Math.imul(b, 0x27d4eb2f);
-	n = Math.imul(n ^ (n >>> 15), 0x85ebca6b);
-	return ((n ^ (n >>> 13)) >>> 0) / 4294967296;
 }
 
 export function smoothstep(value: number): number {

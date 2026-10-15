@@ -6,11 +6,13 @@ import {
 	isBlonkyEmote,
 	sampleBlonkyEmoteOffset,
 	type BlonkyEmote,
-	type BlonkyEmoteInfo,
+	type BlonkyEmoteDefinition,
 	type BlonkyEmoteOffset,
 	type BlonkyEmotePose,
 } from './emotes';
-import { DEFAULT_BLONKY_PALETTE, drawBlonky } from './drawing';
+import { createBlonkyGaze } from './gaze';
+import { drawBlonky } from './ink/drawing';
+import { DEFAULT_BLONKY_PALETTE } from './ink/palette';
 import {
 	BLONKY_FPS,
 	BLONKY_VIEWPORTS,
@@ -28,6 +30,8 @@ export interface BlonkyPainter {
 
 interface BlonkyAnimatorOptions {
 	autoPauseOffscreen?: boolean;
+	/** Looks at the pointer, or what the keyboard focuses, while he's animating. */
+	followGaze?: boolean;
 	initiallyPaused?: boolean;
 	onFrame?: (time: number) => void;
 	onPlaybackChange?: (playing: boolean) => void;
@@ -132,6 +136,7 @@ export function createBlonkyAnimator(
 	let armsVisibilityOverridden = options.showArms !== undefined;
 	let headVisible = options.showHead ?? true;
 	let shading: BlonkyShading = 'lit';
+	const gazeTracker = options.followGaze ? createBlonkyGaze(canvas, view) : undefined;
 
 	const reportPlayback = (): void => {
 		if (reportedPlayback === running) return;
@@ -156,16 +161,16 @@ export function createBlonkyAnimator(
 				transitionFrom: emote.transitionFrom,
 			};
 		}
-		const emoteInfo: BlonkyEmoteInfo = BLONKY_EMOTES[emote.kind];
-		const holds = emoteInfo.holds === true;
-		if (emoteElapsed >= Math.max(emoteInfo.duration, blonkyTransitionSeconds(emote.transitionFrom)) && !holds) return;
+		const definition: BlonkyEmoteDefinition = BLONKY_EMOTES[emote.kind];
+		const holds = definition.holds === true;
+		if (emoteElapsed >= Math.max(definition.duration, blonkyTransitionSeconds(emote.transitionFrom)) && !holds) return;
 		return {
 			kind: emote.kind,
-			elapsed: holds ? Math.min(emoteElapsed, emoteInfo.duration) : emoteElapsed,
+			elapsed: holds ? Math.min(emoteElapsed, definition.duration) : emoteElapsed,
 			direction: emote.direction,
-			heldElapsed: !holds || emoteElapsed <= emoteInfo.duration
+			heldElapsed: !holds || emoteElapsed <= definition.duration
 				? undefined
-				: emoteElapsed - emoteInfo.duration,
+				: emoteElapsed - definition.duration,
 			transitionFrom: emote.transitionFrom,
 		};
 	};
@@ -202,10 +207,15 @@ export function createBlonkyAnimator(
 		// Keep the last performance so the lab can seek back through it. Sample
 		// the pose on the same clock as the ink for reproducible exported frames.
 		const emotePose = emotePoseAt(nextFrame / BLONKY_FPS);
+		// His look moves on with each new drawing, and holds while he's still.
+		// Reduced motion keeps him looking straight out.
+		if (running && nextFrame !== lastFrame) gazeTracker?.step();
+		const gaze = !reducedMotion || reducedMotionOverride ? gazeTracker?.current() : undefined;
 
 		if (painter) {
 			painter.draw(time, {
 				emote: emotePose,
+				gaze,
 				showArms: armsVisible,
 				showBody: bodyVisible,
 				showHead: headVisible,
@@ -217,6 +227,7 @@ export function createBlonkyAnimator(
 			drawBlonky(context, time, {
 				palette,
 				emote: emotePose,
+				gaze,
 				showArms: armsVisible,
 				showBody: bodyVisible,
 				showHead: headVisible,
@@ -354,6 +365,8 @@ export function createBlonkyAnimator(
 			? sampleBlonkyEmoteOffset(outgoingPose)
 			: undefined;
 		emoteDirection = emoteDirection === -1 ? 1 : -1;
+		// He plays to the visitor, and looks back to them afterward.
+		gazeTracker?.lookAtVisitor();
 		emote = {
 			kind,
 			direction: emoteDirection,
@@ -376,6 +389,7 @@ export function createBlonkyAnimator(
 		const time = Math.floor(animationTime() * BLONKY_FPS) / BLONKY_FPS;
 		const outgoingPose = emotePoseAt(time);
 		if (!outgoingPose || outgoingPose.kind === 'rest') return;
+		gazeTracker?.lookAtVisitor();
 		emote = {
 			kind: 'rest',
 			direction: outgoingPose.direction,
@@ -491,6 +505,7 @@ function mountBlonkyCanvas(root: HTMLElement, painter?: BlonkyPainterFactory): B
 	if (!canvas) return;
 	const view = canvas.dataset.blonkyView === 'bust' ? 'bust' : 'portrait';
 	const animator = createBlonkyAnimator(canvas, {
+		followGaze: canvas.dataset.blonkyGaze === 'true',
 		painter,
 		showHead: canvas.dataset.blonkyShowHead !== 'false',
 		view,

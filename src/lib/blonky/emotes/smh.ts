@@ -1,7 +1,7 @@
 import { heldEnvelope, INK_FRAME_SECONDS } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteSample } from '../types';
 
-export function sampleSmhEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleSmhEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	// Facial tension precedes four overlapping yaw sweeps. Torso offsets begin
 	// after head yaw approaches zero.
 	const judgment = heldEnvelope(elapsed, 0, 0.25, 1.5, 0.375);
@@ -49,3 +49,10 @@ export function sampleSmhEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteO
 		rightEyeOpen: 1 - judgment * 0.12 - eyeClose * 0.43,
 	};
 }
+
+export const smhEmote: BlonkyEmoteDefinition = {
+	label: 'smh',
+	duration: 2.125,
+	menuIcon: '🤦',
+	sample: sampleSmhEmote,
+};

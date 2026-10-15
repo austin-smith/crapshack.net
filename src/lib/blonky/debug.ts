@@ -2,7 +2,7 @@ import { createBlonkyAnimator, type BlonkyAnimator, type BlonkyPainter } from '.
 import {
 	BLONKY_EMOTES,
 	isBlonkyEmote,
-	type BlonkyEmoteInfo,
+	type BlonkyEmoteDefinition,
 } from './emotes';
 import { BLONKY_FPS, BLONKY_SHADINGS, isBlonkyShading } from './types';
 import type { ToggleChangeEvent } from '../ui/toggle';
@@ -185,12 +185,12 @@ function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory, faile
 		activeRow = row;
 		row.setAttribute('aria-pressed', 'true');
 		emoteStateOutput.value = BLONKY_EMOTES[emote].label;
-		const emoteInfo: BlonkyEmoteInfo = BLONKY_EMOTES[emote];
-		clipEnd = emoteInfo.duration + (emoteInfo.holds ? 2 : 0.5);
+		const definition: BlonkyEmoteDefinition = BLONKY_EMOTES[emote];
+		clipEnd = definition.duration + (definition.holds ? 2 : 0.5);
 		timeline.max = String(Math.round(clipEnd * BLONKY_FPS));
 		timeline.disabled = false;
 		durationOutput.value = `${clipEnd.toFixed(3)} s`;
-		canvas.setAttribute('aria-label', `Blonky: ${emoteInfo.label}`);
+		canvas.setAttribute('aria-label', `Blonky: ${definition.label}`);
 		animator.playEmote(emote);
 		// An explicitly selected expression stays still when reduced motion is set.
 		if (!matchMedia('(prefers-reduced-motion: reduce)').matches) animator.play();

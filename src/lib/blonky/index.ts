@@ -9,8 +9,14 @@ export {
 	unmountBlonkyCanvases,
 	type BlonkyAnimator,
 } from './animator';
-export { DEFAULT_BLONKY_PALETTE, drawBlonky } from './drawing';
-export { BLONKY_EMOTES, isBlonkyEmote, sampleBlonkyEmoteOffset } from './emotes';
+export { drawBlonky } from './ink/drawing';
+export { DEFAULT_BLONKY_PALETTE } from './ink/palette';
+export {
+	BLONKY_EMOTES,
+	isBlonkyEmote,
+	sampleBlonkyEmoteOffset,
+	type BlonkyEmote,
+} from './emotes';
 export {
 	BLONKY_BUST_HEIGHT,
 	BLONKY_BUST_WIDTH,
@@ -18,8 +24,7 @@ export {
 	BLONKY_FPS,
 	BLONKY_VIEWPORTS,
 	type BlonkyDrawOptions,
-	type BlonkyEmote,
-	type BlonkyEmoteInfo,
+	type BlonkyEmoteDefinition,
 	type BlonkyEmoteOffset,
 	type BlonkyEmotePose,
 	type BlonkyPalette,
