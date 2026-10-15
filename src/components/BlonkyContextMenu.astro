@@ -1,28 +1,14 @@
 ---
 import { FlaskConical, Gauge, Palette, Smile } from '@lucide/astro';
-import { BLONKY_EMOTES, type BlonkyEmote } from '../lib/blonky';
+import { BLONKY_EMOTES } from '../lib/blonky';
 import ContextMenu from './ui/ContextMenu.astro';
 
-const excludedEmotes = new Set<BlonkyEmote>(['confirm', 'notice']);
-const emoteIcons: Partial<Record<BlonkyEmote, string>> = {
-	cry: '😢',
-	deny: '🙅',
-	'nod-off': '😴',
-	shrug: '🤷',
-	shudder: '😬',
-	sigh: '😮‍💨',
-	skeptical: '🤨',
-	smh: '🤦',
-	wave: '👋',
-	wink: '😉',
-};
-const emoteItems = Object.entries(BLONKY_EMOTES)
-	.filter(([emote]) => !excludedEmotes.has(emote as BlonkyEmote))
-	.map(([value, info]) => ({
-		icon: emoteIcons[value as BlonkyEmote],
-		label: info.label,
-		value,
-	}));
+// Only emotes with a menu icon are offered; the page plays the rest itself.
+const emoteItems = Object.entries(BLONKY_EMOTES).flatMap(([value, definition]) => (
+	definition.menuIcon
+		? [{ icon: definition.menuIcon, label: definition.label, value }]
+		: []
+));
 const styleItems = [
 	{ label: 'ink', value: 'ink' },
 	{ label: 'clay', value: 'clay' },

@@ -1,7 +1,7 @@
 import { heldEnvelope } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteSample } from '../types';
 
-export function sampleSkepticalEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleSkepticalEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	const presence = heldEnvelope(elapsed, 0, 0.25, 0.75, 0.375);
 	const leftBrowLeads = direction < 0;
 	const raisedBrow = leftBrowLeads
@@ -34,3 +34,10 @@ export function sampleSkepticalEmote(elapsed: number, direction: -1 | 1): Blonky
 		rightUpperLid: leftBrowLeads ? presence * 0.38 : 0,
 	};
 }
+
+export const skepticalEmote: BlonkyEmoteDefinition = {
+	label: 'skeptical',
+	duration: 1.375,
+	menuIcon: '🤨',
+	sample: sampleSkepticalEmote,
+};

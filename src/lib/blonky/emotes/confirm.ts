@@ -1,7 +1,7 @@
 import { heldEnvelope, INK_FRAME_SECONDS, smoothstep } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteOffset, BlonkyEmoteSample } from '../types';
 
-export function sampleConfirmEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleConfirmEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	const presence = heldEnvelope(elapsed, 0, 0.25, 0.375, 0.375);
 	const down = heldEnvelope(elapsed, 0.125, 0.25, 0.125, 0.25);
 	const shoulderFollow = heldEnvelope(elapsed, 0.125 + INK_FRAME_SECONDS, 0.25, 0.125, 0.25);
@@ -32,7 +32,7 @@ export function sampleConfirmEmote(elapsed: number, direction: -1 | 1): BlonkyEm
 	};
 }
 
-export function sampleConfirmExit(from: BlonkyEmoteOffset, elapsed: number): BlonkyEmoteOffset {
+function sampleConfirmExit(from: BlonkyEmoteOffset, elapsed: number): BlonkyEmoteSample {
 	const eyeReturn = smoothstep(elapsed / INK_FRAME_SECONDS);
 	const headReturn = smoothstep((elapsed - INK_FRAME_SECONDS) / (INK_FRAME_SECONDS * 2));
 	const bodyReturn = smoothstep((elapsed - INK_FRAME_SECONDS * 2) / (INK_FRAME_SECONDS * 2));
@@ -55,7 +55,7 @@ export function sampleConfirmExit(from: BlonkyEmoteOffset, elapsed: number): Blo
 		shoulderTilt: blendToRest(from.shoulderTilt, bodyReturn),
 		bellySpread: blendToRest(from.bellySpread, bodyReturn) - settle * 0.25,
 		mouthPurse: blendToRest(from.mouthPurse, headReturn),
-		mouthSmile: blendToRest(from.mouthSmile ?? 0, headReturn),
+		mouthSmile: blendToRest(from.mouthSmile, headReturn),
 		mouthTension: blendToRest(from.mouthTension, headReturn),
 		leftBrowLift: blendToRest(from.leftBrowLift, headReturn),
 		rightBrowLift: blendToRest(from.rightBrowLift, headReturn),
@@ -64,9 +64,16 @@ export function sampleConfirmExit(from: BlonkyEmoteOffset, elapsed: number): Blo
 		mouthCurl: blendToRest(from.mouthCurl, headReturn),
 		leftEyeOpen: blendToRest(from.leftEyeOpen, eyeReturn, 1),
 		rightEyeOpen: blendToRest(from.rightEyeOpen, eyeReturn, 1),
-		leftUpperLid: blendToRest(from.leftUpperLid ?? 0, eyeReturn),
-		rightUpperLid: blendToRest(from.rightUpperLid ?? 0, eyeReturn),
-		leftWink: blendToRest(from.leftWink ?? 0, eyeReturn),
-		rightWink: blendToRest(from.rightWink ?? 0, eyeReturn),
+		leftUpperLid: blendToRest(from.leftUpperLid, eyeReturn),
+		rightUpperLid: blendToRest(from.rightUpperLid, eyeReturn),
+		leftWink: blendToRest(from.leftWink, eyeReturn),
+		rightWink: blendToRest(from.rightWink, eyeReturn),
 	};
 }
+
+export const confirmEmote: BlonkyEmoteDefinition = {
+	label: 'confirm',
+	duration: 1,
+	sample: sampleConfirmEmote,
+	interrupting: sampleConfirmExit,
+};

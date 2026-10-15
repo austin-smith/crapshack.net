@@ -6,7 +6,7 @@ import {
 	isBlonkyEmote,
 	sampleBlonkyEmoteOffset,
 	type BlonkyEmote,
-	type BlonkyEmoteInfo,
+	type BlonkyEmoteDefinition,
 	type BlonkyEmoteOffset,
 	type BlonkyEmotePose,
 } from './emotes';
@@ -156,16 +156,16 @@ export function createBlonkyAnimator(
 				transitionFrom: emote.transitionFrom,
 			};
 		}
-		const emoteInfo: BlonkyEmoteInfo = BLONKY_EMOTES[emote.kind];
-		const holds = emoteInfo.holds === true;
-		if (emoteElapsed >= Math.max(emoteInfo.duration, blonkyTransitionSeconds(emote.transitionFrom)) && !holds) return;
+		const definition: BlonkyEmoteDefinition = BLONKY_EMOTES[emote.kind];
+		const holds = definition.holds === true;
+		if (emoteElapsed >= Math.max(definition.duration, blonkyTransitionSeconds(emote.transitionFrom)) && !holds) return;
 		return {
 			kind: emote.kind,
-			elapsed: holds ? Math.min(emoteElapsed, emoteInfo.duration) : emoteElapsed,
+			elapsed: holds ? Math.min(emoteElapsed, definition.duration) : emoteElapsed,
 			direction: emote.direction,
-			heldElapsed: !holds || emoteElapsed <= emoteInfo.duration
+			heldElapsed: !holds || emoteElapsed <= definition.duration
 				? undefined
-				: emoteElapsed - emoteInfo.duration,
+				: emoteElapsed - definition.duration,
 			transitionFrom: emote.transitionFrom,
 		};
 	};

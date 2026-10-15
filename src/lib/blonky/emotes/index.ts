@@ -1,41 +1,44 @@
 import { smoothstep } from '../motion';
-import { sampleConfirmEmote, sampleConfirmExit } from './confirm';
-import { CRY_DURATION_FRAMES, sampleCryEmote } from './cry';
-import { sampleDenyEmote } from './deny';
-import { sampleNodOffEmote } from './nod-off';
-import { sampleNoticeEmote } from './notice';
-import { sampleShrugEmote } from './shrug';
-import { sampleShudderEmote } from './shudder';
-import { sampleSighEmote } from './sigh';
-import { sampleSkepticalEmote } from './skeptical';
-import { sampleSmhEmote } from './smh';
-import { sampleWaveEmote, WAVE_DURATION, WAVE_RELEASE_SECONDS } from './wave';
-import { sampleWinkEmote } from './wink';
+import { confirmEmote } from './confirm';
+import { cryEmote } from './cry';
+import { denyEmote } from './deny';
+import { nodOffEmote } from './nod-off';
+import { noticeEmote } from './notice';
+import { shrugEmote } from './shrug';
+import { shudderEmote } from './shudder';
+import { sighEmote } from './sigh';
+import { skepticalEmote } from './skeptical';
+import { smhEmote } from './smh';
+import { waveEmote, WAVE_RELEASE_SECONDS } from './wave';
+import { winkEmote } from './wink';
 import {
 	BLONKY_EMOTE_TRANSITION_FRAMES,
 	BLONKY_FPS,
-	type BlonkyEmote,
-	type BlonkyEmoteInfo,
+	type BlonkyEmoteDefinition,
 	type BlonkyEmoteOffset,
 	type BlonkyEmotePose,
+	type BlonkyEmoteSample,
 } from '../types';
 
-export const BLONKY_EMOTES: Record<BlonkyEmote, BlonkyEmoteInfo> = {
-	confirm: { label: 'confirm', duration: 1 },
-	cry: { label: 'cry', duration: CRY_DURATION_FRAMES / BLONKY_FPS },
-	deny: { label: 'deny', duration: 1.875 },
-	'nod-off': { label: 'nod off', duration: 3 },
-	notice: { label: 'notice', duration: 0.625, holds: true },
-	shrug: { label: 'shrug', duration: 1.5 },
-	shudder: { label: 'shudder', duration: 2.125 },
-	sigh: { label: 'sigh', duration: 2.75 },
-	skeptical: { label: 'skeptical', duration: 1.375 },
-	smh: { label: 'smh', duration: 2.125 },
-	wave: { label: 'wave', duration: WAVE_DURATION, stillFrame: 21 },
-	wink: { label: 'wink', duration: 1.5, stillFrame: 3 },
-};
+/** Every emote Blonky knows, in the order the lab and his menu list them. */
+export const BLONKY_EMOTES = {
+	confirm: confirmEmote,
+	cry: cryEmote,
+	deny: denyEmote,
+	'nod-off': nodOffEmote,
+	notice: noticeEmote,
+	shrug: shrugEmote,
+	shudder: shudderEmote,
+	sigh: sighEmote,
+	skeptical: skepticalEmote,
+	smh: smhEmote,
+	wave: waveEmote,
+	wink: winkEmote,
+} as const satisfies Record<string, BlonkyEmoteDefinition>;
 
-const NO_EMOTE_OFFSET: BlonkyEmoteOffset = {
+export type BlonkyEmote = keyof typeof BLONKY_EMOTES;
+
+const REST_OFFSET: Readonly<BlonkyEmoteOffset> = {
 	presence: 0,
 	leftWave: 0,
 	rightWave: 0,
@@ -72,119 +75,80 @@ const NO_EMOTE_OFFSET: BlonkyEmoteOffset = {
 	rightWink: 0,
 };
 
+const OFFSET_KEYS = Object.keys(REST_OFFSET) as (keyof BlonkyEmoteOffset)[];
+
+const WAVE_KEYS = [
+	'leftWave',
+	'rightWave',
+	'leftWaveSwing',
+	'rightWaveSwing',
+	'leftWaveFingers',
+	'rightWaveFingers',
+] as const satisfies readonly (keyof BlonkyEmoteOffset)[];
+
+function fromRest(sample: BlonkyEmoteSample): BlonkyEmoteOffset {
+	return { ...REST_OFFSET, ...sample };
+}
+
 function blendEmoteOffsets(
 	from: BlonkyEmoteOffset,
 	to: BlonkyEmoteOffset,
 	amount: number,
 ): BlonkyEmoteOffset {
-	const blend = (start: number, end: number): number => start + (end - start) * amount;
-	return {
-		presence: blend(from.presence, to.presence),
-		leftWave: blend(from.leftWave ?? 0, to.leftWave ?? 0),
-		rightWave: blend(from.rightWave ?? 0, to.rightWave ?? 0),
-		leftWaveSwing: blend(from.leftWaveSwing ?? 0, to.leftWaveSwing ?? 0),
-		rightWaveSwing: blend(from.rightWaveSwing ?? 0, to.rightWaveSwing ?? 0),
-		leftWaveFingers: blend(from.leftWaveFingers ?? 0, to.leftWaveFingers ?? 0),
-		rightWaveFingers: blend(from.rightWaveFingers ?? 0, to.rightWaveFingers ?? 0),
-		armTension: blend(from.armTension ?? 0, to.armTension ?? 0),
-		headX: blend(from.headX, to.headX),
-		headY: blend(from.headY, to.headY),
-		headAngle: blend(from.headAngle, to.headAngle),
-		headTurn: blend(from.headTurn, to.headTurn),
-		faceLookY: blend(from.faceLookY, to.faceLookY),
-		eyeLookY: blend(from.eyeLookY, to.eyeLookY),
-		bodyX: blend(from.bodyX, to.bodyX),
-		shoulderY: blend(from.shoulderY, to.shoulderY),
-		torsoY: blend(from.torsoY, to.torsoY),
-		shoulderTilt: blend(from.shoulderTilt, to.shoulderTilt),
-		bellySpread: blend(from.bellySpread, to.bellySpread),
-		mouthPurse: blend(from.mouthPurse, to.mouthPurse),
-		mouthTension: blend(from.mouthTension, to.mouthTension),
-		mouthFrown: blend(from.mouthFrown ?? 0, to.mouthFrown ?? 0),
-		mouthSmile: blend(from.mouthSmile ?? 0, to.mouthSmile ?? 0),
-		leftBrowLift: blend(from.leftBrowLift, to.leftBrowLift),
-		rightBrowLift: blend(from.rightBrowLift, to.rightBrowLift),
-		leftBrowArch: blend(from.leftBrowArch, to.leftBrowArch),
-		rightBrowArch: blend(from.rightBrowArch, to.rightBrowArch),
-		mouthCurl: blend(from.mouthCurl, to.mouthCurl),
-		leftEyeOpen: blend(from.leftEyeOpen, to.leftEyeOpen),
-		rightEyeOpen: blend(from.rightEyeOpen, to.rightEyeOpen),
-		leftUpperLid: blend(from.leftUpperLid ?? 0, to.leftUpperLid ?? 0),
-		rightUpperLid: blend(from.rightUpperLid ?? 0, to.rightUpperLid ?? 0),
-		leftWink: blend(from.leftWink ?? 0, to.leftWink ?? 0),
-		rightWink: blend(from.rightWink ?? 0, to.rightWink ?? 0),
-	};
+	const result = { ...to };
+	for (const key of OFFSET_KEYS) result[key] = from[key] + (to[key] - from[key]) * amount;
+	return result;
 }
 
 function rawEmoteOffsetAt(emote: BlonkyEmotePose): BlonkyEmoteOffset {
-	if (emote.kind === 'rest') return { ...NO_EMOTE_OFFSET };
+	if (emote.kind === 'rest') return { ...REST_OFFSET };
 
-	const duration = BLONKY_EMOTES[emote.kind].duration;
-	const elapsed = Math.max(0, Math.min(duration, emote.elapsed));
-
-	switch (emote.kind) {
-		case 'confirm':
-			return sampleConfirmEmote(elapsed, emote.direction);
-		case 'cry':
-			return sampleCryEmote(elapsed, emote.direction);
-		case 'deny':
-			return sampleDenyEmote(elapsed, emote.direction);
-		case 'nod-off':
-			return sampleNodOffEmote(elapsed, emote.direction);
-		case 'notice':
-			return sampleNoticeEmote(elapsed, emote.direction, emote.heldElapsed);
-		case 'shrug':
-			return sampleShrugEmote(elapsed, emote.direction);
-		case 'shudder':
-			return sampleShudderEmote(elapsed, emote.direction);
-		case 'sigh':
-			return sampleSighEmote(elapsed, emote.direction);
-		case 'skeptical':
-			return sampleSkepticalEmote(elapsed, emote.direction);
-		case 'smh':
-			return sampleSmhEmote(elapsed, emote.direction);
-		case 'wave':
-			return sampleWaveEmote(elapsed, emote.direction);
-		case 'wink':
-			return sampleWinkEmote(elapsed, emote.direction);
-	}
+	const definition: BlonkyEmoteDefinition = BLONKY_EMOTES[emote.kind];
+	const elapsed = Math.max(0, Math.min(definition.duration, emote.elapsed));
+	return fromRest(definition.sample(elapsed, emote.direction, emote.heldElapsed));
 }
 
 export function isBlonkyEmote(value: unknown): value is BlonkyEmote {
-	return typeof value === 'string'
-		&& Object.prototype.hasOwnProperty.call(BLONKY_EMOTES, value);
+	return typeof value === 'string' && Object.hasOwn(BLONKY_EMOTES, value);
 }
 
+const raisesArm = (offset?: BlonkyEmoteOffset): boolean => (
+	(offset?.leftWave ?? 0) > 0 || (offset?.rightWave ?? 0) > 0
+);
+
 export function blonkyTransitionSeconds(from?: BlonkyEmoteOffset): number {
-	return (from?.leftWave ?? 0) > 0 || (from?.rightWave ?? 0) > 0
+	return raisesArm(from)
 		? WAVE_RELEASE_SECONDS
 		: BLONKY_EMOTE_TRANSITION_FRAMES / BLONKY_FPS;
 }
 
 export function sampleBlonkyEmoteOffset(emote?: BlonkyEmotePose): BlonkyEmoteOffset {
-	if (!emote) return { ...NO_EMOTE_OFFSET };
+	if (!emote) return { ...REST_OFFSET };
 	const from = emote.transitionFrom;
-	const confirmExit = emote.kind === 'confirm' && from;
-	const current = confirmExit ? sampleConfirmExit(from, emote.elapsed) : rawEmoteOffsetAt(emote);
-	if (!from) return current;
+	if (!from) return rawEmoteOffsetAt(emote);
+	const definition: BlonkyEmoteDefinition | undefined = emote.kind === 'rest'
+		? undefined
+		: BLONKY_EMOTES[emote.kind];
+	const interrupting = definition?.interrupting;
+	const current = interrupting
+		? fromRest(interrupting(from, emote.elapsed))
+		: rawEmoteOffsetAt(emote);
 	const transitionFrame = Math.max(0, Math.floor(emote.elapsed * BLONKY_FPS + 1e-6));
 	const transition = Math.min(1, transitionFrame / BLONKY_EMOTE_TRANSITION_FRAMES);
-	const result = confirmExit ? current : blendEmoteOffsets(from, current, transition);
+	const result = interrupting ? current : blendEmoteOffsets(from, current, transition);
 	// A face can change in two drawings. A raised arm needs time to lower,
 	// even when a new reaction interrupts the greeting.
-	if ((from.leftWave ?? 0) > 0 || (from.rightWave ?? 0) > 0) {
+	if (raisesArm(from)) {
 		const armReturn = smoothstep(emote.elapsed / WAVE_RELEASE_SECONDS);
-		for (const key of ['leftWave', 'rightWave', 'leftWaveSwing', 'rightWaveSwing', 'leftWaveFingers', 'rightWaveFingers'] as const) {
-			const start = from[key] ?? 0;
-			result[key] = start + ((current[key] ?? 0) - start) * armReturn;
+		for (const key of WAVE_KEYS) {
+			result[key] = from[key] + (current[key] - from[key]) * armReturn;
 		}
 	}
 	return result;
 }
 
 export type {
-	BlonkyEmote,
-	BlonkyEmoteInfo,
+	BlonkyEmoteDefinition,
 	BlonkyEmoteOffset,
 	BlonkyEmotePose,
 } from '../types';

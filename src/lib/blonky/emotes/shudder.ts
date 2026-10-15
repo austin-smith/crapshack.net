@@ -1,5 +1,5 @@
 import { heldEnvelope, INK_FRAME_SECONDS, smoothstep } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteSample } from '../types';
 
 const BODY_WOBBLE_KEYS = [0, 1, -0.78, 0.54, -0.32, 0.15, 0];
 
@@ -12,7 +12,7 @@ function bodyWobbleAt(elapsed: number): number {
 		+ (BODY_WOBBLE_KEYS[index + 1] - BODY_WOBBLE_KEYS[index]) * amount;
 }
 
-export function sampleShudderEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleShudderEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	// The head lowers once and stays planted while the shoulders close around it.
 	// A single damped burst rocks the braced upper body beneath that fixed head;
 	// each reversal tightens both shoulders rather than becoming a loose sway.
@@ -80,3 +80,10 @@ export function sampleShudderEmote(elapsed: number, direction: -1 | 1): BlonkyEm
 		rightEyeOpen: 1 - unease * 0.16 - cringe * 0.37,
 	};
 }
+
+export const shudderEmote: BlonkyEmoteDefinition = {
+	label: 'shudder',
+	duration: 2.125,
+	menuIcon: '😬',
+	sample: sampleShudderEmote,
+};

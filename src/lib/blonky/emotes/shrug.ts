@@ -1,7 +1,7 @@
 import { heldEnvelope, INK_FRAME_SECONDS } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteSample } from '../types';
 
-export function sampleShrugEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleShrugEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	// Brace and glance begin together, then the inhale builds through the staggered
 	// shoulders and torso. Its lead-in starts one ink frame earlier while the peak,
 	// hold, and release timings stay fixed so the exhale remains unchanged.
@@ -44,3 +44,10 @@ export function sampleShrugEmote(elapsed: number, direction: -1 | 1): BlonkyEmot
 		rightEyeOpen: 1 - glance * rightEyePinch - settle * 0.24,
 	};
 }
+
+export const shrugEmote: BlonkyEmoteDefinition = {
+	label: 'shrug',
+	duration: 1.5,
+	menuIcon: '🤷',
+	sample: sampleShrugEmote,
+};
