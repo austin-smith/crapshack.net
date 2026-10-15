@@ -10,7 +10,8 @@ import {
 	type BlonkyEmoteOffset,
 	type BlonkyEmotePose,
 } from './emotes';
-import { DEFAULT_BLONKY_PALETTE, drawBlonky } from './drawing';
+import { drawBlonky } from './ink/drawing';
+import { DEFAULT_BLONKY_PALETTE } from './ink/palette';
 import {
 	BLONKY_FPS,
 	BLONKY_VIEWPORTS,

@@ -9,7 +9,8 @@ export {
 	unmountBlonkyCanvases,
 	type BlonkyAnimator,
 } from './animator';
-export { DEFAULT_BLONKY_PALETTE, drawBlonky } from './drawing';
+export { drawBlonky } from './ink/drawing';
+export { DEFAULT_BLONKY_PALETTE } from './ink/palette';
 export {
 	BLONKY_EMOTES,
 	isBlonkyEmote,
