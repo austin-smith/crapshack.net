@@ -25,6 +25,11 @@ export interface ArmGeometry {
 	cuffLower: [Pt, Pt];
 	cuffUpper: [Pt, Pt];
 	endRadius: number;
+	/**
+	 * Segments above and below the elbow in the arm's skin. Each sample
+	 * carries its own hand-drawn wobble, so the count stays put as he breathes.
+	 */
+	limbSegments: [number, number];
 	innerContour: Pt[];
 	limbId: number;
 	outlineId: number;
@@ -101,6 +106,7 @@ export function armGeometry(
 			cuffLower,
 			cuffUpper,
 			endRadius: 82,
+			limbSegments: [19, 16],
 			innerContour,
 			limbId: 740,
 			outlineId: 752,
@@ -168,6 +174,7 @@ export function armGeometry(
 		cuffLower,
 		cuffUpper,
 		endRadius: 84,
+		limbSegments: [20, 15],
 		innerContour,
 		limbId: 745,
 		outlineId: 765,
@@ -208,8 +215,13 @@ export function tensionArmGeometry(arm: ArmGeometry, tension: number): ArmGeomet
 	};
 }
 
-function tube(chain: [Pt, Pt, Pt], startRadius: number, endRadius: number): { left: Pt[]; right: Pt[]; center: Pt[] } {
-	const center = throughJoint(chain);
+function tube(
+	chain: [Pt, Pt, Pt],
+	segments: [number, number],
+	startRadius: number,
+	endRadius: number,
+): { left: Pt[]; right: Pt[]; center: Pt[] } {
+	const center = throughJoint(chain, segments);
 	const left: Pt[] = [];
 	const right: Pt[] = [];
 	center.forEach((point, index) => {
@@ -225,9 +237,9 @@ function tube(chain: [Pt, Pt, Pt], startRadius: number, endRadius: number): { le
 }
 
 export function restingSkinContours(arm: ArmGeometry): { outer: Pt[]; inner: Pt[] } {
-	const { chain, side, startRadius, endRadius } = arm;
+	const { chain, limbSegments, side, startRadius, endRadius } = arm;
 	const cuffEdge = arm.cuffLower;
-	const shape = tube(chain, startRadius, endRadius);
+	const shape = tube(chain, limbSegments, startRadius, endRadius);
 	const trimAtCuff = (points: Pt[]): Pt[] => {
 		const [a, b] = cuffEdge;
 		const signedDistance = (point: Pt): number => {
