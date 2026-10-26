@@ -86,23 +86,15 @@ const galleryIcon = iconEntries[0].icon;
 					class="size-5 opacity-70 grayscale transition duration-200 ease-out group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0 motion-reduce:transition-none"
 				/>
 			</a>
-		</div>
-		<div
-			id="sidebar-info"
-			class="hidden text-xs border-t border-line mt-3 pt-3"
-		>
-			<a 
+			<a
 				href={repoUrl}
-				target="_blank" 
+				target="_blank"
 				rel="noopener noreferrer"
-				class="group grid w-full grid-cols-[2rem_minmax(0,1fr)_auto] items-center text-dim hover:text-[var(--color-brand)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/70 rounded-sm"
-				aria-label="View source on GitHub"
+				aria-label={`crapshack.net v${version} on GitHub`}
+				data-tooltip="sidebar-github-tooltip"
+				class:list={[buttonVariants({ variant: 'ghost', size: 'icon' }), 'group']}
 			>
-				<span aria-hidden="true" class="flex size-8 items-center justify-center">
-					<span class="size-4 icon-github"></span>
-				</span>
-				<span class="truncate">crapshack.net</span>
-				<span class="ml-2 shrink-0 text-faint transition-colors group-hover:text-[var(--color-brand)]">v{version}</span>
+				<span class="size-4 icon-github" aria-hidden="true"></span>
 			</a>
 		</div>
 	</div>
@@ -113,6 +105,13 @@ const galleryIcon = iconEntries[0].icon;
 	*/}
 	<Tooltip id="sidebar-knobs-tooltip" class="left-1 sm:left-2 w-max max-w-[calc(100%-1rem)]" />
 	<Tooltip id="sidebar-app-icons-tooltip" class="left-8 sm:left-9 w-max max-w-[calc(100%-1rem)]" />
+	{/* Wider than its button, so it starts at the footer's edge; the caret still finds the button. */}
+	<Tooltip id="sidebar-github-tooltip" class="left-4 sm:left-5 w-max max-w-[calc(100%-2rem)] sm:max-w-[calc(100%-2.5rem)]">
+		<p class="flex items-baseline justify-between gap-3 text-[11px]">
+			<span class="font-medium text-[var(--color-brand)]">crapshack.net</span>
+			<span class="text-faint">v{version}</span>
+		</p>
+	</Tooltip>
 </aside>
 
 <style>
