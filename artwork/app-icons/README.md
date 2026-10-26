@@ -7,7 +7,8 @@ graphics app.
 ## Layout
 
 - `catalog.json`: every collection and variant, with names, credits, and
-  optional `opticalSources` and `housing` settings. `publicDir` and the IDs set
+  optional `opticalSources` and `housing` settings. The gallery shows them in
+  this order, so keep collections sorted by name. `publicDir` and the IDs set
   every path: a variant's sources live in `<collection>/<variant>/`, and it
   publishes `public/<publicDir>/<collection>/<variant>.icns` with its previews
   in `<variant>/` beside it.
