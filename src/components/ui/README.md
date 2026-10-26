@@ -178,6 +178,26 @@ Component-specific `--dropdown-*` hooks remain available for cases not covered b
 
 An open dropdown behaves like [Radix Select](https://www.radix-ui.com/primitives/docs/components/select): choosing an option, Escape, its trigger, or a press anywhere outside closes it, and Tab stays in the list. Until it closes, the page behind it doesn't scroll, take the pointer, or run keyboard shortcuts. While it's open, `html` has `data-dropdown-open`, which the shortcut registry checks.
 
+## Dialog
+
+```astro
+<Dialog id="guide-dialog" ariaLabel="Guide" maxWidth="max-w-3xl">
+  …
+</Dialog>
+```
+
+```ts
+import { closeDialog, isAnyDialogOpen, openDialog } from '../../lib/ui/dialog';
+
+openDialog('guide-dialog');
+```
+
+Opening remembers what had focus, holds the scroll lock, and focuses the dialog's container. Escape closes the most recently opened dialog, as do its close button and a press on the backdrop. Closing returns focus to whatever had it before.
+
+As in Radix's `FocusScope`, Tab and Shift+Tab wrap between the dialog's first and last Tab stops. Only elements Tab can reach count. Hidden elements, elements with a negative `tabIndex` (such as the theme and weather pickers' unselected options), and the unchecked radios in a group with a checked one are skipped.
+
+Unlike Radix Dialog, opening focuses the container rather than the first control, and focus that leaves another way than Tab isn't pulled back.
+
 ## Scroll lock
 
 Dialogs and open dropdowns share `lockScroll(content)` from `lib/ui/scroll-lock.ts`, as Radix's overlays share `react-remove-scroll`. It returns the function that releases the hold. The page stays locked until every hold is released, and only the most recent holder's content scrolls; wheel and touch scrolling anywhere else is cancelled. New overlays should hold the lock rather than set `overflow` on the body.
