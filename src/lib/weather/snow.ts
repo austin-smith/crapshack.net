@@ -2,10 +2,12 @@
  * Creates a cozy snowfall effect on the page. Flakes fall and drift up along
  * the bottom (see ./pool). Where the page has surfaces (see ./surfaces), some
  * land on them too and settle: heaping up, slumping where it's too steep to
- * hold, and shaken off when what they're on moves suddenly.
+ * hold, and shaken off when what they're on moves suddenly. All of that
+ * only while it's accumulating (see ./accumulation); otherwise flakes just
+ * fall from view.
  */
 
-import { createWeatherCanvas } from './canvas';
+import { createWeatherCanvas, type WeatherEffect } from './canvas';
 import {
 	columnAt,
 	columnX,
@@ -32,6 +34,8 @@ interface WeatherOptions {
 	fillSeconds?: number;
 	/** sessionStorage key to keep the drift along the bottom from page to page. */
 	persist?: string;
+	/** Lets what falls pile up: in the drift, and with `settle`, on surfaces. */
+	accumulate?: boolean;
 }
 
 interface Flake {
@@ -128,8 +132,8 @@ function flakeSprite(): HTMLCanvasElement {
 	return sprite;
 }
 
-export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {}) {
-	const { count = 100, scale = 1, speed = 1, settle = false, fillSeconds, persist } = options;
+export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {}): WeatherEffect {
+	const { count = 100, scale = 1, speed = 1, settle = false, fillSeconds, persist, accumulate = false } = options;
 	const sprite = flakeSprite();
 	// The sprite's flake, as a share of its width.
 	const spriteCore = 16 / sprite.width;
@@ -137,6 +141,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 	let width = 0;
 	let height = 0;
 	let snowing = true;
+	let accumulating = accumulate;
 	const flakes: Flake[] = Array.from({ length: count }, () => ({} as Flake));
 	const clumps: Clump[] = [];
 
@@ -455,7 +460,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 			}
 		},
 		frame: ({ context, seconds }) => {
-			if (settle) footings.sync();
+			if (settle && accumulating) footings.sync();
 
 			if (snowing) {
 				for (const flake of flakes) {
@@ -527,13 +532,28 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 		},
 	});
 	// Each flake lands in the drift as its fall ends: 9s, on average.
-	let pool = weather ? createPool(container, { kind: 'snow', scale, rate: count / (9 * speed), fillSeconds, persist, behind: settle }) : undefined;
+	const startPool = () => (weather ? createPool(container, { kind: 'snow', scale, rate: count / (9 * speed), fillSeconds, persist, behind: settle }) : undefined);
+	let pool = accumulating ? startPool() : undefined;
 
-	return () => {
-		pool?.destroy();
-		pool = undefined;
-		// What's settled on things melts away rather than vanishing.
-		snowing = false;
-		if (!weather?.running()) weather?.finish();
+	return {
+		accumulate: (on) => {
+			if (on === accumulating || !snowing) return;
+			accumulating = on;
+			if (on) {
+				pool = startPool();
+				return;
+			}
+			pool?.destroy();
+			pool = undefined;
+			// What's settled on him falls off, past where the drift was.
+			footings.clear();
+		},
+		stop: () => {
+			pool?.destroy();
+			pool = undefined;
+			// What's settled on things melts away rather than vanishing.
+			snowing = false;
+			if (!weather?.running()) weather?.finish();
+		},
 	};
 }

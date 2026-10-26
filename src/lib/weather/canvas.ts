@@ -28,6 +28,14 @@ export interface WeatherCanvas {
 	finish: () => void;
 }
 
+/** Rain or snow, falling. */
+export interface WeatherEffect {
+	/** Lets it pile up from now on, or not. Turned off, what's piled up falls away. */
+	accumulate: (on: boolean) => void;
+	/** Stops it falling. What's settled on things dries or melts off first. */
+	stop: () => void;
+}
+
 /** Whether `element` can be seen: it has a size, and nothing hides it. */
 export function inSight(element: Element): boolean {
 	const rect = element.getBoundingClientRect();

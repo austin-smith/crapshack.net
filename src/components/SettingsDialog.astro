@@ -1,5 +1,6 @@
 ---
 import Dialog from './ui/Dialog.astro';
+import Switch from './ui/Switch.astro';
 import ThemeToggle from './ThemeToggle.astro';
 import WeatherToggle from './WeatherToggle.astro';
 
@@ -20,26 +21,18 @@ const dialogId = 'settings-dialog';
 			{/* Applies on top of any resolved dark, so it stays settable under `system`. */}
 			<div class="flex items-center justify-between gap-4" data-true-black-row>
 				<label for="true-black-toggle" class="text-sm text-subtle">you want it darker</label>
-				<button
-					id="true-black-toggle"
-					type="button"
-					role="switch"
-					aria-checked="false"
-					data-true-black-toggle
-					class="group relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-fill-strong transition-colors aria-checked:bg-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-overlay-to)]"
-				>
-					{/* aria-checked lives on the button, so the thumb reads it via `group-`. */}
-					<span
-						aria-hidden="true"
-						class="pointer-events-none ml-0.5 size-5 rounded-full bg-[var(--app-overlay-to)] shadow transition-transform group-aria-checked:translate-x-5 motion-reduce:transition-none"
-						data-true-black-thumb
-					></span>
-				</button>
+				<Switch id="true-black-toggle" checked={false} data-true-black-toggle />
 			</div>
 
 			<div class="space-y-1.5 border-t border-line pt-4">
 				<p id="settings-weather-label" class="text-sm text-subtle">weather</p>
 				<WeatherToggle labelledBy="settings-weather-label" />
+			</div>
+
+			{/* Clear skies have nothing to pile up, but it stays settable for later. */}
+			<div class="flex items-center justify-between gap-4" data-accumulation-row>
+				<label for="accumulation-toggle" class="text-sm text-subtle">accumulation</label>
+				<Switch id="accumulation-toggle" checked={false} data-accumulation-toggle />
 			</div>
 		</div>
 	</div>
@@ -83,7 +76,8 @@ const dialogId = 'settings-dialog';
 <style>
 	@layer utilities {
 		/* Nothing to act on in light, but still settable — a "system" user can pre-opt-in. */
-		:global(html[data-theme="light"]) [data-true-black-row] {
+		:global(html[data-theme="light"]) [data-true-black-row],
+		:global(html[data-effect="off"]) [data-accumulation-row] {
 			opacity: 0.55;
 		}
 	}

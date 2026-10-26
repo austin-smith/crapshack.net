@@ -40,13 +40,21 @@ const options = [
 </div>
 
 <script>
+	import { onAccumulationChange, readAccumulation } from '../lib/weather/accumulation';
 	import { initRainyDay } from '../lib/weather/rain';
 	import { initSnowyDay } from '../lib/weather/snow';
 
 	// The real effects, in miniature — same code the page runs, just fewer and
 	// smaller particles, falling the tile's height rather than the viewport's.
+	// They pile up only when the page's weather does.
 	const rain = document.querySelector<HTMLElement>('[data-weather-preview="rain"]');
 	const snow = document.querySelector<HTMLElement>('[data-weather-preview="snow"]');
-	if (rain) initRainyDay(rain, { count: 20, scale: 0.34, speed: 0.5, fillSeconds: 20 });
-	if (snow) initSnowyDay(snow, { count: 12, scale: 0.4, speed: 0.3, fillSeconds: 20 });
+	const accumulate = readAccumulation();
+	const previews = [
+		rain && initRainyDay(rain, { count: 20, scale: 0.34, speed: 0.5, fillSeconds: 20, accumulate }),
+		snow && initSnowyDay(snow, { count: 12, scale: 0.4, speed: 0.3, fillSeconds: 20, accumulate }),
+	];
+	onAccumulationChange((on) => {
+		for (const preview of previews) preview?.accumulate(on);
+	});
 </script>

@@ -3,10 +3,11 @@
  * bottom (see ./pool). Where the page has surfaces (see ./surfaces), some hit
  * them instead: they splash, and leave beads of water that grow as more
  * drops hit, run downhill once they're heavy enough, leaving a wet trail,
- * and drip off the edge, onto whatever's below.
+ * and drip off the edge, onto whatever's below. All of that only while it's
+ * accumulating (see ./accumulation); otherwise drops just fall from view.
  */
 
-import { createWeatherCanvas } from './canvas';
+import { createWeatherCanvas, type WeatherEffect } from './canvas';
 import { columnAt, createFootings, hasGround, landingOn, lastPagePoint, pagePoint, type Footing } from './footing';
 import { createPool } from './pool';
 
@@ -23,6 +24,8 @@ interface WeatherOptions {
 	fillSeconds?: number;
 	/** sessionStorage key to keep the puddle from page to page. */
 	persist?: string;
+	/** Lets what falls pile up: in the puddle, and with `settle`, on surfaces. */
+	accumulate?: boolean;
 }
 
 interface Raindrop {
@@ -181,14 +184,15 @@ function drawWater(context: CanvasRenderingContext2D, x: number, y: number, rx: 
 	context.restore();
 }
 
-export function initRainyDay(container: HTMLElement, options: WeatherOptions = {}) {
-	const { count = 100, scale = 1, speed = 1, settle = false, fillSeconds, persist } = options;
+export function initRainyDay(container: HTMLElement, options: WeatherOptions = {}): WeatherEffect {
+	const { count = 100, scale = 1, speed = 1, settle = false, fillSeconds, persist, accumulate = false } = options;
 	const sprite = dropSprite();
 	const streak = Math.max(1.5, 2 * scale);
 	const average = AVERAGE_LENGTH * scale;
 	let width = 0;
 	let height = 0;
 	let raining = true;
+	let accumulating = accumulate;
 	const drops: Raindrop[] = Array.from({ length: count }, () => ({} as Raindrop));
 	const falling: Falling[] = [];
 	const sprays: Spray[] = [];
@@ -437,7 +441,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 			}
 		},
 		frame: ({ context, seconds }) => {
-			if (settle) footings.sync();
+			if (settle && accumulating) footings.sync();
 
 			if (raining) {
 				for (const drop of drops) {
@@ -507,13 +511,28 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 		},
 	});
 	// Each drop lands in the puddle as its fall ends: 2.75s, on average.
-	let pool = weather ? createPool(container, { kind: 'rain', scale, rate: count / (2.75 * speed), fillSeconds, persist, behind: settle }) : undefined;
+	const startPool = () => (weather ? createPool(container, { kind: 'rain', scale, rate: count / (2.75 * speed), fillSeconds, persist, behind: settle }) : undefined);
+	let pool = accumulating ? startPool() : undefined;
 
-	return () => {
-		pool?.destroy();
-		pool = undefined;
-		// What's beaded on things dries off rather than vanishing.
-		raining = false;
-		if (!weather?.running()) weather?.finish();
+	return {
+		accumulate: (on) => {
+			if (on === accumulating || !raining) return;
+			accumulating = on;
+			if (on) {
+				pool = startPool();
+				return;
+			}
+			pool?.destroy();
+			pool = undefined;
+			// What's beaded on him drips off, past where the puddle was.
+			footings.clear();
+		},
+		stop: () => {
+			pool?.destroy();
+			pool = undefined;
+			// What's beaded on things dries off rather than vanishing.
+			raining = false;
+			if (!weather?.running()) weather?.finish();
+		},
 	};
 }
