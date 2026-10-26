@@ -2,9 +2,11 @@
 import SettingsGear from './icons/animated/SettingsGear.astro';
 import Button from './ui/Button.astro';
 import Tooltip from './ui/Tooltip.astro';
+import { buttonVariants } from './ui/button';
 import { LayoutGrid } from '@lucide/astro';
 import packageJson from '../../package.json';
 import { apps } from '../data/apps';
+import { iconEntries, previewSrc } from '../data/app-icons';
 
 const version = packageJson.version;
 const repoUrl = typeof packageJson.repository === 'string'
@@ -19,6 +21,8 @@ const appLinks = apps
 		description: app.description,
 	}))
 	.sort((a, b) => a.label.localeCompare(b.label));
+// The gallery's first icon stands in for the whole gallery
+const galleryIcon = iconEntries[0].icon;
 ---
 <div id="sidebar-overlay" class="fixed inset-0 z-[90] bg-scrim"></div>
 
@@ -33,7 +37,6 @@ const appLinks = apps
 	<h2 id="site-sidebar-title" class="sr-only">Site navigation</h2>
 	<nav class="relative flex flex-col gap-0.5 px-4 pt-3 pb-4 sm:px-5 sm:pt-4 sm:pb-6 grow overflow-y-auto">
 		<a href="/" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">home</span></a>
-		<a href="/app-icons" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">app icons</span></a>
 		<a href="https://ombi.crapshack.net" target="_blank" rel="noopener noreferrer" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">plex requests</span></a>
 		<a href="https://plex.crapshack.net" target="_blank" rel="noopener noreferrer" class="group block rounded-md px-4 py-2 text-sm sm:text-base font-medium text-[var(--color-text)] transition-colors hover:text-[var(--color-brand)]"><span class="squiggle-underline">plex</span></a>
 		<p class="mt-4 px-4 pb-1.5 text-xs font-medium uppercase tracking-wider text-faint">apps</p>
@@ -54,18 +57,36 @@ const appLinks = apps
 		<Tooltip id="sidebar-app-tooltip" class="left-4 right-4 sm:left-5 sm:right-5" />
 	</nav>
 	<div class="mt-auto px-4 sm:px-5 pb-3 sm:pb-4">
-		{/* No aria-describedby: the tooltip only repeats the aria-label. */}
-		<Button
-			variant="ghost"
-			size="icon"
-			data-settings-open
-			aria-label="knobs"
-			data-tooltip="sidebar-knobs-tooltip"
-			data-tooltip-body="knobs"
-			class="group"
-		>
-			<SettingsGear />
-		</Button>
+		{/* No aria-describedby: the tooltips only repeat the aria-labels. */}
+		<div class="flex items-center gap-1">
+			<Button
+				variant="ghost"
+				size="icon"
+				data-settings-open
+				aria-label="knobs"
+				data-tooltip="sidebar-knobs-tooltip"
+				data-tooltip-body="knobs"
+				class="group"
+			>
+				<SettingsGear />
+			</Button>
+			<a
+				href="/app-icons"
+				aria-label="app icons"
+				data-tooltip="sidebar-app-icons-tooltip"
+				data-tooltip-body="app icons"
+				class:list={[buttonVariants({ variant: 'ghost', size: 'icon' }), 'group']}
+			>
+				{/* Grey and quiet like the gear until the pointer or focus reaches it. */}
+				<img
+					src={previewSrc(galleryIcon, 32)}
+					srcset={`${previewSrc(galleryIcon, 64)} 2x`}
+					alt=""
+					aria-hidden="true"
+					class="size-5 opacity-70 grayscale transition duration-200 ease-out group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0 motion-reduce:transition-none"
+				/>
+			</a>
+		</div>
 		<div
 			id="sidebar-info"
 			class="hidden text-xs border-t border-line mt-3 pt-3"
@@ -86,11 +107,12 @@ const appLinks = apps
 		</div>
 	</div>
 	{/*
-		Its own panel, and a direct child of <aside>: tooltip.ts positions against
+		Their own panels, and direct children of <aside>: tooltip.ts positions against
 		targets sharing the panel's offset parent, and the nav's is inside <nav>.
-		The inset hand-centres it on the button — retune if the label grows.
+		The insets hand-centre them on their buttons — retune if a label grows.
 	*/}
 	<Tooltip id="sidebar-knobs-tooltip" class="left-1 sm:left-2 w-max max-w-[calc(100%-1rem)]" />
+	<Tooltip id="sidebar-app-icons-tooltip" class="left-8 sm:left-9 w-max max-w-[calc(100%-1rem)]" />
 </aside>
 
 <style>
