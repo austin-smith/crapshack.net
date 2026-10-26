@@ -32,6 +32,10 @@ export const REQUIRED_EXTENSIONS = ['EXT_color_buffer_float', 'OES_texture_float
 // within a second, but can refuse, as after repeated GPU resets; past this,
 // clay gives way to ink rather than stay blank.
 export const CONTEXT_RESTORE_TIMEOUT_MS = 3000;
+// How often a pending check looks for the GPU to have caught up, and how
+// long it can go without catching up before the page waits for it instead.
+const WATCH_POLL_MS = 16;
+const WATCH_MAX_DELAY_MS = 1000;
 let claySupport: boolean | undefined;
 
 // Probe once on a throwaway canvas: a canvas that has handed out a WebGL
@@ -74,6 +78,86 @@ export function createTexture(gl: WebGL2RenderingContext): WebGLTexture {
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	return texture;
+}
+
+/**
+ * Watches for the GPU refusing a context's buffers, which it does without
+ * throwing, leaving nothing drawn. Reading the error makes the page wait for
+ * the GPU to finish everything asked of it so far, a long stall while it's
+ * busy, so a later check waits for a fence to show the GPU is done instead.
+ */
+export interface GpuWatch {
+	/** Whether the GPU has refused anything asked of it so far. Waits for it. */
+	failedNow: () => boolean;
+	/**
+	 * Checks everything asked so far once the GPU has done it, and calls
+	 * `onFail` if it refused any. Each call supersedes the last, so the error
+	 * is only read while the GPU has nothing left to do. If it never catches
+	 * up, the page waits for it at most once a second.
+	 */
+	checkLater: () => void;
+	/** Drops any pending check, as when the context is lost or torn down. */
+	cancel: () => void;
+}
+
+export function watchGpu(gl: WebGL2RenderingContext, onFail: () => void): GpuWatch {
+	let fence: WebGLSync | null = null;
+	let timer: number | undefined;
+	// When the oldest work not yet checked was asked for.
+	let uncheckedSince: number | undefined;
+
+	const refused = (): boolean => {
+		const error = gl.getError();
+		return error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION;
+	};
+
+	const dropFence = (): void => {
+		window.clearTimeout(timer);
+		timer = undefined;
+		if (fence && !gl.isContextLost()) gl.deleteSync(fence);
+		fence = null;
+	};
+
+	const check = (): void => {
+		dropFence();
+		uncheckedSince = undefined;
+		if (refused()) onFail();
+	};
+
+	const poll = (): void => {
+		timer = undefined;
+		// A lost context takes its fence with it, and is handled by its own events.
+		if (!fence || gl.isContextLost()) {
+			fence = null;
+			return;
+		}
+		if (gl.getSyncParameter(fence, gl.SYNC_STATUS) === gl.SIGNALED) check();
+		else timer = window.setTimeout(poll, WATCH_POLL_MS);
+	};
+
+	const checkLater = (): void => {
+		if (gl.isContextLost()) return;
+		const now = performance.now();
+		uncheckedSince ??= now;
+		if (now - uncheckedSince >= WATCH_MAX_DELAY_MS) {
+			check();
+			return;
+		}
+		dropFence();
+		fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+		// A fence is only signalled once its commands are sent on.
+		gl.flush();
+		timer = window.setTimeout(poll, WATCH_POLL_MS);
+	};
+
+	return {
+		failedNow: () => refused() || gl.isContextLost(),
+		checkLater,
+		cancel: () => {
+			dropFence();
+			uncheckedSince = undefined;
+		},
+	};
 }
 
 export interface Gpu {
