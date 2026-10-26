@@ -192,7 +192,7 @@ import { closeDialog, isAnyDialogOpen, openDialog } from '../../lib/ui/dialog';
 openDialog('guide-dialog');
 ```
 
-Opening remembers what had focus, holds the scroll lock, and focuses the dialog's container. Escape closes the most recently opened dialog, as do its close button and a press on the backdrop. Closing returns focus to whatever had it before.
+Opening remembers what had focus, holds the scroll lock, scrolls the content back to the top, and focuses the dialog's container. Escape closes the most recently opened dialog, as do its close button and a press on the backdrop. Closing returns focus to whatever had it before.
 
 As in Radix's `FocusScope`, Tab and Shift+Tab wrap between the dialog's first and last Tab stops. Only elements Tab can reach count. Hidden elements, elements with a negative `tabIndex` (such as the theme and weather pickers' unselected options), and the unchecked radios in a group with a checked one are skipped.
 
