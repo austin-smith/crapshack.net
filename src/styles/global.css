@@ -2,6 +2,9 @@
 @import "./tokens.css";
 @import "./weather.css";
 
+/* Layered icon sources contain embedded images, not website utility classes. */
+@source not "../../artwork";
+
 @layer base {
 	html,
 	body {
