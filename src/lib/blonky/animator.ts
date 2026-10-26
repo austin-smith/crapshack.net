@@ -17,6 +17,7 @@ import {
 	BLONKY_FPS,
 	BLONKY_VIEWPORTS,
 	type BlonkyDrawOptions,
+	type BlonkyGaze,
 	type BlonkyPalette,
 	type BlonkyShading,
 	type BlonkyView,
@@ -33,7 +34,8 @@ interface BlonkyAnimatorOptions {
 	/** Looks at the pointer, or what the keyboard focuses, while he's animating. */
 	followGaze?: boolean;
 	initiallyPaused?: boolean;
-	onFrame?: (time: number) => void;
+	/** After each drawing, with what it was drawn from. */
+	onFrame?: (time: number, drawn: BlonkyFrame) => void;
 	onPlaybackChange?: (playing: boolean) => void;
 	showArms?: boolean;
 	showBody?: boolean;
@@ -70,6 +72,15 @@ export interface BlonkyAnimator {
 	step: (frames: number) => void;
 }
 
+/** What a drawing was drawn from: enough to pose him again, as `poseAtRest` does. */
+export interface BlonkyFrame {
+	emote?: BlonkyEmotePose;
+	gaze?: BlonkyGaze;
+	/** How fast he's playing: at 1, BLONKY_FPS drawings a second. */
+	rate: number;
+	view: BlonkyView;
+}
+
 interface ActiveEmote {
 	kind: BlonkyEmote | 'rest';
 	direction: -1 | 1;
@@ -79,6 +90,8 @@ interface ActiveEmote {
 
 const mountedCanvases = new Map<HTMLElement, BlonkyAnimator>();
 const BLONKY_EMOTE_EVENT = 'blonky:emote';
+/** Dispatched on a mounted Blonky's root after each new drawing, with its BlonkyFrame and time. */
+export const BLONKY_FRAME_EVENT = 'blonky:frame';
 const MAX_CANVAS_DIMENSION = 4096;
 const MAX_CANVAS_PIXELS = MAX_CANVAS_DIMENSION ** 2;
 let lifecycleRegistered = false;
@@ -235,7 +248,7 @@ export function createBlonkyAnimator(
 			});
 		}
 		lastFrame = nextFrame;
-		options.onFrame?.(time);
+		options.onFrame?.(time, { emote: emotePose, gaze, rate: playbackRate, view });
 	};
 
 	const stopAnimation = (): void => {
@@ -506,6 +519,9 @@ function mountBlonkyCanvas(root: HTMLElement, painter?: BlonkyPainterFactory): B
 	const view = canvas.dataset.blonkyView === 'bust' ? 'bust' : 'portrait';
 	const animator = createBlonkyAnimator(canvas, {
 		followGaze: canvas.dataset.blonkyGaze === 'true',
+		onFrame: (time, drawn) => {
+			root.dispatchEvent(new CustomEvent(BLONKY_FRAME_EVENT, { detail: { ...drawn, time } }));
+		},
 		painter,
 		showHead: canvas.dataset.blonkyShowHead !== 'false',
 		view,

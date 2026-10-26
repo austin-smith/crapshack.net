@@ -5,6 +5,8 @@ type Cleanup = () => void;
 type EffectName = 'off' | 'rain' | 'snow';
 
 const STORAGE_KEY = 'crapshack:sky';
+// What's pooled at the bottom of the page, kept for the next page.
+const POOL_KEY = 'crapshack:sky-drift';
 
 class EffectsController {
   private container: HTMLElement | null = null;
@@ -55,9 +57,9 @@ class EffectsController {
     if (!this.container) return;
     this.stopEffect();
     if (name === 'rain') {
-      this.cleanup = initRainyDay(this.container);
+      this.cleanup = initRainyDay(this.container, { settle: true, persist: POOL_KEY });
     } else if (name === 'snow') {
-      this.cleanup = initSnowyDay(this.container);
+      this.cleanup = initSnowyDay(this.container, { settle: true, persist: POOL_KEY });
     } else {
       this.cleanup = null;
     }

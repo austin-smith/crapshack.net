@@ -11,48 +11,27 @@
 		overflow: hidden;
 	}
 
-	.raindrop {
+	/* Rain and snow, drawn as they fall and settle */
+	.weather-canvas {
 		position: absolute;
-		top: -50px;
-		width: 2px;
-		height: 20px;
-		background: linear-gradient(to bottom, 
-			rgba(174, 194, 224, 0) 0%, 
-			rgba(174, 194, 224, 0.8) 50%, 
-			rgba(174, 194, 224, 0) 100%
-		);
-		animation: fall linear infinite;
-		will-change: transform;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
 	}
 
-	@keyframes fall {
-		to {
-			transform: translateY(var(--weather-fall, 100vh));
-		}
-	}
-
-	/* Snow effect */
-	.snowflake {
+	/* Where the weather lands, in front of what's still falling. */
+	.weather-pool {
 		position: absolute;
-		top: -20px;
-		width: 4px;
-		height: 4px;
-		background: white;
-		border-radius: 9999px;
-		box-shadow: 0 0 6px rgba(255,255,255,0.6);
-		animation: snowfall linear infinite;
-		will-change: transform;
-	}
-
-	@keyframes snowfall {
-		to {
-			transform: translateY(var(--weather-fall, 100vh));
-		}
+		z-index: 1;
+		left: 0;
+		bottom: 0;
+		width: 100%;
+		pointer-events: none;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.raindrop, .snowflake {
-			animation: none;
+		.weather-canvas, .weather-pool {
 			display: none;
 		}
 	}

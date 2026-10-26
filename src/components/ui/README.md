@@ -16,7 +16,7 @@ These use native HTML rather than requiring a client framework.
 - Consumers use variants and sizes for appearance and `class` for layout. Native HTML attributes pass through to the rendered element.
 - `ContextMenu` owns styles for its `ContextMenuEntry` children. Root-anchored `:global()` selectors cross that component boundary and style slotted triggers/icons; the document-level pointer lock is global because it targets `html`/`body`.
 - `scrollbar-none` remains a global utility shared by ScreenshotGallery and AppLinks. Gallery-specific decoration stays in ScreenshotGallery.
-- Sidebar and settings-specific styles live with Sidebar, SettingsDialog, ThemeToggle, and WeatherToggle. The two preview controls import their shared frame styles from `components/preference-preview.css`; dynamically created weather particles use scoped-parent `:global()` selectors. These existing site styles retain their utility-layer priority.
+- Sidebar and settings-specific styles live with Sidebar, SettingsDialog, ThemeToggle, and WeatherToggle. The two preview controls import their shared frame styles from `components/preference-preview.css`; the weather previews draw on the same canvases as the page's weather, styled in `styles/weather.css`. These existing site styles retain their utility-layer priority.
 
 Astro's [scoped styles and class forwarding](https://docs.astro.build/en/guides/styling/)
 keep styles with their component. Forwarding attributes also preserves the parent's Astro scope for layout classes.

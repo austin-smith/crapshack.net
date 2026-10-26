@@ -44,32 +44,9 @@ const options = [
 	import { initSnowyDay } from '../lib/weather/snow';
 
 	// The real effects, in miniature — same code the page runs, just fewer and
-	// smaller particles. The tile sets --weather-fall so they fall its height
-	// rather than the viewport's.
+	// smaller particles, falling the tile's height rather than the viewport's.
 	const rain = document.querySelector<HTMLElement>('[data-weather-preview="rain"]');
 	const snow = document.querySelector<HTMLElement>('[data-weather-preview="snow"]');
-	if (rain) initRainyDay(rain, { count: 20, scale: 0.34, speed: 0.5 });
-	if (snow) initSnowyDay(snow, { count: 12, scale: 0.4, speed: 0.3 });
+	if (rain) initRainyDay(rain, { count: 20, scale: 0.34, speed: 0.5, fillSeconds: 20 });
+	if (snow) initSnowyDay(snow, { count: 12, scale: 0.4, speed: 0.3, fillSeconds: 20 });
 </script>
-
-<style>
-	@layer utilities {
-		/* The effects assume a viewport-sized container: they park particles tens of px
-		   above it and fall 100vh. Rescaled to the tile; container-type gives cqh
-		   something to measure. */
-		.weather-preview {
-			container-type: size;
-			--weather-fall: 130cqh;
-		}
-
-		.weather-preview :global(.raindrop) {
-			top: -20%;
-			width: 1.5px;
-		}
-
-		.weather-preview :global(.snowflake) {
-			top: -10%;
-			box-shadow: none;
-		}
-	}
-</style>
