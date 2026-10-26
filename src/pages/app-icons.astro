@@ -124,14 +124,16 @@ const plates = [
 								</a>
 								<span class="font-mono text-xs text-dim">{size} · 16–1024 px</span>
 							</div>
-							<p class="border-t border-line pt-3 text-xs text-dim">
-								{app.credits.map((credit) => (
-									<>
-										{credit.text}{' '}
-										<a href={credit.url} target="_blank" rel="noopener noreferrer" class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]">{credit.name}</a>.{' '}
-									</>
-								))}
-							</p>
+							{app.credits && (
+								<p class="border-t border-line pt-3 text-xs text-dim">
+									{app.credits.map((credit) => (
+										<>
+											{credit.text}{' '}
+											<a href={credit.url} target="_blank" rel="noopener noreferrer" class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]">{credit.name}</a>.{' '}
+										</>
+									))}
+								</p>
+							)}
 						</div>
 					</div>
 

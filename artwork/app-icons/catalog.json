@@ -2,6 +2,23 @@
   "publicDir": "app-icons",
   "collections": [
     {
+      "id": "bitdream",
+      "name": "BitDream",
+      "url": "https://bitdream.app",
+      "variants": [
+        {
+          "id": "blue-clouds",
+          "name": "Blue Clouds",
+          "description": "BitDream’s pixel cloud, outlined in blue on a pale sky."
+        },
+        {
+          "id": "cloudy-day",
+          "name": "Cloudy Day",
+          "description": "A bank of pixel clouds drifting across a blue sky."
+        }
+      ]
+    },
+    {
       "id": "plex",
       "name": "Plex",
       "url": "https://www.plex.tv/",

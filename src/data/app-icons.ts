@@ -24,7 +24,8 @@ export interface IconCollection {
 	id: string;
 	name: string;
 	url: string;
-	credits: IconCredit[];
+	/** Owners of the artwork a collection adapts; none for our own apps' icons. */
+	credits?: IconCredit[];
 	variants: IconVariant[];
 }
 
