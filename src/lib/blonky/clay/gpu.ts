@@ -145,6 +145,11 @@ export function watchGpu(gl: WebGL2RenderingContext, onFail: () => void): GpuWat
 		}
 		dropFence();
 		fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+		// Without a fence to wait on, nothing would check this work later.
+		if (!fence) {
+			check();
+			return;
+		}
 		// A fence is only signalled once its commands are sent on.
 		gl.flush();
 		timer = window.setTimeout(poll, WATCH_POLL_MS);
