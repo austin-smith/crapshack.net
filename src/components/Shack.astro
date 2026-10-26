@@ -1,0 +1,790 @@
+---
+import { CircleQuestionMark, Hammer, Redo2, Rotate3d, RotateCcw, RotateCw, Undo2, Volume2, VolumeX, X } from '@lucide/astro';
+import Button from './ui/Button.astro';
+import Kbd from './ui/Kbd.astro';
+---
+
+<section class="shack" data-shack-root data-phase="title" aria-labelledby="shack-title">
+	<div
+		class="shack-stage"
+		data-shack-stage
+		tabindex="0"
+		role="group"
+		aria-label="Shack. An island in the sky. Click junk to pick it up and click again to put it down, or use the arrow keys and Space. R turns it, F flips it, N nails it. Q and E look around."
+	>
+		<canvas class="shack-canvas" data-shack-canvas aria-hidden="true"></canvas>
+		<div class="shack-bubbles" data-shack-bubbles aria-hidden="true"></div>
+	</div>
+
+	<header class="shack-masthead">
+		<h1 id="shack-title" class="shack-wordmark">shack</h1>
+		<p class="shack-day" data-shack-daybar hidden>
+			<span data-shack-day>day 1</span>
+			<span aria-hidden="true">·</span>
+			<span data-shack-phase>building</span>
+		</p>
+	</header>
+
+	<aside class="shack-note shack-forecast" data-shack-forecast aria-label="Tonight's forecast" hidden>
+		<div class="shack-compass" aria-hidden="true">
+			<svg viewBox="0 0 40 40" data-shack-compass>
+				<path d="M20 34 L20 9" />
+				<path d="M13 15 L20 7 L27 15" />
+			</svg>
+		</div>
+		<div class="grid gap-0.5">
+			<p class="shack-forecast__headline" data-shack-forecast-headline></p>
+			<p class="text-sm" data-shack-forecast-detail></p>
+			<p class="shack-forecast__aside text-xs" data-shack-forecast-aside></p>
+		</div>
+	</aside>
+
+	<aside class="shack-note shack-tenants" data-shack-tenants-panel aria-labelledby="shack-tenants-title" hidden>
+		<h2 id="shack-tenants-title" class="shack-note__title">residents</h2>
+		<ul class="grid gap-1.5" data-shack-tenants></ul>
+		<p class="shack-tenants__score text-xs" title="one for each person who gets through a night dry">dry sleeps <strong data-shack-score>0</strong></p>
+	</aside>
+
+	<aside class="shack-lesson" data-shack-lesson hidden>
+		<p class="shack-note__title">day one</p>
+		<h2 class="shack-lesson__title" data-shack-lesson-title>one roof. two people.</h2>
+		<p class="text-sm" data-shack-lesson-detail>put the tin sheet across the two crates. leave room underneath.</p>
+	</aside>
+
+	<div class="shack-note shack-night-meter" data-shack-storm hidden>
+		<span class="text-xs">till morning</span>
+		<span class="shack-night-meter__track"><span data-shack-storm-fill></span></span>
+	</div>
+
+	<div class="shack-toasts" data-shack-toasts role="status" aria-live="polite"></div>
+	<p class="sr-only" data-shack-announcer role="status" aria-live="polite"></p>
+
+	<div class="shack-dock" data-shack-dock hidden>
+		<div class="shack-note shack-editor" data-shack-editor hidden>
+			<p class="shack-editor__about">
+				<strong data-shack-object-name></strong>
+				<span data-shack-object-detail></span>
+			</p>
+			<div class="shack-editor__actions" role="toolbar" aria-label="The piece in hand">
+				<Button variant="outline" size="sm" data-shack-rotate aria-keyshortcuts="R" title="turn (R)">
+					<RotateCw aria-hidden="true" />turn
+				</Button>
+				<Button variant="outline" size="sm" data-shack-flip aria-keyshortcuts="F" title="flip (F)">
+					<Rotate3d aria-hidden="true" /><span data-shack-flip-label>flip</span>
+				</Button>
+				<Button variant="outline" size="sm" data-shack-nail aria-keyshortcuts="N" title="nail (N)">
+					<Hammer aria-hidden="true" /><span data-shack-nail-label>nail</span>
+					<span class="shack-editor__count" data-shack-nails>2</span>
+				</Button>
+				<Button variant="default" size="sm" data-shack-place hidden>set it down</Button>
+				<Button variant="ghost" size="icon-sm" data-shack-close aria-label="Let go of it" title="esc">
+					<X aria-hidden="true" />
+				</Button>
+			</div>
+		</div>
+		<p class="shack-hint text-sm" data-shack-hint></p>
+		<div class="shack-note shack-bar">
+			<div class="shack-bar__history" role="group" aria-label="Undo and redo">
+				<Button variant="ghost" size="icon-sm" data-shack-undo aria-label="Undo" title="undo (⌘Z)" disabled>
+					<Undo2 aria-hidden="true" />
+				</Button>
+				<Button variant="ghost" size="icon-sm" data-shack-redo aria-label="Redo" title="redo (⇧⌘Z)" disabled>
+					<Redo2 aria-hidden="true" />
+				</Button>
+			</div>
+			<div class="shack-goal" data-shack-goal data-met="false" role="status">
+				<p class="shack-goal__count">dry spots <strong data-shack-goal-count>0 of 0</strong></p>
+				<p class="shack-goal__detail text-xs" data-shack-goal-detail></p>
+			</div>
+			<Button variant="default" size="sm" data-shack-night>bring on the night</Button>
+		</div>
+	</div>
+
+	<div class="shack-corner">
+		<Button variant="ghost" size="icon" data-shack-help-open aria-label="How to play">
+			<CircleQuestionMark aria-hidden="true" />
+		</Button>
+		<Button variant="ghost" size="icon" data-shack-sound aria-pressed="true" aria-label="Turn sound off">
+			<Volume2 aria-hidden="true" data-shack-sound-on />
+			<VolumeX aria-hidden="true" data-shack-sound-off class="hidden" />
+		</Button>
+		<Button variant="ghost" size="icon" data-shack-restart aria-label="Start over">
+			<RotateCcw aria-hidden="true" />
+		</Button>
+	</div>
+
+	<div class="shack-veil" data-shack-title-card>
+		<div class="shack-note shack-card">
+			<p class="shack-card__kicker text-xs">a game about junk and weather</p>
+			<h2 class="shack-card__title">shack</h2>
+			<p>A few people live on a small island in the sky. Every night the weather comes through. Build them somewhere to wait it out.</p>
+			<ul class="shack-card__rules text-sm">
+				<li>click junk to pick it up. click again to put it down. scroll to turn it.</li>
+				<li>green ground stays dry. make enough for everyone. they'll find it themselves.</li>
+				<li>gravity is on the whole time. if it falls over now, it'll fall over tonight.</li>
+			</ul>
+			<div class="shack-card__actions">
+				<Button variant="default" size="lg" data-shack-start disabled>
+					<span data-shack-loading>gathering junk…</span>
+					<span data-shack-ready hidden>start</span>
+				</Button>
+				<p class="shack-card__best text-xs" data-shack-best-line hidden>best: <span data-shack-best>0</span> dry sleeps</p>
+			</div>
+		</div>
+	</div>
+
+	<div class="shack-veil" data-shack-report hidden>
+		<div class="shack-note shack-card" role="dialog" aria-modal="false" aria-labelledby="shack-report-title">
+			<p class="shack-card__kicker text-xs" data-shack-report-kicker>the morning after</p>
+			<h2 id="shack-report-title" class="shack-card__title shack-card__title--small" data-shack-report-title>day 1</h2>
+			<ul class="shack-report__list text-sm" data-shack-report-list></ul>
+			<p class="text-sm" data-shack-report-score></p>
+			<div class="shack-card__actions">
+				<Button variant="default" data-shack-report-next>start the day</Button>
+			</div>
+		</div>
+	</div>
+
+	<div class="shack-veil" data-shack-over hidden>
+		<div class="shack-note shack-card" role="dialog" aria-modal="false" aria-labelledby="shack-over-title">
+			<h2 id="shack-over-title" class="shack-card__title shack-card__title--small" data-shack-over-title>everyone left.</h2>
+			<p data-shack-over-sub></p>
+			<p class="text-sm" data-shack-over-score></p>
+			<p class="text-xs" data-shack-over-best></p>
+			<div class="shack-card__actions">
+				<Button variant="default" data-shack-again>build another</Button>
+			</div>
+		</div>
+	</div>
+
+	<dialog class="shack-note shack-help" data-shack-help aria-labelledby="shack-help-title">
+		<div class="shack-help__heading">
+			<p class="shack-note__title">how this works</p>
+			<Button variant="ghost" size="icon-sm" data-shack-help-close aria-label="Close">
+				<X aria-hidden="true" />
+			</Button>
+		</div>
+		<h2 id="shack-help-title" class="shack-help__title">a roof is anything that keeps the rain off.</h2>
+		<p class="text-sm">Green ground stays dry tonight. Amber ground doesn't, quite. At nightfall everyone walks to a dry spot on their own. They won't climb through walls, so leave a way in.</p>
+		<dl class="shack-help__keys text-sm">
+			<div><dt>move it</dt><dd>click it, then click where it goes. dragging works too. right-click puts it back.</dd></div>
+			<div><dt>turn it, flip it</dt><dd>scroll, or <Kbd>R</Kbd>. <Kbd>F</Kbd> stands it up or lays it flat.</dd></div>
+			<div><dt>nail it</dt><dd>point at it and press <Kbd>N</Kbd>. it joins whatever it's touching. <Kbd>N</Kbd> again gets the nail back.</dd></div>
+			<div><dt>look around</dt><dd>drag the sky, or <Kbd>Q</Kbd> and <Kbd>E</Kbd>. scroll to zoom. two fingers on touch.</dd></div>
+			<div><dt>take it back</dt><dd><Kbd>⌘Z</Kbd> undoes. <Kbd>esc</Kbd> puts a carried thing back.</dd></div>
+		</dl>
+		<p class="text-xs shack-help__footer">orange means it won't stay up. it isn't being dramatic.</p>
+	</dialog>
+</section>
+
+<script>
+	import { initShack } from '../lib/shack';
+
+	const root = document.querySelector<HTMLElement>('[data-shack-root]');
+	if (root) void initShack(root);
+</script>
+
+<style>
+	.shack {
+		--shack-ink: #303c36;
+		--shack-paper: #fbf6e9;
+		--shack-pink: #cf647f;
+		--shack-green: #38765d;
+		--shack-muted: #657369;
+		--shack-line: #b7b9a8;
+		--app-brand: #38765d;
+		--app-on-brand: #fffaf0;
+		--app-fill-rgb: 255 250 240;
+		position: relative;
+		height: 100dvh;
+		overflow: hidden;
+		color: var(--shack-ink);
+		user-select: none;
+		-webkit-user-select: none;
+	}
+
+	/* Panels here set their own display, which would otherwise beat `hidden`. */
+	.shack :global([hidden]) {
+		display: none !important;
+	}
+
+	.shack-stage {
+		position: absolute;
+		inset: 0;
+		touch-action: none;
+		cursor: default;
+	}
+
+	.shack-stage:focus-visible {
+		outline: 3px solid var(--shack-green);
+		outline-offset: -3px;
+	}
+
+	.shack[data-cursor='grab'] .shack-stage { cursor: grab; }
+	.shack[data-cursor='grabbing'] .shack-stage { cursor: grabbing; }
+	.shack[data-cursor='pointer'] .shack-stage { cursor: pointer; }
+
+	.shack-canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.shack-bubbles {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+
+	/* Paper with an ink edge. Buttons inside take their colours from it. */
+	.shack-note {
+		--ui-control-color: var(--shack-ink);
+		--ui-control-muted: var(--shack-muted);
+		--ui-control-border: var(--shack-line);
+		--ui-control-hover: #e7e8d9;
+		--ui-control-focus: var(--shack-green);
+		position: absolute;
+		border: 1.5px solid var(--shack-ink);
+		border-radius: 14px 5px 12px 4px / 4px 12px 5px 14px;
+		background: var(--shack-paper);
+		box-shadow: 3px 4px 0 rgb(48 60 54 / 0.8);
+		color: var(--shack-ink);
+	}
+
+	.shack-note__title {
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.shack-masthead {
+		position: absolute;
+		top: 1rem;
+		left: 1.25rem;
+		pointer-events: none;
+	}
+
+	.shack-wordmark {
+		color: #fff8e5;
+		font-size: 2.6rem;
+		font-weight: 900;
+		letter-spacing: -0.06em;
+		line-height: 1;
+		text-shadow: 2px 3px 0 var(--shack-ink);
+		transform: rotate(-3deg);
+		transform-origin: left bottom;
+		-webkit-text-stroke: 1.5px var(--shack-ink);
+	}
+
+	.shack-day {
+		display: flex;
+		gap: 0.4rem;
+		width: fit-content;
+		margin-top: 0.35rem;
+		padding: 0.1rem 0.5rem;
+		border-radius: 999px;
+		background: rgb(48 60 54 / 0.75);
+		color: #fff8e5;
+		font-size: 0.8rem;
+		font-weight: 600;
+	}
+
+	.shack-forecast {
+		top: 1rem;
+		left: 50%;
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+		max-width: min(27rem, calc(100% - 20rem));
+		padding: 0.55rem 0.9rem 0.6rem 0.6rem;
+		transform: translateX(-50%) rotate(-0.6deg);
+	}
+
+	.shack-forecast__headline { font-weight: 800; }
+	.shack-forecast__aside { color: var(--shack-muted); }
+
+	.shack-compass {
+		flex: 0 0 auto;
+		width: 2.5rem;
+		height: 2.5rem;
+		border: 1.5px solid var(--shack-ink);
+		border-radius: 50%;
+		background: #fff;
+	}
+
+	.shack-compass svg {
+		width: 100%;
+		height: 100%;
+		fill: none;
+		stroke: var(--shack-pink);
+		stroke-width: 3;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		transition: transform 240ms ease;
+	}
+
+	.shack-tenants {
+		top: 6.4rem;
+		left: 1.25rem;
+		display: grid;
+		gap: 0.5rem;
+		width: 13rem;
+		padding: 0.6rem 0.75rem 0.7rem;
+		transform: rotate(0.5deg);
+	}
+
+	.shack-tenants :global(li) {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		gap: 0.1rem 0.45rem;
+		align-items: center;
+		font-size: 0.85rem;
+	}
+
+	.shack-tenants :global(.shack-tenant__swatch) {
+		width: 0.8rem;
+		height: 0.8rem;
+		border: 1.5px solid var(--shack-ink);
+		border-radius: 50%;
+		background: var(--swatch);
+	}
+
+	.shack-tenants :global(.shack-tenant__name) { font-weight: 700; }
+	.shack-tenants :global(.shack-tenant__patience) { font-size: 0.7rem; letter-spacing: 0.1em; }
+
+	.shack-tenants :global(.shack-tenant__status) {
+		grid-column: 2 / -1;
+		margin-top: -0.2rem;
+		color: var(--shack-muted);
+		font-size: 0.75rem;
+	}
+
+	.shack-tenants :global(.shack-tenant__wet) {
+		grid-column: 2 / -1;
+		height: 0.3rem;
+		border: 1px solid rgb(48 60 54 / 0.6);
+		border-radius: 999px;
+		background: linear-gradient(90deg, #749fae var(--wet), transparent var(--wet));
+	}
+
+	.shack-tenants :global(li[data-gone='true']) { opacity: 0.45; text-decoration: line-through; }
+
+	.shack-tenants__score {
+		padding-top: 0.4rem;
+		border-top: 1.5px dashed var(--shack-line);
+	}
+
+	.shack-lesson {
+		position: absolute;
+		top: 6.4rem;
+		right: 1.25rem;
+		display: grid;
+		gap: 0.35rem;
+		width: 12rem;
+		pointer-events: none;
+	}
+
+	.shack-lesson__title {
+		font-size: 1.35rem;
+		font-weight: 900;
+		letter-spacing: -0.04em;
+		line-height: 1.1;
+	}
+
+	.shack-night-meter {
+		top: 1rem;
+		left: 50%;
+		display: flex;
+		gap: 0.6rem;
+		align-items: center;
+		padding: 0.45rem 0.8rem;
+		transform: translateX(-50%);
+	}
+
+	.shack-night-meter__track {
+		position: relative;
+		width: 10rem;
+		height: 0.55rem;
+		overflow: hidden;
+		border: 1.5px solid var(--shack-ink);
+		border-radius: 999px;
+	}
+
+	.shack-night-meter__track span {
+		position: absolute;
+		inset: 0;
+		background: var(--shack-ink);
+		transform-origin: left center;
+		transform: scaleX(var(--progress, 0));
+	}
+
+	.shack-toasts {
+		position: absolute;
+		top: 6.4rem;
+		left: 50%;
+		display: grid;
+		justify-items: center;
+		gap: 0.4rem;
+		width: min(30rem, calc(100% - 2rem));
+		transform: translateX(-50%);
+		pointer-events: none;
+	}
+
+	.shack-toasts :global(p) {
+		padding: 0.3rem 0.75rem;
+		border: 1.5px solid var(--shack-ink);
+		border-radius: 999px;
+		background: var(--shack-paper);
+		box-shadow: 2px 2px 0 rgb(48 60 54 / 0.8);
+		font-size: 0.85rem;
+		text-align: center;
+		animation: shack-toast-in 220ms ease-out;
+	}
+
+	.shack-toasts :global(p.is-leaving) {
+		opacity: 0;
+		transform: translateY(-0.4rem);
+		transition: opacity 400ms ease, transform 400ms ease;
+	}
+
+	.shack-dock {
+		position: absolute;
+		right: 1rem;
+		bottom: 1.1rem;
+		left: 1rem;
+		display: grid;
+		justify-items: center;
+		gap: 0.6rem;
+		pointer-events: none;
+	}
+
+	.shack-editor {
+		position: static;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+		align-items: center;
+		justify-content: center;
+		max-width: 40rem;
+		padding: 0.45rem 0.5rem 0.45rem 0.9rem;
+		pointer-events: auto;
+		transform: rotate(0.3deg);
+	}
+
+	/* A fixed width, so the buttons beside it stay put as the text changes. */
+	.shack-editor__about {
+		display: grid;
+		width: 15rem;
+		font-size: 0.8rem;
+	}
+
+	.shack-editor__about strong { font-weight: 800; }
+
+	.shack-editor__about span {
+		overflow: hidden;
+		color: var(--shack-muted);
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.shack-editor[data-warning='true'] .shack-editor__about span { color: #a8561c; }
+
+	.shack-editor__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		align-items: center;
+	}
+
+	.shack-editor__count {
+		min-width: 1.1rem;
+		padding: 0 0.3rem;
+		border-radius: 999px;
+		background: var(--shack-ink);
+		color: var(--shack-paper);
+		font-size: 0.75rem;
+		font-weight: 700;
+		line-height: 1.1rem;
+		text-align: center;
+	}
+
+	.shack-hint {
+		max-width: 38rem;
+		padding: 0.2rem 0.7rem;
+		border-radius: 999px;
+		background: rgb(48 60 54 / 0.75);
+		color: #fff8e5;
+		text-align: center;
+	}
+
+	.shack-hint:empty { display: none; }
+
+	.shack-bar {
+		position: static;
+		display: flex;
+		gap: 0.9rem;
+		align-items: center;
+		width: min(44rem, 100%);
+		padding: 0.5rem 0.6rem;
+		pointer-events: auto;
+		transform: rotate(-0.3deg);
+	}
+
+	.shack-bar__history {
+		display: flex;
+		padding-right: 0.6rem;
+		border-right: 1.5px dashed var(--shack-line);
+	}
+
+	.shack-goal {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.shack-goal__count {
+		font-size: 0.85rem;
+		font-weight: 700;
+	}
+
+	.shack-goal__count strong {
+		padding: 0 0.4rem;
+		border-radius: 999px;
+		background: var(--shack-ink);
+		color: var(--shack-paper);
+	}
+
+	.shack-goal[data-met='true'] .shack-goal__count strong { background: var(--shack-green); }
+	.shack-goal__detail { color: var(--shack-muted); }
+
+	.shack-corner {
+		position: absolute;
+		top: 3.4rem;
+		right: 0.75rem;
+		display: grid;
+		gap: 0.25rem;
+		--ui-control-color: #fff8e5;
+		--ui-control-hover: rgb(48 60 54 / 0.3);
+	}
+
+	.shack-corner :global(.ui-button) {
+		filter: drop-shadow(1px 2px 0 rgb(48 60 54 / 0.9));
+	}
+
+	.shack-veil {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		padding: 1.25rem;
+		background: rgb(37 62 50 / 0.18);
+	}
+
+	.shack-card {
+		position: relative;
+		display: grid;
+		gap: 0.9rem;
+		width: min(30rem, 100%);
+		max-height: calc(100dvh - 2.5rem);
+		overflow-y: auto;
+		padding: 1.4rem 1.5rem 1.5rem;
+		transform: rotate(-0.8deg);
+		user-select: text;
+		-webkit-user-select: text;
+	}
+
+	.shack-card__kicker {
+		color: var(--shack-muted);
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.shack-card__title {
+		margin-top: -0.6rem;
+		font-size: 3.4rem;
+		font-weight: 900;
+		letter-spacing: -0.07em;
+		line-height: 1;
+	}
+
+	.shack-card__title--small {
+		margin-top: -0.4rem;
+		font-size: 2rem;
+		letter-spacing: -0.05em;
+	}
+
+	.shack-card__rules {
+		display: grid;
+		gap: 0.35rem;
+		padding-left: 1.1rem;
+		list-style: '— ';
+	}
+
+	.shack-card__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem 1rem;
+		align-items: center;
+	}
+
+	.shack-card__best { color: var(--shack-muted); }
+
+	.shack-report__list {
+		display: grid;
+		gap: 0.45rem;
+	}
+
+	.shack-report__list :global(li) {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 0.5rem;
+		align-items: baseline;
+	}
+
+	.shack-report__list :global(.shack-report__mark) {
+		width: 0.7rem;
+		height: 0.7rem;
+		border: 1.5px solid var(--shack-ink);
+		border-radius: 50%;
+		background: var(--swatch);
+		transform: translateY(0.05rem);
+	}
+
+	.shack-bubbles :global(.shack-bubble) {
+		position: absolute;
+		top: 0;
+		left: 0;
+		max-width: 12rem;
+		padding: 0.25rem 0.55rem;
+		border: 1.5px solid var(--shack-ink);
+		border-radius: 10px 10px 10px 3px;
+		background: #fffdf6;
+		box-shadow: 2px 2px 0 rgb(48 60 54 / 0.8);
+		color: var(--shack-ink);
+		font-size: 0.8rem;
+		line-height: 1.25;
+		white-space: nowrap;
+		opacity: 0;
+		transition: opacity 180ms ease;
+		will-change: transform;
+	}
+
+	.shack-bubbles :global(.shack-bubble.is-showing) { opacity: 1; }
+
+	.shack-bubbles :global(.shack-bubble--name) {
+		padding: 0.1rem 0.45rem;
+		border-radius: 999px;
+		background: var(--shack-ink);
+		color: #fff8e5;
+		font-weight: 700;
+	}
+
+	.shack-help {
+		position: fixed;
+		width: min(32rem, calc(100% - 2rem));
+		max-height: calc(100dvh - 3rem);
+		margin: auto;
+		padding: 1.2rem 1.4rem 1.4rem;
+		overflow-y: auto;
+	}
+
+	.shack-help::backdrop { background: rgb(23 46 44 / 0.4); }
+
+	.shack-help__heading {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.shack-help__title {
+		margin: 0.4rem 0 0.7rem;
+		font-size: 1.6rem;
+		font-weight: 900;
+		letter-spacing: -0.05em;
+		line-height: 1.1;
+	}
+
+	.shack-help__keys {
+		display: grid;
+		gap: 0.6rem;
+		margin-block: 1rem;
+		padding-block: 1rem;
+		border-block: 1.5px dashed var(--shack-line);
+	}
+
+	.shack-help__keys div {
+		display: grid;
+		grid-template-columns: 7.5rem 1fr;
+		gap: 0.75rem;
+	}
+
+	.shack-help__keys dt { font-weight: 700; }
+	.shack-help__keys dd { color: var(--shack-muted); }
+	.shack-help__footer { color: var(--shack-muted); }
+
+	.shack[data-phase='storm'] .shack-forecast,
+	.shack[data-phase='dusk'] .shack-forecast { display: none; }
+
+	@keyframes shack-toast-in {
+		from { opacity: 0; transform: translateY(0.5rem) rotate(-1deg); }
+		to { opacity: 1; transform: none; }
+	}
+
+	@media (max-width: 860px) {
+		.shack-forecast {
+			top: 4.9rem;
+			right: 1rem;
+			left: 1rem;
+			max-width: none;
+			transform: rotate(-0.6deg);
+		}
+
+		.shack-forecast__aside,
+		.shack-lesson__title { display: none; }
+
+		.shack-tenants {
+			top: 10.2rem;
+			left: 0.75rem;
+			width: auto;
+			max-width: 11rem;
+		}
+
+		.shack-tenants :global(.shack-tenant__status) { display: none; }
+
+		.shack-lesson {
+			top: 10.4rem;
+			right: 0.75rem;
+			width: 9.5rem;
+		}
+
+		.shack-toasts { top: 10.2rem; }
+
+		/* A row beside the site's menu button, above the forecast. */
+		.shack-corner {
+			top: 0.55rem;
+			right: 2.9rem;
+			display: flex;
+		}
+	}
+
+	@media (max-width: 640px) {
+		.shack-wordmark { font-size: 2rem; }
+		.shack-masthead { left: 0.9rem; }
+		.shack-tenants__score,
+		.shack-goal__detail,
+		.shack-editor__about span { display: none; }
+
+		.shack-bar {
+			flex-wrap: wrap;
+			justify-content: space-between;
+		}
+
+		.shack-dock { right: 0.6rem; left: 0.6rem; bottom: max(0.6rem, env(safe-area-inset-bottom)); }
+		.shack-help__keys div { grid-template-columns: 1fr; gap: 0.1rem; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.shack-toasts :global(p) { animation: none; }
+		.shack-compass svg { transition: none; }
+	}
+</style>

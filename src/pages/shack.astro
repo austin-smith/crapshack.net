@@ -1,0 +1,15 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Shack from '../components/Shack.astro';
+---
+
+<Layout title="crapshack (shack)" fullBleed lockScroll>
+	<Shack />
+</Layout>
+
+<style>
+	/* The island has its own weather. The site's would fall in front of it. */
+	:global(.weather-container) {
+		display: none;
+	}
+</style>
