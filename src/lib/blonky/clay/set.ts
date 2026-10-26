@@ -1,6 +1,6 @@
 import { BLONKY_VIEW_FRAMING, BLONKY_VIEWPORTS } from '../types';
 import { exposureFlicker } from './figure';
-import { CONTEXT_RESTORE_TIMEOUT_MS, createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, type SolveLevel } from './gpu';
+import { CONTEXT_RESTORE_TIMEOUT_MS, createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, watchGpu, type SolveLevel } from './gpu';
 import {
 	SET_DEVELOP_FRAGMENT,
 	SET_HEIGHT_FRAGMENT,
@@ -468,12 +468,12 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 			textDirty = false;
 		}
 		develop();
-		if (gpuFailed()) throw new Error('The clay set could not draw');
 	};
 	const render = (): void => {
 		if (destroyed) return;
 		try {
 			draw();
+			watch.checkLater();
 		} catch (error) {
 			fail(error);
 		}
@@ -578,14 +578,13 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	};
 	const onContextLost = (event: Event): void => {
 		event.preventDefault();
+		watch.cancel();
 		restoreTimer = window.setTimeout(() => fail(new Error('The clay set\'s context was not restored')), CONTEXT_RESTORE_TIMEOUT_MS);
 	};
 	// The GPU can refuse the set's targets without throwing, leaving it
-	// nothing to draw.
-	const gpuFailed = (): boolean => {
-		const error = gl.getError();
-		return gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION;
-	};
+	// nothing to draw. Its first draw is checked as it's drawn, and later
+	// ones once the GPU has caught up with them.
+	const watch = watchGpu(gl, () => fail(new Error('The clay set could not draw')));
 	const onContextRestored = (): void => {
 		window.clearTimeout(restoreTimer);
 		try {
@@ -596,7 +595,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 			if (hasFigure) shadeFigure();
 			cancelScheduled();
 			draw();
-			if (gl.isContextLost()) throw new Error('The clay set could not be restored');
+			if (watch.failedNow()) throw new Error('The clay set could not be restored');
 		} catch (error) {
 			fail(error);
 		}
@@ -607,6 +606,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	const destroy = (): void => {
 		destroyed = true;
 		window.clearTimeout(restoreTimer);
+		watch.cancel();
 		cancelScheduled();
 		for (const observer of observers) observer.disconnect();
 		options.logo.removeEventListener('load', onLayout);
@@ -617,7 +617,7 @@ export function createClaySet(canvas: HTMLCanvasElement, options: ClaySetOptions
 	try {
 		setup();
 		draw();
-		if (gl.isContextLost()) throw new Error('The clay set could not draw');
+		if (watch.failedNow()) throw new Error('The clay set could not draw');
 	} catch (error) {
 		console.error(error);
 		destroy();
