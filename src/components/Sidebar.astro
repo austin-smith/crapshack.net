@@ -21,8 +21,9 @@ const appLinks = apps
 		description: app.description,
 	}))
 	.sort((a, b) => a.label.localeCompare(b.label));
-// The gallery's first icon stands in for the whole gallery
-const galleryIcon = iconEntries[0].icon;
+// Rextty stands in for the whole gallery, named so reordering the catalog can't change it
+const galleryIcon = iconEntries.find(({ icon }) => icon.key === 'rex-rextty')?.icon;
+if (!galleryIcon) throw new Error('No rex-rextty app icon for the sidebar: update the sidebar or the catalog');
 ---
 <div id="sidebar-overlay" class="fixed inset-0 z-[90] bg-scrim"></div>
 
