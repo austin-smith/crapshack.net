@@ -8,6 +8,7 @@ import ButtonGroup from '../components/ui/ButtonGroup.astro';
 import Dialog from '../components/ui/Dialog.astro';
 import { buttonVariants } from '../components/ui/button';
 import { actualSizeSet, iconEntries, previewSrc, responsivePreviewSet, type IconEntry } from '../data/app-icons';
+import type { SvgComponent } from 'astro/types';
 
 const dialogId = 'icon-inspector';
 // Decimal units, as Finder reports the downloaded file
@@ -17,7 +18,17 @@ const fileSize = (path: string) => {
 };
 const iconLabel = ({ app, icon }: IconEntry) => `${app.name} ${icon.name} icon`;
 
-const entries = iconEntries.map((entry) => ({ ...entry, size: fileSize(entry.icon.download) }));
+// Each collection's one-colour logo, named by its id and drawn in the text colour. Each
+// viewBox is a square the art covers 22/35 of (so the widest, the BitDream cloud, just fits
+// across), so every logo looks the same size at the same square size.
+const logos = import.meta.glob<SvgComponent>('../assets/app-logos/*.svg', { eager: true, import: 'default' });
+const logoFor = (id: string) => {
+	const logo = logos[`../assets/app-logos/${id}.svg`];
+	if (!logo) throw new Error(`No logo for the ${id} app icons: add src/assets/app-logos/${id}.svg`);
+	return logo;
+};
+
+const entries = iconEntries.map((entry) => ({ ...entry, size: fileSize(entry.icon.download), Logo: logoFor(entry.app.id) }));
 const first = entries[0];
 const actualSizes = [16, 32, 64, 128] as const;
 // On screen at first paint on every viewport from 360 × 640 up; later cards load lazily
@@ -35,7 +46,7 @@ const plates = [
 		</header>
 
 		<ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
-			{entries.map(({ app, icon }, index) => (
+			{entries.map(({ app, icon, Logo }, index) => (
 				<li>
 					<article id={icon.key} class="flex h-full scroll-mt-8 overflow-hidden rounded-lg border border-line bg-raised shadow-lg max-sm:flex-row sm:flex-col">
 						<button
@@ -64,7 +75,9 @@ const plates = [
 							<div class="space-y-1">
 								<div class="flex items-baseline justify-between gap-3">
 									<h2 class="font-mono text-lg font-semibold text-[var(--color-text)]">{icon.name}</h2>
-									<span class="shrink-0 font-mono text-xs text-dim">{app.name}</span>
+									<span class="shrink-0 font-mono text-xs text-dim">
+										<Logo aria-hidden="true" class="mr-1.5 inline size-4 align-[-0.28em]" />{app.name}
+									</span>
 								</div>
 								<p class="text-sm text-muted">{icon.description}</p>
 							</div>
@@ -92,7 +105,7 @@ const plates = [
 			</div>
 
 			{/* All hidden until opened: a closed dialog still has layout, so a shown panel's lazy images would load */}
-			{entries.map(({ app, icon, size }) => (
+			{entries.map(({ app, icon, size, Logo }) => (
 				<section data-icon-panel={icon.key} data-label={iconLabel({ app, icon })} data-name={icon.name} hidden aria-labelledby={`${icon.key}-inspect-title`} class="text-[var(--color-text)]">
 					<div class="grid gap-6 md:grid-cols-[20rem_minmax(0,1fr)] md:items-center">
 						<div class="relative grid aspect-square place-items-center overflow-hidden rounded-xl bg-sunken p-[8%]">
@@ -110,12 +123,11 @@ const plates = [
 							/>
 						</div>
 						<div class="flex flex-col gap-4">
-							<div>
-								<p class="font-mono text-sm text-dim">
-									for{' '}
-									<a href={app.url} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]">{app.name}<ArrowUpRight width={14} height={14} aria-hidden="true" /></a>
-								</p>
-								<h2 id={`${icon.key}-inspect-title`} class="mt-1 font-mono text-2xl font-semibold">{icon.name}</h2>
+							<div class="flex flex-col items-start">
+								<a href={app.url} target="_blank" rel="noopener noreferrer" class={`${buttonVariants({ variant: 'outline', size: 'sm' })} mb-3`}>
+									<Logo aria-hidden="true" /> {app.name} <ArrowUpRight aria-hidden="true" />
+								</a>
+								<h2 id={`${icon.key}-inspect-title`} class="font-mono text-2xl font-semibold">{icon.name}</h2>
 								<p class="mt-2 text-muted">{icon.description}</p>
 							</div>
 							<div class="flex flex-wrap items-center gap-x-3 gap-y-2">
