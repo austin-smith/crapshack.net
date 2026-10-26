@@ -7,7 +7,8 @@ graphics app.
 ## Layout
 
 - `catalog.json`: every collection and variant, with names, credits, and
-  optional `opticalSources` and `housing` settings. `publicDir` and the IDs set
+  optional `opticalSources` and `housing` settings. The gallery shows them in
+  this order, so keep collections sorted by name. `publicDir` and the IDs set
   every path: a variant's sources live in `<collection>/<variant>/`, and it
   publishes `public/<publicDir>/<collection>/<variant>.icns` with its previews
   in `<variant>/` beside it.
@@ -40,6 +41,15 @@ Edit the icon's `generate.py`, or the data it reads, then run it and rebuild:
 ```
 
 Pass `--out DIR` to a generator to write somewhere else for comparison.
+
+BitDream's icons are the app's own alternates. To refresh them after the app's
+`.icon` documents change, pass its `AppIcons` folder with `--export`, which
+needs Xcode's Icon Composer:
+
+```sh
+~/.venvs/app-icons/bin/python artwork/app-icons/bitdream/generate.py --export ../BitDream/AppIcons
+```
+
 To see an icon's layers, open its `icon.svg` in VectorCraft or PhotoCraft. Make
 changes in `generate.py`, which overwrites the SVG.
 
@@ -59,4 +69,5 @@ It also rewrites each `optical-*/render.png`; commit them with the rest.
 
 Original artwork belongs to its owners, credited per collection in
 `catalog.json` and on the gallery. These icons adapt that artwork and claim no
-ownership or license over it.
+ownership or license over it. Collections of our own apps' icons, such as
+BitDream's, have no credits.
