@@ -101,6 +101,10 @@ export function openDialog(id: string): void {
 		triggerMap.set(dialog, activeElement);
 	}
 
+	// Start at the top each time, as Radix does by mounting fresh content
+	const content = dialog.querySelector<HTMLElement>('[data-dialog-content]');
+	if (content) content.scrollTop = 0;
+
 	// Prevent body scroll
 	scrollLocks.set(dialog, lockScroll(dialog.querySelector('[data-dialog-container]') ?? dialog));
 
