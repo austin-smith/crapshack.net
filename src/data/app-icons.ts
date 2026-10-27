@@ -23,6 +23,7 @@ export interface IconVariant {
 export interface IconCollection {
 	id: string;
 	name: string;
+	/** The app's page: a path on this site, which opens in place, or another site's URL. */
 	url: string;
 	/** Owners of the artwork a collection adapts; none for our own apps' icons. */
 	credits?: IconCredit[];
