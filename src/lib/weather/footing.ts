@@ -200,10 +200,24 @@ export function hasGround<T>(footing: Footing<T>, column: number): boolean {
 }
 
 /**
+ * Whether something on the page is in front of a surface at page point
+ * (x, y), a dialog or a menu: what falls in front of that can't reach the
+ * surface there, nor can anything coming off the surface there be seen.
+ * Only a surface with a `layer` can tell; what's in front of it is
+ * whatever's topmost there that isn't in that element.
+ */
+export function coveredAt<T>(footing: Footing<T>, x: number, y: number): boolean {
+	const element = footing.surface.layer;
+	if (!element) return false;
+	const top = document.elementFromPoint(x, y);
+	return top !== null && !element.contains(top);
+}
+
+/**
  * The surface a particle falling from (x, lastY) to (x, y) reaches this
  * frame, if any: it crossed the top, or is only just under it (the surface
- * rose to meet it). `top` is the top's page y at a column, if it differs
- * from the ground's.
+ * rose to meet it), where nothing's in front of it. `top` is the top's page
+ * y at a column, if it differs from the ground's.
  */
 export function landingOn<T>(
 	footings: Iterable<Footing<T>>,
@@ -219,7 +233,7 @@ export function landingOn<T>(
 		if (!hasGround(footing, column)) continue;
 		const at = top(footing, column);
 		if (y < at || (lastY >= at && y - at > 3)) continue;
-		if (at < foundTop) {
+		if (at < foundTop && !coveredAt(footing, x, at)) {
 			found = footing;
 			foundTop = at;
 		}

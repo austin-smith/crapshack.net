@@ -10,7 +10,7 @@
  */
 
 import { createWeatherCanvas, type WeatherEffect } from './canvas';
-import { columnAt, createFootings, hasGround, landingOn, lastPagePoint, pagePoint, type Footing } from './footing';
+import { columnAt, coveredAt, createFootings, hasGround, landingOn, lastPagePoint, pagePoint, type Footing } from './footing';
 import { createPool } from './pool';
 
 interface WeatherOptions {
@@ -239,16 +239,17 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 
 	/**
 	 * Lets a bead go from its surface, at its place, going its way; where
-	 * the surface has gone from under it, from where that was.
+	 * the surface has gone from under it, from where that was. Where
+	 * something's in front of it there, it goes unseen.
 	 */
 	const detach = (footing: Footing<Wet>, bead: Bead, vx: number, vy: number): void => {
-		if (hasGround(footing, bead.at)) {
-			const shape = beadShape(footing, bead);
-			falling.push({ x: shape.x, y: shape.y, vx, vy, volume: bead.volume });
-		} else {
+		let from: { x: number; y: number } | undefined;
+		if (hasGround(footing, bead.at)) from = beadShape(footing, bead);
+		else {
 			const was = lastPagePoint(footing, bead.at);
-			if (!Number.isNaN(was.x)) falling.push({ x: was.x, y: was.y - radiusOf(bead.volume), vx, vy, volume: bead.volume });
+			if (!Number.isNaN(was.x)) from = { x: was.x, y: was.y - radiusOf(bead.volume) };
 		}
+		if (from && !coveredAt(footing, from.x, from.y)) falling.push({ x: from.x, y: from.y, vx, vy, volume: bead.volume });
 		bead.volume = 0;
 	};
 

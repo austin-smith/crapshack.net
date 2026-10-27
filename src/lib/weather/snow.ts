@@ -12,6 +12,7 @@ import {
 	columnAt,
 	columnX,
 	columnY,
+	coveredAt,
 	createFootings,
 	hasGround,
 	landingOn,
@@ -245,7 +246,8 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 				const piece = left < CLUMP_MAX * 1.5 ? left : CLUMP_MAX * (0.6 + Math.random() * 0.4);
 				left -= piece;
 				const point = from();
-				if (!point) continue;
+				// Where something's in front of it, it goes unseen.
+				if (!point || coveredAt(footing, point.x, point.y)) continue;
 				// Each piece goes a little its own way, more so the harder it's thrown.
 				const scatter = 10 + speed * 0.15;
 				clump(point.x, point.y, piece, towardX + (Math.random() - 0.5) * 2 * scatter, towardY - Math.random() * scatter);
