@@ -17,6 +17,7 @@ const fileSize = (path: string) => {
 	return bytes < 1e6 ? `${Math.round(bytes / 1e3)} KB` : `${(bytes / 1e6).toFixed(1)} MB`;
 };
 const iconLabel = ({ app, icon }: IconEntry) => `${app.name} ${icon.name} icon`;
+const isExternal = (url: string) => /^https?:\/\//.test(url);
 
 // Each collection's one-colour logo, named by its id and drawn in the text colour. Each
 // viewBox is a square the art covers 22/35 of (so the widest, the BitDream cloud, just fits
@@ -124,9 +125,16 @@ const plates = [
 						</div>
 						<div class="flex flex-col gap-4">
 							<div class="flex flex-col items-start">
-								<a href={app.url} target="_blank" rel="noopener noreferrer" class={`${buttonVariants({ variant: 'outline', size: 'sm' })} mb-3`}>
-									<Logo aria-hidden="true" /> {app.name} <ArrowUpRight aria-hidden="true" />
-								</a>
+								{/* Our own app pages open in place; other sites open in a new tab */}
+								{isExternal(app.url) ? (
+									<a href={app.url} target="_blank" rel="noopener noreferrer" class={`${buttonVariants({ variant: 'outline', size: 'sm' })} mb-3`}>
+										<Logo aria-hidden="true" /> {app.name} <ArrowUpRight aria-hidden="true" />
+									</a>
+								) : (
+									<a href={app.url} class={`${buttonVariants({ variant: 'outline', size: 'sm' })} mb-3`}>
+										<Logo aria-hidden="true" /> {app.name}
+									</a>
+								)}
 								<h2 id={`${icon.key}-inspect-title`} class="font-mono text-2xl font-semibold">{icon.name}</h2>
 								<p class="mt-2 text-muted">{icon.description}</p>
 							</div>

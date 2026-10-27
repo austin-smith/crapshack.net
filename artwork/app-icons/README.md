@@ -50,6 +50,13 @@ needs Xcode's Icon Composer:
 ~/.venvs/app-icons/bin/python artwork/app-icons/bitdream/generate.py --export ../BitDream/AppIcons
 ```
 
+PlexBar's icons come from PlexBar Studio's `.icon` documents the same way; pass
+its `Studio/Resources` folder:
+
+```sh
+~/.venvs/app-icons/bin/python artwork/app-icons/plexbar/generate.py --export ../PlexBar/Studio/Resources
+```
+
 To see an icon's layers, open its `icon.svg` in VectorCraft or PhotoCraft. Make
 changes in `generate.py`, which overwrites the SVG.
 
@@ -70,4 +77,4 @@ It also rewrites each `optical-*/render.png`; commit them with the rest.
 Original artwork belongs to its owners, credited per collection in
 `catalog.json` and on the gallery. These icons adapt that artwork and claim no
 ownership or license over it. Collections of our own apps' icons, such as
-BitDream's, have no credits.
+BitDream's and PlexBar's, have no credits.
