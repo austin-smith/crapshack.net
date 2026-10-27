@@ -1,0 +1,133 @@
+{
+  "publicDir": "app-icons",
+  "collections": [
+    {
+      "id": "bitdream",
+      "name": "BitDream",
+      "url": "https://bitdream.app",
+      "variants": [
+        {
+          "id": "blue-clouds",
+          "name": "Blue Clouds",
+          "description": "BitDream’s pixel cloud, outlined in blue on a pale sky."
+        },
+        {
+          "id": "cloudy-day",
+          "name": "Cloudy Day",
+          "description": "A bank of pixel clouds drifting across a blue sky."
+        }
+      ]
+    },
+    {
+      "id": "plex",
+      "name": "Plex",
+      "url": "https://www.plex.tv/",
+      "credits": [
+        {
+          "text": "Original Plex mark by",
+          "name": "Plex",
+          "url": "https://www.plex.tv/"
+        }
+      ],
+      "variants": [
+        {
+          "id": "phosphor",
+          "name": "Phosphor",
+          "description": "Plex chevron in amber phosphor dots on a dark screen.",
+          "opticalSources": {
+            "16": "optical-64/icon.svg",
+            "32": "optical-64/icon.svg",
+            "64": "optical-64/icon.svg",
+            "128": "optical-128/icon.svg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rex",
+      "name": "Rex",
+      "url": "https://www.superlogical.com/rex/docs/installation",
+      "credits": [
+        {
+          "text": "Rexie character by",
+          "name": "Superlogical",
+          "url": "https://www.superlogical.com/rex/docs/installation"
+        },
+        {
+          "text": "Frame, phosphor texture, and glass treatment adapted from",
+          "name": "Ghostty",
+          "url": "https://ghostty.org"
+        }
+      ],
+      "variants": [
+        {
+          "id": "rextty",
+          "name": "Rextty",
+          "description": "Ghostty’s blue CRT frame, with a larger Rexie centered inside."
+        },
+        {
+          "id": "rextty-classic",
+          "name": "Rextty Classic",
+          "description": "Ghostty’s blue CRT frame, with a smaller Rexie in the upper left."
+        },
+        {
+          "id": "fossil",
+          "name": "Fossil",
+          "description": "A pixel dinosaur on a green phosphor screen."
+        },
+        {
+          "id": "prism",
+          "name": "Prism",
+          "description": "A pale glass Rexie over a violet, coral, and amber screen."
+        }
+      ],
+      "housing": {
+        "reference": "references/ghostty-original.png",
+        "screenMask": "references/screen-mask.png"
+      }
+    },
+    {
+      "id": "t3code",
+      "name": "T3 Code",
+      "url": "https://t3.codes",
+      "credits": [
+        {
+          "text": "T3 wordmark by",
+          "name": "T3 Tools",
+          "url": "https://t3.codes"
+        }
+      ],
+      "variants": [
+        {
+          "id": "keycap",
+          "name": "Keycap",
+          "description": "T3’s wordmark as the legend on a black mechanical keycap."
+        }
+      ]
+    },
+    {
+      "id": "vlc",
+      "name": "VLC",
+      "url": "https://www.videolan.org/vlc/",
+      "credits": [
+        {
+          "text": "Original VLC cone by",
+          "name": "VideoLAN",
+          "url": "https://www.videolan.org/"
+        }
+      ],
+      "variants": [
+        {
+          "id": "test-pattern",
+          "name": "Test Pattern",
+          "description": "VLC’s cone in front of color bars on an old CRT.",
+          "opticalSources": {
+            "16": "optical-small/icon.svg",
+            "32": "optical-small/icon.svg",
+            "64": "optical-small/icon.svg"
+          }
+        }
+      ]
+    }
+  ]
+}

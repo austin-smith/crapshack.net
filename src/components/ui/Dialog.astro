@@ -34,7 +34,7 @@ const { id, class: className, maxWidth = 'max-w-2xl', ariaLabel } = Astro.props;
 		>
 			<X aria-hidden="true" />
 		</Button>
-		<div class="dialog-content">
+		<div class="dialog-content" data-dialog-content>
 			<slot />
 		</div>
 	</div>

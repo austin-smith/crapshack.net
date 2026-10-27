@@ -12,7 +12,7 @@ import {
 	type ClayFigure,
 	type ClayLayers,
 } from './figure';
-import { CONTEXT_RESTORE_TIMEOUT_MS, createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, type Target } from './gpu';
+import { CONTEXT_RESTORE_TIMEOUT_MS, createGpu, createTexture, program, REQUIRED_EXTENSIONS, supportsClay, watchGpu, type Target } from './gpu';
 import {
 	FILLET_FRAGMENT,
 	HEIGHT_FRAGMENT,
@@ -275,22 +275,20 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 	// even when nothing is animating.
 	let latest: { time: number; options: BlonkyDrawOptions } | undefined;
 	// The GPU can refuse the renderer's targets without throwing, leaving
-	// nothing drawn. Every frame uploads textures, and resizing reallocates
-	// targets, so check after every draw, not just the first one.
-	const gpuFailed = (): boolean => {
-		const error = gl.getError();
-		return gl.isContextLost() || error === gl.OUT_OF_MEMORY || error === gl.INVALID_FRAMEBUFFER_OPERATION;
-	};
+	// nothing drawn. The first frame is checked as it's drawn, so whoever
+	// mounted the renderer falls back to ink rather than show a blank Blonky.
+	// Every frame uploads textures, and resizing reallocates targets, so later
+	// frames are checked too, once the GPU has caught up with them.
+	const watch = watchGpu(gl, () => fail(new Error('The clay renderer could not draw')));
 	let firstFrame = true;
 	let failed = false;
-	const checkFrame = (): boolean => {
-		const initial = firstFrame;
+	const checkFrame = (): void => {
+		if (!firstFrame) {
+			watch.checkLater();
+			return;
+		}
 		firstFrame = false;
-		if (!gpuFailed()) return true;
-		const error = new Error('The clay renderer could not draw');
-		if (initial) throw error;
-		fail(error);
-		return false;
+		if (watch.failedNow()) throw new Error('The clay renderer could not draw');
 	};
 
 	// A lost context that isn't given back in time, or a restore that can't
@@ -301,11 +299,13 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		if (failed) return;
 		failed = true;
 		window.clearTimeout(restoreTimer);
+		watch.cancel();
 		console.error(error);
 		settings.onFail?.();
 	};
 	const onContextLost = (event: Event): void => {
 		event.preventDefault();
+		watch.cancel();
 		restoreTimer = window.setTimeout(() => fail(new Error('The clay renderer\'s context was not restored')), CONTEXT_RESTORE_TIMEOUT_MS);
 	};
 	const onContextRestored = (): void => {
@@ -314,7 +314,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 			setup();
 			firstFrame = true;
 			if (latest) draw(latest.time, latest.options);
-			if (gpuFailed()) throw new Error('The clay renderer could not be restored');
+			if (watch.failedNow()) throw new Error('The clay renderer could not be restored');
 		} catch (error) {
 			fail(error);
 		}
@@ -499,7 +499,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 				gl.drawArrays(gl.TRIANGLES, 0, 3);
 			}
 		}
-		if (!checkFrame()) return;
+		checkFrame();
 		settings.onExpose?.(frame, layers.silhouette);
 	};
 
@@ -508,6 +508,7 @@ export function createClayRenderer(canvas: HTMLCanvasElement, settings: ClayRend
 		destroy: () => {
 			failed = true;
 			window.clearTimeout(restoreTimer);
+			watch.cancel();
 			canvas.removeEventListener('webglcontextlost', onContextLost);
 			canvas.removeEventListener('webglcontextrestored', onContextRestored);
 			gl.getExtension('WEBGL_lose_context')?.loseContext();

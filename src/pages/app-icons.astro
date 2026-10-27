@@ -1,0 +1,212 @@
+---
+import { statSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { ArrowDownToLine, ArrowUpRight, ChevronLeft, ChevronRight, Maximize2 } from '@lucide/astro';
+import Layout from '../layouts/Layout.astro';
+import Button from '../components/ui/Button.astro';
+import ButtonGroup from '../components/ui/ButtonGroup.astro';
+import Dialog from '../components/ui/Dialog.astro';
+import { buttonVariants } from '../components/ui/button';
+import { actualSizeSet, iconEntries, previewSrc, responsivePreviewSet, type IconEntry } from '../data/app-icons';
+import type { SvgComponent } from 'astro/types';
+
+const dialogId = 'icon-inspector';
+// Decimal units, as Finder reports the downloaded file
+const fileSize = (path: string) => {
+	const bytes = statSync(resolve('public', path.slice(1))).size;
+	return bytes < 1e6 ? `${Math.round(bytes / 1e3)} KB` : `${(bytes / 1e6).toFixed(1)} MB`;
+};
+const iconLabel = ({ app, icon }: IconEntry) => `${app.name} ${icon.name} icon`;
+
+// Each collection's one-colour logo, named by its id and drawn in the text colour. Each
+// viewBox is a square the art covers 22/35 of (so the widest, the BitDream cloud, just fits
+// across), so every logo looks the same size at the same square size.
+const logos = import.meta.glob<SvgComponent>('../assets/app-logos/*.svg', { eager: true, import: 'default' });
+const logoFor = (id: string) => {
+	const logo = logos[`../assets/app-logos/${id}.svg`];
+	if (!logo) throw new Error(`No logo for the ${id} app icons: add src/assets/app-logos/${id}.svg`);
+	return logo;
+};
+
+const entries = iconEntries.map((entry) => ({ ...entry, size: fileSize(entry.icon.download), Logo: logoFor(entry.app.id) }));
+const first = entries[0];
+const actualSizes = [16, 32, 64, 128] as const;
+// On screen at first paint on every viewport from 360 × 640 up; later cards load lazily
+const eagerCards = 3;
+const plates = [
+	{ id: 'light', label: 'light' },
+	{ id: 'dark', label: 'dark' },
+];
+---
+
+<Layout title="crapshack (app icons)">
+	<section class="mx-auto mt-10 max-w-5xl space-y-10" data-icon-gallery data-dialog-id={dialogId}>
+		<header>
+			<h1 class="font-mono text-3xl font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">app icons</h1>
+		</header>
+
+		<ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+			{entries.map(({ app, icon, Logo }, index) => (
+				<li>
+					<article id={icon.key} class="flex h-full scroll-mt-8 overflow-hidden rounded-lg border border-line bg-raised shadow-lg max-sm:flex-row sm:flex-col">
+						<button
+							type="button"
+							class="group relative grid shrink-0 place-items-center overflow-hidden border-line bg-sunken p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-brand)] max-sm:border-r sm:aspect-[4/3] sm:border-b"
+							data-icon-inspect={icon.key}
+							aria-haspopup="dialog"
+							aria-controls={dialogId}
+						>
+							<span class="sr-only">Inspect {app.name} {icon.name}</span>
+							<img src={previewSrc(icon, 128)} alt="" aria-hidden="true" loading={index < eagerCards ? 'eager' : 'lazy'} class="pointer-events-none absolute inset-0 size-full scale-125 object-cover opacity-55 blur-2xl saturate-150" decoding="async" />
+							<img
+								src={previewSrc(icon, 256)}
+								srcset={responsivePreviewSet(icon)}
+								sizes="(min-width: 640px) 176px, 88px"
+								width="176"
+								height="176"
+								alt=""
+								class="relative size-[88px] drop-shadow-2xl transition-transform duration-200 ease-out group-hover:scale-[1.05] motion-reduce:transition-none sm:size-44"
+								loading={index < eagerCards ? 'eager' : 'lazy'}
+								decoding="async"
+							/>
+							<Maximize2 aria-hidden="true" class="absolute top-2 right-2 size-3.5 text-[var(--color-text)] opacity-60 transition-opacity group-hover:opacity-100 sm:top-3 sm:right-3 sm:size-4" />
+						</button>
+						<div class="flex min-w-0 flex-1 flex-col justify-between gap-4 p-4">
+							<div class="space-y-1">
+								<div class="flex items-baseline justify-between gap-3">
+									<h2 class="font-mono text-lg font-semibold text-[var(--color-text)]">{icon.name}</h2>
+									<span class="shrink-0 font-mono text-xs text-dim">
+										<Logo aria-hidden="true" class="mr-1.5 inline size-4 align-[-0.28em]" />{app.name}
+									</span>
+								</div>
+								<p class="text-sm text-muted">{icon.description}</p>
+							</div>
+							<a href={icon.download} download={icon.fileName} class={`${buttonVariants({ variant: 'secondary', size: 'sm' })} self-start`}>
+								<ArrowDownToLine aria-hidden="true" /> <span><span class="sr-only">Download {app.name} {icon.name} </span>.icns</span>
+							</a>
+						</div>
+					</article>
+				</li>
+			))}
+		</ul>
+
+		<Dialog id={dialogId} maxWidth="max-w-4xl" ariaLabel={iconLabel(first)}>
+			<div class="mb-5 flex items-center gap-3 pr-12">
+				<ButtonGroup ariaLabel="Browse icons">
+					<Button variant="outline" size="icon-sm" data-icon-step="-1" aria-label="Previous icon" aria-keyshortcuts="ArrowLeft">
+						<ChevronLeft aria-hidden="true" />
+					</Button>
+					<Button variant="outline" size="icon-sm" data-icon-step="1" aria-label="Next icon" aria-keyshortcuts="ArrowRight">
+						<ChevronRight aria-hidden="true" />
+					</Button>
+				</ButtonGroup>
+				<p class="font-mono text-xs text-dim" aria-hidden="true" data-icon-position>1 of {entries.length}</p>
+				<span class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-icon-status></span>
+			</div>
+
+			{/* All hidden until opened: a closed dialog still has layout, so a shown panel's lazy images would load */}
+			{entries.map(({ app, icon, size, Logo }) => (
+				<section data-icon-panel={icon.key} data-label={iconLabel({ app, icon })} data-name={icon.name} hidden aria-labelledby={`${icon.key}-inspect-title`} class="text-[var(--color-text)]">
+					<div class="grid gap-6 md:grid-cols-[20rem_minmax(0,1fr)] md:items-center">
+						<div class="relative grid aspect-square place-items-center overflow-hidden rounded-xl bg-sunken p-[8%]">
+							<img src={previewSrc(icon, 128)} alt="" aria-hidden="true" loading="lazy" class="pointer-events-none absolute inset-0 size-full scale-125 object-cover opacity-55 blur-3xl saturate-150" decoding="async" />
+							<img
+								src={previewSrc(icon, 512)}
+								srcset={responsivePreviewSet(icon)}
+								sizes="(min-width: 768px) 17rem, 75vw"
+								width="272"
+								height="272"
+								alt={iconLabel({ app, icon })}
+								class="relative aspect-square w-full drop-shadow-2xl"
+								loading="lazy"
+								decoding="async"
+							/>
+						</div>
+						<div class="flex flex-col gap-4">
+							<div class="flex flex-col items-start">
+								<a href={app.url} target="_blank" rel="noopener noreferrer" class={`${buttonVariants({ variant: 'outline', size: 'sm' })} mb-3`}>
+									<Logo aria-hidden="true" /> {app.name} <ArrowUpRight aria-hidden="true" />
+								</a>
+								<h2 id={`${icon.key}-inspect-title`} class="font-mono text-2xl font-semibold">{icon.name}</h2>
+								<p class="mt-2 text-muted">{icon.description}</p>
+							</div>
+							<div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+								<a href={icon.download} download={icon.fileName} class={buttonVariants({ variant: 'secondary' })}>
+									<ArrowDownToLine aria-hidden="true" /> <span><span class="sr-only">Download {icon.name} </span>.icns</span>
+								</a>
+								<span class="font-mono text-xs text-dim">{size} · 16–1024 px</span>
+							</div>
+							{app.credits && (
+								<p class="border-t border-line pt-3 text-xs text-dim">
+									{app.credits.map((credit) => (
+										<>
+											{credit.text}{' '}
+											<a href={credit.url} target="_blank" rel="noopener noreferrer" class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]">{credit.name}</a>.{' '}
+										</>
+									))}
+								</p>
+							)}
+						</div>
+					</div>
+
+					<figure class="mt-6">
+						<figcaption class="mb-2 font-mono text-xs text-dim">actual size</figcaption>
+						<div class="grid gap-3 sm:grid-cols-2">
+							{plates.map((plate) => (
+								<div class:list={['size-plate', `size-plate--${plate.id}`]}>
+									<span class="size-plate-label font-mono text-[10px] leading-none">{plate.label}</span>
+									<ul class="flex items-end justify-center gap-4" role="list">
+										{actualSizes.map((px) => (
+											<li class:list={['flex flex-col items-center gap-1.5', { 'max-sm:hidden': px === 128 }]}>
+												<img src={previewSrc(icon, px)} srcset={actualSizeSet(icon, px)} width={px} height={px} alt="" loading="lazy" decoding="async" />
+												<span class="font-mono text-[10px] leading-none">{px}</span>
+											</li>
+										))}
+									</ul>
+								</div>
+							))}
+						</div>
+					</figure>
+				</section>
+			))}
+		</Dialog>
+	</section>
+</Layout>
+
+<script>
+	import { initAppIconGallery } from '../lib/app-icon-gallery';
+
+	const gallery = document.querySelector<HTMLElement>('[data-icon-gallery]');
+	if (gallery) initAppIconGallery(gallery);
+</script>
+
+<style>
+	/* Stand-ins for macOS window backgrounds; fixed in every site theme. */
+	.size-plate {
+		position: relative;
+		padding: 1.75rem 1rem 0.75rem;
+		border-radius: 0.75rem;
+		border: 1px solid var(--app-line);
+	}
+
+	.size-plate--light {
+		background: #ececee;
+		color: rgb(0 0 0 / 0.55);
+	}
+
+	.size-plate--dark {
+		background: #1e1e21;
+		color: rgb(255 255 255 / 0.55);
+	}
+
+	.size-plate-label {
+		position: absolute;
+		top: 0.6rem;
+		left: 0.75rem;
+	}
+
+	.size-plate img {
+		display: block;
+		flex: none;
+	}
+</style>
