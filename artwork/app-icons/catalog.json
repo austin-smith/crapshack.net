@@ -46,7 +46,7 @@
     {
       "id": "plexbar",
       "name": "PlexBar",
-      "url": "https://github.com/austin-smith/PlexBar",
+      "url": "/plexbar",
       "variants": [
         {
           "id": "clay",
