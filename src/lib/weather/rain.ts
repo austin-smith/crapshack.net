@@ -440,7 +440,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 				else drop.fall *= stretch;
 			}
 		},
-		frame: ({ context, seconds }) => {
+		frame: ({ context, seconds, layer }) => {
 			if (settle && accumulating) footings.sync();
 
 			if (raining) {
@@ -501,7 +501,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 			for (const footing of footings.values()) {
 				flow(footing, seconds);
 				if (!beaded) beaded = footing.data.beads.length > 0;
-				drawWet(context, footing);
+				drawWet(footing.surface.layer ? layer(footing.surface.layer) : context, footing);
 			}
 			drawFalling(context);
 			drawSprays(context);

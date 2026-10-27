@@ -1,10 +1,14 @@
 /**
  * A canvas filling a weather container, run a frame at a time while it can
  * be seen: not in a closed dialog, a page that hides its weather, or with
- * reduced motion.
+ * reduced motion. What's settled on something can be drawn on a layer of
+ * its own, in that thing's place on the page (see `layer`).
  */
 
 const MAX_PIXEL_RATIO = 2;
+// How far a layer reaches past its element, CSS px, for what heaps up on
+// its top or hangs off its sides.
+const LAYER_MARGIN = 48;
 
 export interface WeatherFrame {
 	context: CanvasRenderingContext2D;
@@ -12,6 +16,13 @@ export interface WeatherFrame {
 	height: number;
 	/** Since the last frame, at most a tenth of a second. */
 	seconds: number;
+	/**
+	 * Somewhere to draw in `element`'s place on the page rather than in front
+	 * of everything: whatever's in front of it is in front of this too. It
+	 * takes page coordinates, as `context` does, and is cleared each frame.
+	 * `element` has to be positioned, and not scaled or rotated.
+	 */
+	layer: (element: HTMLElement) => CanvasRenderingContext2D;
 }
 
 export interface WeatherCanvasHooks {
@@ -76,6 +87,44 @@ export function createWeatherCanvas(container: HTMLElement, hooks: WeatherCanvas
 	let ratio = 1;
 	let request = 0;
 	let last = 0;
+	const layers = new Map<HTMLElement, { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D; drawn: boolean }>();
+
+	const layer = (element: HTMLElement): CanvasRenderingContext2D => {
+		let found = layers.get(element);
+		if (!found) {
+			const layerCanvas = document.createElement('canvas');
+			layerCanvas.className = 'weather-layer';
+			layerCanvas.setAttribute('aria-hidden', 'true');
+			layerCanvas.style.left = layerCanvas.style.top = `${-LAYER_MARGIN}px`;
+			const layerContext = layerCanvas.getContext('2d');
+			// Nowhere else to draw it: in front of everything, then.
+			if (!layerContext) return context;
+			element.appendChild(layerCanvas);
+			found = { canvas: layerCanvas, context: layerContext, drawn: false };
+			layers.set(element, found);
+		}
+		if (!found.drawn) {
+			found.drawn = true;
+			const rect = element.getBoundingClientRect();
+			const layerWidth = Math.round((rect.width + LAYER_MARGIN * 2) * ratio);
+			const layerHeight = Math.round((rect.height + LAYER_MARGIN * 2) * ratio);
+			if (found.canvas.width !== layerWidth || found.canvas.height !== layerHeight) {
+				found.canvas.width = layerWidth;
+				found.canvas.height = layerHeight;
+				found.canvas.style.width = `${layerWidth / ratio}px`;
+				found.canvas.style.height = `${layerHeight / ratio}px`;
+			}
+			found.context.setTransform(1, 0, 0, 1, 0, 0);
+			found.context.clearRect(0, 0, layerWidth, layerHeight);
+			found.context.setTransform(ratio, 0, 0, ratio, (LAYER_MARGIN - rect.left) * ratio, (LAYER_MARGIN - rect.top) * ratio);
+		}
+		return found.context;
+	};
+
+	const removeLayers = (): void => {
+		for (const { canvas: layerCanvas } of layers.values()) layerCanvas.remove();
+		layers.clear();
+	};
 
 	const tick = (now: number): void => {
 		request = 0;
@@ -83,7 +132,15 @@ export function createWeatherCanvas(container: HTMLElement, hooks: WeatherCanvas
 		last = now;
 		context.setTransform(ratio, 0, 0, ratio, 0, 0);
 		context.clearRect(0, 0, width, height);
-		if (!hooks.frame({ context, width, height, seconds })) {
+		for (const found of layers.values()) found.drawn = false;
+		const more = hooks.frame({ context, width, height, seconds, layer });
+		// A layer nothing was drawn on this frame has nothing on it.
+		for (const [element, found] of layers) {
+			if (found.drawn) continue;
+			found.canvas.remove();
+			layers.delete(element);
+		}
+		if (!more) {
 			finish();
 			return;
 		}
@@ -94,6 +151,8 @@ export function createWeatherCanvas(container: HTMLElement, hooks: WeatherCanvas
 		if (!inSight(canvas)) {
 			cancelAnimationFrame(request);
 			request = 0;
+			// Out of sight, what's on its layers goes with it.
+			removeLayers();
 			return;
 		}
 		const rect = canvas.getBoundingClientRect();
@@ -118,6 +177,7 @@ export function createWeatherCanvas(container: HTMLElement, hooks: WeatherCanvas
 		request = 0;
 		stopWatching();
 		canvas.remove();
+		removeLayers();
 	};
 	return { running: () => request !== 0, finish };
 }

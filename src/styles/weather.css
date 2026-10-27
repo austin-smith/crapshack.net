@@ -30,8 +30,14 @@
 		pointer-events: none;
 	}
 
+	/* What's settled on something, drawn in its place on the page. */
+	.weather-layer {
+		position: absolute;
+		pointer-events: none;
+	}
+
 	@media (prefers-reduced-motion: reduce) {
-		.weather-canvas, .weather-pool {
+		.weather-canvas, .weather-pool, .weather-layer {
 			display: none;
 		}
 	}

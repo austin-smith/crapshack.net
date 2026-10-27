@@ -18,8 +18,10 @@ import { BLONKY_FPS, BLONKY_VIEW_FRAMING, BLONKY_VIEWPORTS } from './types';
  * Blonky as somewhere for the weather to land: the top of his head, and his
  * shoulders. His head is one rigid shape, so what settles on it is kept in
  * the head's own coordinates and turns and bobs with it; his shoulders are
- * posed afresh each drawing, and what's on them rides along on top. He
- * stands in front of what pools along the bottom.
+ * posed afresh each drawing, and what's on them rides along on top. It's
+ * drawn in his place on the page, so whatever's in front of him, a menu or
+ * the page's own logo, is in front of it too. He stands in front of what
+ * pools along the bottom.
  */
 
 // How deep it gets on him, in CSS px.
@@ -49,6 +51,7 @@ export function addBlonkyWeatherSurfaces(root: HTMLElement): () => void {
 		pose: IDENTITY,
 		view: IDENTITY,
 		depth: HEAD_DEPTH,
+		layer: root,
 		drawing: 0,
 		pace: BLONKY_FPS,
 		version: 0,
@@ -60,6 +63,7 @@ export function addBlonkyWeatherSurfaces(root: HTMLElement): () => void {
 		pose: IDENTITY,
 		view: IDENTITY,
 		depth: SHOULDER_DEPTH,
+		layer: root,
 		drawing: 0,
 		pace: BLONKY_FPS,
 		version: 0,

@@ -459,7 +459,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 				else flake.fall *= stretch;
 			}
 		},
-		frame: ({ context, seconds }) => {
+		frame: ({ context, seconds, layer }) => {
 			if (settle && accumulating) footings.sync();
 
 			if (snowing) {
@@ -523,7 +523,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 				}
 				release(footing);
 				if (!settled) settled = data.snow.some((depth) => depth > 0);
-				drawDrift(context, footing);
+				drawDrift(footing.surface.layer ? layer(footing.surface.layer) : context, footing);
 			}
 			drawClumps(context);
 			if (snowing) drawFlakes(context);

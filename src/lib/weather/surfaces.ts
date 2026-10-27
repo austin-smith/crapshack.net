@@ -28,6 +28,13 @@ export interface WeatherSurface {
 	/** The deepest anything settles here, in CSS px. */
 	depth: number;
 	/**
+	 * Where what's settled here is drawn: in this element's place on the
+	 * page, so whatever's in front of the surface is in front of that too
+	 * (see `layer` in ./canvas). Without one, it's drawn in front of
+	 * everything, with what's falling.
+	 */
+	layer?: HTMLElement;
+	/**
 	 * Which drawing it's posed as, for a surface that moves on in drawings,
 	 * `pace` a second, as Blonky does. What's settled on it feels each move
 	 * from one drawing to the next: not the same drawing again, nor a move
