@@ -44,6 +44,18 @@
       ]
     },
     {
+      "id": "plexbar",
+      "name": "PlexBar",
+      "url": "https://github.com/austin-smith/PlexBar",
+      "variants": [
+        {
+          "id": "clay",
+          "name": "Clay",
+          "description": "PlexBar’s ribbon in orange clay on a dark slate."
+        }
+      ]
+    },
+    {
       "id": "rex",
       "name": "Rex",
       "url": "https://www.superlogical.com/rex/docs/installation",
