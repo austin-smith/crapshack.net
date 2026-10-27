@@ -35,6 +35,12 @@ export interface WeatherSurface {
 	 */
 	layer?: HTMLElement;
 	/**
+	 * What of it soaks up rain, and the color that's laid over it soaked: as
+	 * outlines on the page. Rain soaks down into it from its top, deeper the
+	 * more lands, and it dries once the rain stops (see ./rain).
+	 */
+	soaks?: { parts: { x: number; y: number }[][]; color: string };
+	/**
 	 * Which drawing it's posed as, for a surface that moves on in drawings,
 	 * `pace` a second, as Blonky does. What's settled on it feels each move
 	 * from one drawing to the next: not the same drawing again, nor a move

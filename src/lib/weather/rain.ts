@@ -1,10 +1,12 @@
 /**
  * Creates a cozy rain effect on the page. Drops fall into a puddle along the
  * bottom (see ./pool). Where the page has surfaces (see ./surfaces), some hit
- * them instead: they splash, and leave beads of water that grow as more
- * drops hit, run downhill once they're heavy enough, leaving a wet trail,
- * and drip off the edge, onto whatever's below. All of that only while it's
- * accumulating (see ./accumulation); otherwise drops just fall from view.
+ * them instead: they splash, and what of the water's left gathers into
+ * beads that grow as more drops hit, run downhill once they're heavy enough,
+ * and drip off the edge, onto whatever's below. The beads aren't drawn;
+ * what shows is what they soak (a surface's `soaks`), and what runs or is
+ * shaken off them, falling as rain. All of that only while it's accumulating
+ * (see ./accumulation); otherwise drops just fall from view.
  */
 
 import { createWeatherCanvas, type WeatherEffect } from './canvas';
@@ -71,13 +73,11 @@ interface Bead {
 	speed: number;
 	/** Which way it runs where the surface is flat: -1 or 1. */
 	lean: number;
-	/** Where it's been lately, wetting the surface: columns, and seconds ago. */
-	trail: { at: number; age: number }[];
-	/** How it's drawn, as of this frame. */
+	/** Where it is, as of this frame. */
 	shape?: BeadShape;
 }
 
-/** Where a bead is drawn: its middle, its size, and the surface's angle under it. */
+/** Where a bead is: its middle, its size, and the surface's angle under it. */
 interface BeadShape {
 	x: number;
 	y: number;
@@ -93,6 +93,8 @@ interface BeadShape {
 
 interface Wet {
 	beads: Bead[];
+	/** How soaked each column is, 0 to 1, where the surface soaks. */
+	soaked: Float32Array;
 }
 
 // Of the drops, how many are near enough to land on things, and of those,
@@ -119,8 +121,18 @@ const SMALLEST = 0.5;
 const MOST_BEADS = 40;
 // A drop landing this near a bead, CSS px, runs into it.
 const GATHER = 7;
-// How far a wet trail lasts.
-const TRAIL_SECONDS = 1.4;
+// How far either side of where it lands, CSS px, an average drop soaks, and
+// how much; and how much a second that dries, while it rains and after.
+const SOAK_REACH = 10;
+const SOAK = 0.12;
+const SOAK_DRY = 0.01;
+const SOAK_DRY_AFTER = 0.12;
+// How far down from the top a soaking goes, CSS px: this far damp, and this
+// much more soaked through.
+const SOAK_DAMP = 8;
+const SOAK_DEEP = 90;
+// Less soaked than this doesn't show.
+const SOAK_SHOWS = 0.04;
 // A jolt (change in velocity between drawings, CSS px) past this starts
 // flinging beads off; by START + RANGE, all of them go. He jolts about 3.5 px
 // noticing something, and about 20 jerking awake.
@@ -129,7 +141,6 @@ const SHAKE_RANGE = 8;
 const GRAVITY = 1400;
 const FASTEST = 900;
 const AVERAGE_LENGTH = 27.5;
-const TAU = Math.PI * 2;
 const COLOR = '174, 194, 224';
 
 /** A streak of rain, drawn once, then stretched into place. */
@@ -150,39 +161,9 @@ function dropSprite(): HTMLCanvasElement {
 
 const radiusOf = (volume: number): number => Math.max(0.7, Math.sqrt(volume / Math.PI));
 
-/**
- * A bead of water as drawn: clear, so what's under it shows through, with
- * a darker rim where it bends the light, and a glint.
- */
-function drawWater(context: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, angle: number): void {
-	context.save();
-	context.translate(x, y);
-	context.rotate(angle);
-	const body = context.createRadialGradient(-rx * 0.3, -ry * 0.35, 0, 0, 0, Math.max(rx, ry));
-	body.addColorStop(0, 'rgba(236, 244, 255, 0.45)');
-	body.addColorStop(0.65, 'rgba(176, 198, 230, 0.45)');
-	body.addColorStop(1, 'rgba(100, 128, 172, 0.7)');
-	context.fillStyle = body;
-	context.beginPath();
-	context.ellipse(0, 0, rx, ry, 0, 0, TAU);
-	context.fill();
-	context.strokeStyle = 'rgba(52, 76, 116, 0.6)';
-	context.lineWidth = Math.max(0.6, Math.min(rx, ry) * 0.2);
-	context.stroke();
-	context.fillStyle = 'rgba(255, 255, 255, 0.92)';
-	context.beginPath();
-	context.ellipse(-rx * 0.34, -ry * 0.38, rx * 0.3, ry * 0.22, -0.4, 0, TAU);
-	context.fill();
-	if (Math.min(rx, ry) > 1.6) {
-		// Light gathered through it, at the bottom.
-		context.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-		context.lineWidth = Math.min(rx, ry) * 0.18;
-		context.beginPath();
-		context.ellipse(0, 0, rx * 0.66, ry * 0.62, 0, Math.PI * 0.2, Math.PI * 0.75);
-		context.stroke();
-	}
-	context.restore();
-}
+/** Smooth, 0 to 1, along x, and drifting as t goes. */
+const ruffle = (x: number, t: number): number =>
+	0.5 + 0.3 * Math.sin(x * 1.7 + t) * Math.sin(x * 0.63 - t * 0.7) + 0.2 * Math.sin(x * 2.9 - t * 1.3);
 
 export function initRainyDay(container: HTMLElement, options: WeatherOptions = {}): WeatherEffect {
 	const { count = 100, scale = 1, speed = 1, settle = false, fillSeconds, persist, accumulate = false } = options;
@@ -271,10 +252,27 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 		bead.volume = 0;
 	};
 
+	/** Soaks the surface around column `at` with `volume` of water, where it soaks. */
+	const soak = (footing: Footing<Wet>, at: number, volume: number): void => {
+		if (!footing.surface.soaks) return;
+		const columns = footing.surface.ground.length;
+		if (footing.data.soaked.length !== columns) footing.data.soaked = new Float32Array(columns);
+		const { soaked } = footing.data;
+		const stride = Math.max(0.1, footing.unitX * footing.surface.dx);
+		const reach = Math.max(1, Math.round(SOAK_REACH / stride));
+		const center = Math.round(at);
+		for (let column = center - reach; column <= center + reach; column++) {
+			if (column < 0 || column >= columns) continue;
+			const near = 1 - Math.abs(column - center) / (reach + 1);
+			soaked[column] = Math.min(1, soaked[column] + SOAK * (volume / DROP_WATER) * near);
+		}
+	};
+
 	/** Puts `volume` of water on a surface at page point (x, y): into a bead there, or a new one. */
 	const wet = (footing: Footing<Wet>, x: number, y: number, volume: number): void => {
 		const at = columnAt(footing, x, y);
 		if (!hasGround(footing, at)) return;
+		soak(footing, at, volume);
 		const { beads } = footing.data;
 		let nearest: Bead | undefined;
 		let nearestDistance = Number.POSITIVE_INFINITY;
@@ -290,11 +288,11 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 			nearest.volume += volume;
 			return;
 		}
-		beads.push({ at, volume, speed: 0, lean: Math.random() < 0.5 ? -1 : 1, trail: [] });
+		beads.push({ at, volume, speed: 0, lean: Math.random() < 0.5 ? -1 : 1 });
 	};
 
 	const footings = createFootings<Wet>({
-		create: () => ({ beads: [] }),
+		create: () => ({ beads: [], soaked: new Float32Array(0) }),
 		changed: (footing) => {
 			const { jolt, motion, surface } = footing;
 			for (const bead of footing.data.beads) {
@@ -321,15 +319,15 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 		},
 	});
 
-	/** Lets each bead dry, hold, or run, and drip where its surface ends. */
+	/** Lets what's soaked dry, and each bead dry, hold, or run, and drip where its surface ends. */
 	const flow = (footing: Footing<Wet>, seconds: number): void => {
-		const { beads } = footing.data;
+		const { beads, soaked } = footing.data;
+		const drying = (raining ? SOAK_DRY : SOAK_DRY_AFTER) * seconds;
+		for (let column = 0; column < soaked.length; column++) soaked[column] = Math.max(0, soaked[column] - drying);
 		for (const bead of beads) bead.shape = bead.volume > 0 ? beadShape(footing, bead) : undefined;
 		for (const bead of beads) {
 			if (bead.volume <= 0 || !bead.shape) continue;
 			bead.volume -= (raining ? EVAPORATE : DRY) * seconds;
-			for (const mark of bead.trail) mark.age += seconds;
-			while (bead.trail.length && bead.trail[0].age > TRAIL_SECONDS) bead.trail.shift();
 			if (bead.volume < SMALLEST) {
 				bead.volume = 0;
 				continue;
@@ -347,8 +345,6 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 			const before = bead.at;
 			bead.at += (way * bead.speed * seconds) / shape.stride;
 			bead.volume *= 1 - SMEAR * seconds;
-			const last = bead.trail[bead.trail.length - 1];
-			if (!last || Math.abs(last.at - before) * shape.stride > 1.5) bead.trail.push({ at: before, age: 0 });
 			if (!hasGround(footing, bead.at)) {
 				// Off the edge: it drips.
 				bead.at = before;
@@ -368,48 +364,70 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 				}
 			}
 		}
-		footing.data.beads = beads.filter((bead) => bead.volume > 0 || bead.trail.length > 0);
+		footing.data.beads = beads.filter((bead) => bead.volume > 0);
 	};
+
+	/** Whether any of a surface's soaking still shows. */
+	const isSoaked = (footing: Footing<Wet>): boolean => footing.data.soaked.some((wetness) => wetness > SOAK_SHOWS);
 
 	// ---- Drawing ----
 
-	const drawWet = (context: CanvasRenderingContext2D, footing: Footing<Wet>): void => {
-		// Trails first, under the beads that left them.
-		context.lineCap = 'round';
-		context.lineJoin = 'round';
-		for (const bead of footing.data.beads) {
-			const { trail } = bead;
-			if (!trail.length) continue;
-			const marks = bead.volume > 0 ? [...trail, { at: bead.at, age: 0 }] : trail;
-			const thickness = Math.max(0.8, radiusOf(Math.max(bead.volume, DROP_WATER)) * 0.9);
-			for (let i = 1; i < marks.length; i++) {
-				const fade = 1 - marks[i - 1].age / TRAIL_SECONDS;
-				if (fade <= 0) continue;
-				const from = pagePoint(footing, marks[i - 1].at, 0.4 / footing.unitY);
-				const to = pagePoint(footing, marks[i].at, 0.4 / footing.unitY);
-				context.strokeStyle = `rgba(150, 174, 212, ${0.32 * fade})`;
-				context.lineWidth = thickness;
-				context.beginPath();
-				context.moveTo(from.x, from.y);
-				context.lineTo(to.x, to.y);
-				context.stroke();
+	/**
+	 * What's soaked on a surface, from its top down: deeper the wetter, with
+	 * a ragged edge that shifts a little each drawing.
+	 */
+	const drawSoaked = (context: CanvasRenderingContext2D, footing: Footing<Wet>): void => {
+		const { soaks } = footing.surface;
+		const { soaked } = footing.data;
+		if (!soaks) return;
+		context.save();
+		context.beginPath();
+		for (const part of soaks.parts) {
+			context.moveTo(part[0].x, part[0].y);
+			for (const point of part) context.lineTo(point.x, point.y);
+			context.closePath();
+		}
+		context.clip();
+		context.fillStyle = soaks.color;
+		const fill = (from: number, to: number): void => {
+			if (to - from < 1) return;
+			context.beginPath();
+			// From just above its top, for the clip to trim to its edge.
+			for (let column = from; column <= to; column++) {
+				const top = pagePoint(footing, column, 4 / footing.unitY);
+				if (column === from) context.moveTo(top.x, top.y);
+				else context.lineTo(top.x, top.y);
+			}
+			for (let column = to; column >= from; column--) {
+				const ragged = 0.75 + ruffle(column * 0.12, footing.drawing * 0.05) * 0.5;
+				const bottom = pagePoint(footing, column, -((SOAK_DAMP + SOAK_DEEP * soaked[column] ** 1.4) * ragged) / footing.unitY);
+				context.lineTo(bottom.x, bottom.y);
+			}
+			context.closePath();
+			context.fill();
+		};
+		let from = -1;
+		for (let column = 0; column <= soaked.length; column++) {
+			const shows = column < soaked.length && soaked[column] > SOAK_SHOWS && hasGround(footing, column);
+			if (shows && from < 0) from = column;
+			if (!shows && from >= 0) {
+				fill(from, column - 1);
+				from = -1;
 			}
 		}
-		for (const bead of footing.data.beads) {
-			if (bead.volume <= 0) continue;
-			const shape = beadShape(footing, bead);
-			drawWater(context, shape.x, shape.y, shape.rx, shape.ry, shape.angle);
-		}
+		context.restore();
 	};
 
+	/** What runs or is shaken off a surface, falling: as rain again. */
 	const drawFalling = (context: CanvasRenderingContext2D): void => {
+		context.globalAlpha = 0.75;
 		for (const drop of falling) {
 			const radius = radiusOf(drop.volume);
-			const speed = Math.hypot(drop.vx, drop.vy);
-			// Drawn out along its way as it gathers speed.
-			const stretch = 1 + Math.min(1.6, speed / 500);
-			drawWater(context, drop.x, drop.y, radius * stretch, radius / Math.sqrt(stretch), Math.atan2(drop.vy, drop.vx));
+			// Drawn out as it gathers speed.
+			const stretch = 1 + Math.min(1.6, Math.hypot(drop.vx, drop.vy) / 500);
+			context.drawImage(sprite, drop.x - streak / 2, drop.y - radius * stretch * 3, streak, radius * stretch * 6);
 		}
+		context.globalAlpha = 1;
 	};
 
 	const drawSprays = (context: CanvasRenderingContext2D): void => {
@@ -497,17 +515,19 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 				if (spray.vy > 0 && spray.y > spray.floor) sprays.splice(index, 1);
 			}
 
-			let beaded = false;
+			let lingering = false;
 			for (const footing of footings.values()) {
 				flow(footing, seconds);
-				if (!beaded) beaded = footing.data.beads.length > 0;
-				drawWet(footing.surface.layer ? layer(footing.surface.layer) : context, footing);
+				const soaked = isSoaked(footing);
+				if (!lingering) lingering = soaked || footing.data.beads.length > 0;
+				// In its place on the page, if it has one, behind what's in front of it.
+				if (soaked) drawSoaked(footing.surface.layer ? layer(footing.surface.layer) : context, footing);
 			}
 			drawFalling(context);
 			drawSprays(context);
 			if (raining) drawDrops(context);
 			// Once it's stopped and everything's dried or fallen, it's done.
-			return raining || beaded || falling.length > 0 || sprays.length > 0;
+			return raining || lingering || falling.length > 0 || sprays.length > 0;
 		},
 	});
 	// Each drop lands in the puddle as its fall ends: 2.75s, on average.
