@@ -35,6 +35,8 @@ interface WeatherOptions {
 	fillSeconds?: number;
 	/** sessionStorage key to keep the drift along the bottom from page to page. */
 	persist?: string;
+	/** Where the drift along the bottom goes, if not in the container: behind what's in front of the page. */
+	ground?: HTMLElement;
 	/** Lets what falls pile up: in the drift, and with `settle`, on surfaces. */
 	accumulate?: boolean;
 }
@@ -134,7 +136,7 @@ function flakeSprite(): HTMLCanvasElement {
 }
 
 export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {}): WeatherEffect {
-	const { count = 100, scale = 1, speed = 1, settle = false, fillSeconds, persist, accumulate = false } = options;
+	const { count = 100, scale = 1, speed = 1, settle = false, fillSeconds, persist, accumulate = false, ground = container } = options;
 	const sprite = flakeSprite();
 	// The sprite's flake, as a share of its width.
 	const spriteCore = 16 / sprite.width;
@@ -527,14 +529,18 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 				if (!settled) settled = data.snow.some((depth) => depth > 0);
 				drawDrift(footing.surface.layer ? layer(footing.surface.layer) : context, footing);
 			}
+			// What's falling goes into the drift, wherever that's drawn.
+			context.save();
+			pool?.clipAbove(context, container.getBoundingClientRect());
 			drawClumps(context);
 			if (snowing) drawFlakes(context);
+			context.restore();
 			// Once it's stopped and everything's melted or fallen, it's done.
 			return snowing || settled || clumps.length > 0;
 		},
 	});
 	// Each flake lands in the drift as its fall ends: 9s, on average.
-	const startPool = () => (weather ? createPool(container, { kind: 'snow', scale, rate: count / (9 * speed), fillSeconds, persist, behind: settle }) : undefined);
+	const startPool = () => (weather ? createPool(ground, { kind: 'snow', scale, rate: count / (9 * speed), fillSeconds, persist, behind: settle }) : undefined);
 	let pool = accumulating ? startPool() : undefined;
 
 	return {

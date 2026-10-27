@@ -31,6 +31,12 @@ export interface Pool {
 	 * is its size against the average: about 1.
 	 */
 	land: (x: number, weight?: number) => void;
+	/**
+	 * Clips `context` to above the pool's surface, as last drawn, for what's
+	 * falling into it to go in where it's drawn in front of the pool.
+	 * `origin` is where the context's (0, 0) is in the viewport.
+	 */
+	clipAbove: (context: CanvasRenderingContext2D, origin: { x: number; y: number }) => void;
 	destroy: () => void;
 }
 
@@ -130,6 +136,8 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 	let ripplesMoving = new Float32Array(0);
 	let tops = new Float32Array(0);
 	let level = 0;
+	// Whether there's a surface, as last drawn.
+	let surfaced = false;
 	// Seconds the chop has run, from a random start.
 	let chopTime = Math.random() * 100;
 	const chopPhases = CHOP.map(() => Math.random() * Math.PI * 2);
@@ -137,21 +145,25 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 	let restored = readSaved(persist, kind);
 	if (kind === 'rain' && restored) level = (restored[0] ?? 0) * depth;
 
-	/** Traces the top of the pool, smoothly, through each column's height. */
-	const traceSurface = (top: (i: number) => number, columns: number): void => {
+	/**
+	 * Traces the top of the pool, smoothly, through each column's height:
+	 * on its own canvas, or on another, its top left at (left, offset).
+	 */
+	const traceSurface = (top: (i: number) => number, columns: number, on = context, left = 0, offset = 0): void => {
 		const spacing = width / (columns - 1);
-		context.beginPath();
-		context.moveTo(0, top(0));
+		on.beginPath();
+		on.moveTo(left, offset + top(0));
 		for (let i = 1; i < columns - 1; i++) {
-			context.quadraticCurveTo(i * spacing, top(i), (i + 0.5) * spacing, (top(i) + top(i + 1)) / 2);
+			on.quadraticCurveTo(left + i * spacing, offset + top(i), left + (i + 0.5) * spacing, offset + (top(i) + top(i + 1)) / 2);
 		}
-		context.lineTo(width, top(columns - 1));
+		on.lineTo(left + width, offset + top(columns - 1));
 	};
 
 	const drawSnow = (): void => {
 		let highest = 0;
 		for (const value of heights) highest = Math.max(highest, value);
-		if (highest < 0.3) return;
+		surfaced = highest >= 0.3;
+		if (!surfaced) return;
 		traceSurface((i) => height - heights[i], heights.length);
 		context.lineTo(width, height);
 		context.lineTo(0, height);
@@ -179,7 +191,8 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 	};
 
 	const drawRain = (): void => {
-		if (level > 0.2) {
+		surfaced = level > 0.2;
+		if (surfaced) {
 			// A thin film doesn't ripple or chop much.
 			const film = Math.min(1, level / 4);
 			const spacing = width / Math.max(1, ripples.length - 1);
@@ -243,6 +256,7 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 	const draw = (): void => {
 		context.setTransform(ratio, 0, 0, ratio, 0, 0);
 		context.clearRect(0, 0, width, height);
+		surfaced = false;
 		if (width === 0) return;
 		if (kind === 'snow') drawSnow();
 		else drawRain();
@@ -423,6 +437,19 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 			if (kind === 'snow') landSnow(at, weight);
 			else landRain(at, weight);
 			schedule();
+		},
+		clipAbove: (on, origin) => {
+			if (!surfaced || !seen) return;
+			const rect = canvas.getBoundingClientRect();
+			const left = rect.left - origin.x;
+			const offset = rect.top - origin.y;
+			if (kind === 'snow') traceSurface((i) => height - heights[i], heights.length, on, left, offset);
+			else traceSurface((i) => tops[i], tops.length, on, left, offset);
+			// Up its right side, across, and back down its left.
+			on.lineTo(left + width, -1e5);
+			on.lineTo(left, -1e5);
+			on.closePath();
+			on.clip();
 		},
 		destroy: () => {
 			stopWatching();

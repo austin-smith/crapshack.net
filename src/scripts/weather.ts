@@ -12,12 +12,14 @@ const POOL_KEY = 'crapshack:sky-drift';
 
 class EffectsController {
   private container: HTMLElement | null = null;
+  private ground: HTMLElement | undefined;
   private effect: WeatherEffect | null = null;
   private current: EffectName = 'rain'; // default to rain
   private accumulating = false;
 
   constructor() {
     this.container = document.getElementById('weather-container');
+    this.ground = document.getElementById('weather-ground') ?? undefined;
     if (!this.container) return;
 
     this.current = this.readPreference();
@@ -61,7 +63,7 @@ class EffectsController {
   private startEffect(name: EffectName) {
     if (!this.container) return;
     this.stopEffect();
-    const options = { settle: true, persist: POOL_KEY, accumulate: this.accumulating };
+    const options = { settle: true, persist: POOL_KEY, accumulate: this.accumulating, ground: this.ground };
     if (name === 'rain') {
       this.effect = initRainyDay(this.container, options);
     } else if (name === 'snow') {

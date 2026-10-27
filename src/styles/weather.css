@@ -11,6 +11,12 @@
 		overflow: hidden;
 	}
 
+	/* What's pooled along the bottom: in front of the page, but behind
+	   what's put in front of it (tooltips, menus, the sidebar, dialogs). */
+	.weather-ground {
+		z-index: 5;
+	}
+
 	/* Rain and snow, drawn as they fall and settle */
 	.weather-canvas {
 		position: absolute;
@@ -20,7 +26,8 @@
 		pointer-events: none;
 	}
 
-	/* Where the weather lands, in front of what's still falling. */
+	/* Where the weather lands, in front of what's still falling where they
+	   share a container (the settings previews). */
 	.weather-pool {
 		position: absolute;
 		z-index: 1;

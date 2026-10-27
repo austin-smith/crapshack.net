@@ -26,6 +26,8 @@ interface WeatherOptions {
 	fillSeconds?: number;
 	/** sessionStorage key to keep the puddle from page to page. */
 	persist?: string;
+	/** Where the puddle along the bottom goes, if not in the container: behind what's in front of the page. */
+	ground?: HTMLElement;
 	/** Lets what falls pile up: in the puddle, and with `settle`, on surfaces. */
 	accumulate?: boolean;
 }
@@ -166,7 +168,7 @@ const ruffle = (x: number, t: number): number =>
 	0.5 + 0.3 * Math.sin(x * 1.7 + t) * Math.sin(x * 0.63 - t * 0.7) + 0.2 * Math.sin(x * 2.9 - t * 1.3);
 
 export function initRainyDay(container: HTMLElement, options: WeatherOptions = {}): WeatherEffect {
-	const { count = 100, scale = 1, speed = 1, settle = false, fillSeconds, persist, accumulate = false } = options;
+	const { count = 100, scale = 1, speed = 1, settle = false, fillSeconds, persist, accumulate = false, ground = container } = options;
 	const sprite = dropSprite();
 	const streak = Math.max(1.5, 2 * scale);
 	const average = AVERAGE_LENGTH * scale;
@@ -524,15 +526,19 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 				// In its place on the page, if it has one, behind what's in front of it.
 				if (soaked) drawSoaked(footing.surface.layer ? layer(footing.surface.layer) : context, footing);
 			}
+			// What's falling goes into the puddle, wherever that's drawn.
+			context.save();
+			pool?.clipAbove(context, container.getBoundingClientRect());
 			drawFalling(context);
 			drawSprays(context);
 			if (raining) drawDrops(context);
+			context.restore();
 			// Once it's stopped and everything's dried or fallen, it's done.
 			return raining || lingering || falling.length > 0 || sprays.length > 0;
 		},
 	});
 	// Each drop lands in the puddle as its fall ends: 2.75s, on average.
-	const startPool = () => (weather ? createPool(container, { kind: 'rain', scale, rate: count / (2.75 * speed), fillSeconds, persist, behind: settle }) : undefined);
+	const startPool = () => (weather ? createPool(ground, { kind: 'rain', scale, rate: count / (2.75 * speed), fillSeconds, persist, behind: settle }) : undefined);
 	let pool = accumulating ? startPool() : undefined;
 
 	return {
