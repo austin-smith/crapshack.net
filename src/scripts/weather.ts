@@ -1,21 +1,29 @@
+import type { SwitchChangeEvent } from '../lib/ui/switch';
+import { onAccumulationChange, readAccumulation, setAccumulation } from '../lib/weather/accumulation';
+import type { WeatherEffect } from '../lib/weather/canvas';
 import { initRainyDay } from '../lib/weather/rain';
 import { initSnowyDay } from '../lib/weather/snow';
 
-type Cleanup = () => void;
 type EffectName = 'off' | 'rain' | 'snow';
 
 const STORAGE_KEY = 'crapshack:sky';
+// What's pooled at the bottom of the page, kept for the next page.
+const POOL_KEY = 'crapshack:sky-drift';
 
 class EffectsController {
   private container: HTMLElement | null = null;
-  private cleanup: Cleanup | null = null;
+  private ground: HTMLElement | undefined;
+  private effect: WeatherEffect | null = null;
   private current: EffectName = 'rain'; // default to rain
+  private accumulating = false;
 
   constructor() {
     this.container = document.getElementById('weather-container');
+    this.ground = document.getElementById('weather-ground') ?? undefined;
     if (!this.container) return;
 
     this.current = this.readPreference();
+    this.accumulating = readAccumulation();
     this.applyStateToDom();
     this.startEffect(this.current);
     this.attachToggleHandlers();
@@ -42,24 +50,26 @@ class EffectsController {
       if (checked) r.setAttribute('data-checked', ''); else r.removeAttribute('data-checked');
       r.setAttribute('tabindex', checked ? '0' : '-1');
     }
+    document.querySelector('[data-accumulation-toggle]')?.setAttribute('aria-checked', String(this.accumulating));
   }
 
   private stopEffect() {
-    if (this.cleanup) {
-      this.cleanup();
-      this.cleanup = null;
+    if (this.effect) {
+      this.effect.stop();
+      this.effect = null;
     }
   }
 
   private startEffect(name: EffectName) {
     if (!this.container) return;
     this.stopEffect();
+    const options = { settle: true, persist: POOL_KEY, accumulate: this.accumulating, ground: this.ground };
     if (name === 'rain') {
-      this.cleanup = initRainyDay(this.container);
+      this.effect = initRainyDay(this.container, options);
     } else if (name === 'snow') {
-      this.cleanup = initSnowyDay(this.container);
+      this.effect = initSnowyDay(this.container, options);
     } else {
-      this.cleanup = null;
+      this.effect = null;
     }
   }
 
@@ -72,6 +82,17 @@ class EffectsController {
   }
 
   private attachToggleHandlers() {
+    document.addEventListener('switch-change', ((e: SwitchChangeEvent) => {
+      if (!(e.target as HTMLElement).matches('[data-accumulation-toggle]')) return;
+      setAccumulation(e.detail.checked);
+    }) as EventListener);
+
+    onAccumulationChange((on) => {
+      this.accumulating = on;
+      this.effect?.accumulate(on);
+      this.applyStateToDom();
+    });
+
     // Click support
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement | null;

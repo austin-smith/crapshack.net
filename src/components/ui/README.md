@@ -2,6 +2,7 @@
 
 Astro-native controls inspired by shadcn's [Button](https://ui.shadcn.com/docs/components/base/button),
 [Toggle](https://ui.shadcn.com/docs/components/base/toggle),
+[Switch](https://ui.shadcn.com/docs/components/base/switch),
 [Button Group](https://ui.shadcn.com/docs/components/base/button-group), and
 [Slider](https://ui.shadcn.com/docs/components/base/slider).
 These use native HTML rather than requiring a client framework.
@@ -16,7 +17,7 @@ These use native HTML rather than requiring a client framework.
 - Consumers use variants and sizes for appearance and `class` for layout. Native HTML attributes pass through to the rendered element.
 - `ContextMenu` owns styles for its `ContextMenuEntry` children. Root-anchored `:global()` selectors cross that component boundary and style slotted triggers/icons; the document-level pointer lock is global because it targets `html`/`body`.
 - `scrollbar-none` remains a global utility shared by ScreenshotGallery and AppLinks. Gallery-specific decoration stays in ScreenshotGallery.
-- Sidebar and settings-specific styles live with Sidebar, SettingsDialog, ThemeToggle, and WeatherToggle. The two preview controls import their shared frame styles from `components/preference-preview.css`; dynamically created weather particles use scoped-parent `:global()` selectors. These existing site styles retain their utility-layer priority.
+- Sidebar and settings-specific styles live with Sidebar, SettingsDialog, ThemeToggle, and WeatherToggle. The two preview controls import their shared frame styles from `components/preference-preview.css`; the weather previews draw on the same canvases as the page's weather, styled in `styles/weather.css`. These existing site styles retain their utility-layer priority.
 
 Astro's [scoped styles and class forwarding](https://docs.astro.build/en/guides/styling/)
 keep styles with their component. Forwarding attributes also preserves the parent's Astro scope for layout classes.
@@ -107,6 +108,38 @@ toggle?.addEventListener('toggle-change', ((event: ToggleChangeEvent) => {
 Native Enter/Space activation is retained. The delegated listener initializes once and handles controls added after page navigation.
 Toggle is a button, not a form checkbox; use a checkbox for submitted boolean form values.
 The existing `ToggleGroup` is a separate radio selector with its own sliding indicator and `{ value }` change event. It is not interchangeable with independent toggles.
+
+## Switch
+
+```astro
+<!-- Owns its state. -->
+<label for="sound">Sound</label>
+<Switch id="sound" defaultChecked />
+
+<!-- The page controller owns its state. -->
+<label for="true-black-toggle">you want it darker</label>
+<Switch id="true-black-toggle" checked={false} data-true-black-toggle />
+```
+
+A `role="switch"` button with a sliding thumb, as [Radix Switch](https://www.radix-ui.com/primitives/docs/components/switch) renders. State is represented only by `aria-checked`, which also drives the track color and the thumb.
+It has one size. Label it with a `<label for>`, `aria-label`, or `aria-labelledby`. Native `disabled` disables it.
+
+`switch-change` bubbles with `detail: { checked: boolean }`. Like `toggle-change`, it requests the next state and is cancelable.
+Without a `checked` prop, Switch applies the requested state after dispatch unless the event was canceled.
+With `checked`, the controller must update `aria-checked`; the prop supplies the initial state and opts into controlled behavior, not client reactivity.
+
+```ts
+import type { SwitchChangeEvent } from '../../lib/ui/switch';
+
+document.addEventListener('switch-change', ((event: SwitchChangeEvent) => {
+  if (!(event.target as HTMLElement).matches('[data-true-black-toggle]')) return;
+  // Apply the requested state; the controller then reflects it in aria-checked.
+  setTrueBlack(event.detail.checked);
+}) as EventListener);
+```
+
+Native Enter/Space activation is retained. The delegated listener initializes once and handles controls added after page navigation.
+Like Toggle, Switch is a button, not a form checkbox: it submits no value.
 
 ## ContextMenu
 

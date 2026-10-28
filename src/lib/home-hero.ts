@@ -1,5 +1,6 @@
 import { createAphorismController } from './aphorism';
 import { setContextMenuRadioValue, type ContextMenuSelectEvent } from './ui/context-menu';
+import { addBlonkyWeatherSurfaces } from './blonky/weather-surfaces';
 import type { ClaySet } from './blonky/clay/set';
 import type { ClayWeather, ClayWeatherKind } from './blonky/clay/weather';
 import {
@@ -53,6 +54,9 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 
 	const listeners = new AbortController();
 	const logo = root.querySelector<HTMLImageElement>('.home-hero__logo');
+	const blonkyRoot = root.querySelector<HTMLElement>(`[data-blonky-id="${HOME_BLONKY_ID}"]`);
+	// The weather settles on Blonky: his head and shoulders.
+	const removeWeatherSurfaces = blonkyRoot ? addBlonkyWeatherSurfaces(blonkyRoot) : undefined;
 	let setCanvas = root.querySelector<HTMLCanvasElement>('[data-home-hero-set]');
 	let set: ClaySet | undefined;
 	const weatherCanvas = root.querySelector<HTMLCanvasElement>('[data-home-hero-weather]');
@@ -243,6 +247,7 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 		stopWaiting();
 		listeners.abort();
 		weatherWatcher.disconnect();
+		removeWeatherSurfaces?.();
 		motion.removeEventListener('change', syncWeather);
 		strikeSet();
 		aphorism.destroy();
