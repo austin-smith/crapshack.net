@@ -4,6 +4,8 @@
 	--blonky-shirt: #4f7092;
 	--blonky-shirt-texture: #8ba2b8;
 	--blonky-shirt-texture-alpha: 0.42;
+	/* Laid over the shirt where rain's soaked it: a deeper shade of it. */
+	--blonky-shirt-wet: rgba(59, 87, 116, 0.62);
 }
 
 html[data-theme='dark'] :is([data-blonky-root], [data-blonky-page-root]) {
@@ -11,6 +13,7 @@ html[data-theme='dark'] :is([data-blonky-root], [data-blonky-page-root]) {
 	--blonky-shirt: var(--app-overlay);
 	--blonky-shirt-texture: rgb(var(--app-fg-rgb));
 	--blonky-shirt-texture-alpha: 0.18;
+	--blonky-shirt-wet: rgba(8, 22, 40, 0.6);
 }
 
 html[data-theme='black'] :is([data-blonky-root], [data-blonky-page-root]) {
@@ -18,4 +21,5 @@ html[data-theme='black'] :is([data-blonky-root], [data-blonky-page-root]) {
 	--blonky-shirt: var(--app-overlay);
 	--blonky-shirt-texture: rgb(var(--app-fg-rgb));
 	--blonky-shirt-texture-alpha: 0.18;
+	--blonky-shirt-wet: rgba(8, 14, 22, 0.6);
 }

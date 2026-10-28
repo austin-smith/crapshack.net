@@ -34,7 +34,8 @@ const BODY_COLUMNS = { from: -470, to: 470, dx: 2.5 };
 // Settle on his outline, not halfway through its ink.
 const HEAD_INK = 1;
 const BODY_INK = 1.3;
-// Laid over his shirt where it's soaked: a deeper blue of it.
+// Laid over his shirt where it's soaked, if his theme doesn't say
+// (--blonky-shirt-wet): a deeper blue of it.
 const WET_SHIRT = 'rgba(59, 87, 116, 0.62)';
 
 export function addBlonkyWeatherSurfaces(root: HTMLElement): () => void {
@@ -70,6 +71,14 @@ export function addBlonkyWeatherSurfaces(root: HTMLElement): () => void {
 		pace: BLONKY_FPS,
 		version: 0,
 	};
+
+	// A deeper shade of whichever shirt his theme gives him.
+	const wetShirt = (): string => getComputedStyle(root).getPropertyValue('--blonky-shirt-wet').trim() || WET_SHIRT;
+	let wet = wetShirt();
+	const themeObserver = new MutationObserver(() => {
+		wet = wetShirt();
+	});
+	themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
 	const canvas = (): HTMLCanvasElement | null => root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
 	const occluder = addWeatherOccluder(canvas);
@@ -125,7 +134,7 @@ export function addBlonkyWeatherSurfaces(root: HTMLElement): () => void {
 			parts: [shape.torso.surface, shape.leftArm.sleeveSurface, shape.rightArm.sleeveSurface].map((part) =>
 				part.map((point) => ({ x: onPage.a * point.x + onPage.c * point.y + onPage.e, y: onPage.b * point.x + onPage.d * point.y + onPage.f })),
 			),
-			color: WET_SHIRT,
+			color: wet,
 		};
 		body.pose = translation(pose.centerX, 0);
 		body.view = onPage;
@@ -141,6 +150,7 @@ export function addBlonkyWeatherSurfaces(root: HTMLElement): () => void {
 	root.addEventListener(BLONKY_FRAME_EVENT, update);
 	return () => {
 		root.removeEventListener(BLONKY_FRAME_EVENT, update);
+		themeObserver.disconnect();
 		occluder.remove();
 		removeHead?.();
 		removeBody?.();
