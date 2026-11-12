@@ -325,6 +325,7 @@ export function buildIsland(world: RAPIER.World, random: () => number): Island {
 	inkify(group, createInkMaterial(claimInkId()));
 
 	const { group: cloudGroup, clouds } = buildClouds(random);
+	cloudGroup.name = 'clouds';
 	group.add(cloudGroup);
 
 	const body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());

@@ -14,7 +14,7 @@ export default defineConfig({
 	},
 	webServer: {
 		command: 'node tests/serve-shack.mjs',
-		url: 'http://127.0.0.1:4392/shack',
+		url: 'http://127.0.0.1:4392/experiments/shack',
 		reuseExistingServer: true,
 	},
 });

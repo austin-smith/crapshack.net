@@ -12,7 +12,7 @@ async function start(page, seed = 17) {
 		localStorage.setItem('shack:sound', 'off');
 	}, seed);
 	await page.routeWebSocket('**', (socket) => socket.close());
-	await page.goto('/shack');
+	await page.goto('/experiments/shack');
 	await page.locator('[data-shack-start]').click();
 	await expect(page.locator('[data-shack-night]')).toBeEnabled();
 	await page.waitForFunction(() => window.shack.residents.length === 2 && window.shack.residents.every((r) => r.state !== 'arriving'));

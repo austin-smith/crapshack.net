@@ -1,0 +1,33 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import './shack-palette.css';
+
+type Props = HTMLAttributes<'div'>;
+
+const { class: className, ...attributes } = Astro.props;
+---
+
+{/* The daytime sky the island floats in, whatever the site theme. Its parent gives it its size and place. */}
+<div {...attributes} class:list={['shack-sky', className]}>
+	<slot />
+</div>
+
+<style>
+	/* What is put in it is placed against it. Weighed below a parent's own
+	   class, so whatever position its parent gives it wins. */
+	:where(.shack-sky) {
+		position: relative;
+	}
+
+	/* As the game paints it: the two colours mixed in linear light, easing in
+	   and out of each, top to bottom (src/lib/shack/render.ts). */
+	.shack-sky {
+		background: linear-gradient(
+			var(--shack-sky-top),
+			color-mix(in srgb-linear, var(--shack-sky-top) 84.375%, var(--shack-sky-bottom)) 25%,
+			color-mix(in srgb-linear, var(--shack-sky-top), var(--shack-sky-bottom)) 50%,
+			color-mix(in srgb-linear, var(--shack-sky-top) 15.625%, var(--shack-sky-bottom)) 75%,
+			var(--shack-sky-bottom)
+		);
+	}
+</style>

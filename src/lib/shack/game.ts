@@ -63,8 +63,6 @@ const METAL = new Set(['sheet', 'fridge', 'bathtub', 'barrel', 'sign']);
 const UP = new THREE.Vector3(0, 1, 0);
 
 const SKY = {
-	dayTop: new THREE.Color('#8bb8c8'),
-	dayBottom: new THREE.Color('#f4dfb5'),
 	nightTop: new THREE.Color('#0f1b2a'),
 	nightBottom: new THREE.Color('#2b405a'),
 	glow: new THREE.Color('#f7bfcf'),
@@ -195,6 +193,8 @@ export class Game {
 	private readonly hemi = new THREE.HemisphereLight(SKY.skyDay, '#b8c4d4', 1.9);
 	private readonly sun = new THREE.DirectionalLight(SKY.sunDay, 1.25);
 	private readonly island: Island;
+	private readonly dayTop: THREE.Color;
+	private readonly dayBottom: THREE.Color;
 	private readonly precipitation: Precipitation;
 	private readonly sound: Sound;
 
@@ -312,6 +312,11 @@ export class Game {
 
 	constructor(root: HTMLElement) {
 		this.root = root;
+		// The daytime sky is the page's (src/components/shack-palette.css), so
+		// that words written over a picture of the island elsewhere match it.
+		const page = getComputedStyle(root);
+		this.dayTop = new THREE.Color(page.getPropertyValue('--shack-sky-top').trim());
+		this.dayBottom = new THREE.Color(page.getPropertyValue('--shack-sky-bottom').trim());
 		this.el = {
 			stage: required<HTMLElement>(root, '[data-shack-stage]'),
 			undo: required<HTMLButtonElement>(root, '[data-shack-undo]'),
@@ -2136,8 +2141,8 @@ export class Game {
 		const dark = this.darkness;
 		const glow = 4 * dark * (1 - dark);
 		const look = this.renderer.look;
-		look.skyTop.copy(SKY.dayTop).lerp(SKY.nightTop, dark);
-		look.skyBottom.copy(SKY.dayBottom).lerp(SKY.nightBottom, dark).lerp(SKY.glow, glow * 0.65);
+		look.skyTop.copy(this.dayTop).lerp(SKY.nightTop, dark);
+		look.skyBottom.copy(this.dayBottom).lerp(SKY.nightBottom, dark).lerp(SKY.glow, glow * 0.65);
 		look.ink.copy(SKY.ink).lerp(SKY.chalk, THREE.MathUtils.smoothstep(dark, 0.4, 0.8));
 		this.precipitation.setInk(look.ink);
 		this.sun.intensity = THREE.MathUtils.lerp(1.25, 0.3, dark);

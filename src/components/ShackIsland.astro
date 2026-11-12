@@ -1,0 +1,36 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import island from '../assets/shack/island.webp';
+
+interface Props extends Omit<HTMLAttributes<'img'>, 'src' | 'alt' | 'width' | 'height'> {
+	/** What the picture is announced as. Empty where it is only a backdrop. */
+	label?: string;
+}
+
+const {
+	class: className,
+	label = 'A small grassy island floating over clouds, with a tin roof laid across two wooden crates, two people beside it, and junk lying about',
+	...attributes
+} = Astro.props;
+---
+
+{/* The island on the first morning, with a roof up, as the game draws it, on no sky: made by
+    artwork/shack/capture.mjs from the game itself. Its parent places it and gives it a width or a
+    height; it keeps the picture's shape. Served as it is: the site has no image service to resize it. */}
+<img
+	{...attributes}
+	src={island.src}
+	width={island.width}
+	height={island.height}
+	alt={label}
+	decoding="async"
+	class:list={['shack-island', className]}
+/>
+
+<style>
+	.shack-island {
+		display: block;
+		height: auto;
+		max-width: none;
+	}
+</style>

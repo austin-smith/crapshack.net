@@ -2,6 +2,7 @@
 import { CircleQuestionMark, Hammer, Redo2, Rotate3d, RotateCcw, RotateCw, Undo2, Volume2, VolumeX, X } from '@lucide/astro';
 import Button from './ui/Button.astro';
 import Kbd from './ui/Kbd.astro';
+import './shack-palette.css';
 ---
 
 <section class="shack" data-shack-root data-phase="title" aria-labelledby="shack-title">
@@ -186,13 +187,7 @@ import Kbd from './ui/Kbd.astro';
 
 <style>
 	.shack {
-		--shack-ink: #303c36;
-		--shack-paper: #fbf6e9;
-		--shack-pink: #cf647f;
-		--shack-green: #38765d;
-		--shack-muted: #657369;
-		--shack-line: #b7b9a8;
-		--app-brand: #38765d;
+		--app-brand: var(--shack-green);
 		--app-on-brand: #fffaf0;
 		--app-fill-rgb: 255 250 240;
 		position: relative;
