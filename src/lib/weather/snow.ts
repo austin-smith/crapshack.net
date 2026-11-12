@@ -2,7 +2,9 @@
  * Creates a cozy snowfall effect on the page. Flakes fall and drift up along
  * the bottom (see ./pool). Where the page has surfaces (see ./surfaces), some
  * land on them too and settle: heaping up, slumping where it's too steep to
- * hold, and shaken off when what they're on moves suddenly. All of that
+ * hold, and shaken off when what they're on moves suddenly. Melting, it
+ * soaks what it's on, where that soaks (see ./soak): a little while it
+ * sits there, and more once it stops snowing and it all melts. All of that
  * only while it's accumulating (see ./accumulation); otherwise flakes just
  * fall from view.
  */
@@ -21,6 +23,7 @@ import {
 	type Footing,
 } from './footing';
 import { createPool } from './pool';
+import { drawSoaked, drying, dry, soak } from './soak';
 
 interface WeatherOptions {
 	/** Particle count. Fewer for small containers such as the settings previews. */
@@ -112,6 +115,16 @@ const SHAKE_RANGE = 20;
 const SHAKE_MOST = 0.55;
 // Settled snow melts this many CSS px a second once it stops snowing.
 const MELT = 6;
+// Settled snow melts a little into what it's on, where that soaks: this
+// much a second, until it's as soaked as MOST_UNDER under snow FULL_UNDER
+// CSS px deep, less under less. It creeps out from under it up to
+// UNDER_REACH CSS px either side. Melting away once it stops, each CSS px
+// of it soaks what it's on SOAK_MELTED.
+const SOAK_UNDER = 0.03;
+const MOST_UNDER = 0.3;
+const FULL_UNDER = 6;
+const UNDER_REACH = 16;
+const SOAK_MELTED = 0.09;
 const TAU = Math.PI * 2;
 
 /** A glowing flake, drawn once, then scaled into place. */
@@ -315,8 +328,32 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 				snow[i] = 0;
 			}
 			release(footing);
+			dry(footing.surface);
 		},
 	});
+
+	/**
+	 * Soaks what's under settled snow, for `seconds`: more under deeper
+	 * snow, a little out past its edges, and not quite evenly.
+	 */
+	const soakUnder = (footing: Footing<Drift>, seconds: number): void => {
+		const { snow } = footing.data;
+		const stride = Math.max(0.1, footing.unitX * footing.surface.dx);
+		const reach = Math.max(1, Math.round(UNDER_REACH / stride));
+		for (let i = 0; i < snow.length; i++) {
+			let depth = 0;
+			let weights = 0;
+			for (let j = i - reach; j <= i + reach; j++) {
+				const weight = 1 - Math.abs(j - i) / (reach + 1);
+				weights += weight;
+				if (snow[j] > 0) depth += weight * snow[j];
+			}
+			if (depth <= 0) continue;
+			const deep = Math.min(1, ((depth / weights) * footing.unitY) / FULL_UNDER);
+			const uneven = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(i * 0.21) * Math.sin(i * 0.077 + 1.3));
+			soak(footing, i, SOAK_UNDER * seconds, MOST_UNDER * deep * uneven);
+		}
+	};
 
 	/** Settled snow's top at a column, on the page. */
 	const snowTop = (footing: Footing<Drift>, column: number): number => pagePoint(footing, column, footing.data.snow[column]).y;
@@ -463,7 +500,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 				else flake.fall *= stretch;
 			}
 		},
-		frame: ({ context, seconds, layer }) => {
+		frame: ({ context, seconds, time, layer }) => {
 			if (settle && accumulating) footings.sync();
 
 			if (snowing) {
@@ -517,17 +554,23 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 			for (const footing of footings.values()) {
 				const { data } = footing;
 				if (data.settling) data.settling = slump(footing);
-				if (!snowing) {
-					const melt = (MELT * seconds) / footing.unitY;
-					for (let i = 0; i < data.snow.length; i++) {
-						if (!(data.snow[i] > 0)) continue;
-						data.snow[i] = Math.max(0, data.snow[i] - melt);
-						data.settling = true;
-					}
+				const soaks = footing.surface.soaks !== undefined;
+				if (snowing && soaks) soakUnder(footing, seconds);
+				const melt = (MELT * seconds) / footing.unitY;
+				for (let i = 0; i < data.snow.length; i++) {
+					if (snowing || !(data.snow[i] > 0)) continue;
+					const melted = Math.min(data.snow[i], melt);
+					data.snow[i] -= melted;
+					data.settling = true;
+					if (soaks) soak(footing, i, SOAK_MELTED * melted * footing.unitY);
 				}
 				release(footing);
-				if (!settled) settled = data.snow.some((depth) => depth > 0);
-				drawDrift(footing.surface.layer ? layer(footing.surface.layer) : context, footing);
+				const soaked = drying(footing, time, seconds);
+				if (!settled) settled = soaked || data.snow.some((depth) => depth > 0);
+				// In its place on the page, if it has one, behind what's in front of it.
+				const on = (): CanvasRenderingContext2D => (footing.surface.layer ? layer(footing.surface.layer) : context);
+				if (soaked) drawSoaked(on, footing, time);
+				drawDrift(on(), footing);
 			}
 			// What's falling goes into the drift, wherever that's drawn.
 			context.save();
@@ -535,7 +578,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 			drawClumps(context);
 			if (snowing) drawFlakes(context);
 			context.restore();
-			// Once it's stopped and everything's melted or fallen, it's done.
+			// Once it's stopped and everything's melted, fallen, or dried, it's done.
 			return snowing || settled || clumps.length > 0;
 		},
 	});
@@ -559,7 +602,8 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 		stop: () => {
 			pool?.destroy();
 			pool = undefined;
-			// What's settled on things melts away rather than vanishing.
+			// What's settled on things melts away rather than vanishing, and
+			// what it soaked dries.
 			snowing = false;
 			if (!weather?.running()) weather?.finish();
 		},

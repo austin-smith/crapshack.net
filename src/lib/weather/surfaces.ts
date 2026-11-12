@@ -35,9 +35,10 @@ export interface WeatherSurface {
 	 */
 	layer?: HTMLElement;
 	/**
-	 * What of it soaks up rain, and the color that's laid over it soaked: as
-	 * outlines on the page. Rain soaks down into it from its top, deeper the
-	 * more lands, and it dries once the rain stops (see ./rain).
+	 * What of it soaks up water, and the color that's laid over it soaked: as
+	 * outlines on the page. Rain, and snow as it melts, soak down into it
+	 * from its top, deeper the wetter it gets, and it dries once they stop
+	 * wetting it (see ./soak).
 	 */
 	soaks?: { parts: { x: number; y: number }[][]; color: string };
 	/**

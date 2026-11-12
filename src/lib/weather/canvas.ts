@@ -16,6 +16,8 @@ export interface WeatherFrame {
 	height: number;
 	/** Since the last frame, at most a tenth of a second. */
 	seconds: number;
+	/** The frame's time, as requestAnimationFrame gives it: the same for every weather canvas drawn in it. */
+	time: number;
 	/**
 	 * Somewhere to draw in `element`'s place on the page rather than in front
 	 * of everything: whatever's in front of it is in front of this too. It
@@ -133,7 +135,7 @@ export function createWeatherCanvas(container: HTMLElement, hooks: WeatherCanvas
 		context.setTransform(ratio, 0, 0, ratio, 0, 0);
 		context.clearRect(0, 0, width, height);
 		for (const found of layers.values()) found.drawn = false;
-		const more = hooks.frame({ context, width, height, seconds, layer });
+		const more = hooks.frame({ context, width, height, seconds, time: now, layer });
 		// A layer nothing was drawn on this frame has nothing on it.
 		for (const [element, found] of layers) {
 			if (found.drawn) continue;

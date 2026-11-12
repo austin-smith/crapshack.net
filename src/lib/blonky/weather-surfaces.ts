@@ -18,10 +18,10 @@ import { BLONKY_FPS, BLONKY_VIEW_FRAMING, BLONKY_VIEWPORTS } from './types';
  * Blonky as somewhere for the weather to land: the top of his head, and his
  * shoulders. His head is one rigid shape, so what settles on it is kept in
  * the head's own coordinates and turns and bobs with it; his shoulders are
- * posed afresh each drawing, and what's on them rides along on top. Rain
- * soaks into his shirt. It's all drawn in his place on the page, so
- * whatever's in front of him, a menu or the page's own logo, is in front of
- * it too. He stands in front of what pools along the bottom.
+ * posed afresh each drawing, and what's on them rides along on top. Rain,
+ * and snow as it melts, soak into his shirt. It's all drawn in his place on
+ * the page, so whatever's in front of him, a menu or the page's own logo, is
+ * in front of it too. He stands in front of what pools along the bottom.
  */
 
 // How deep it gets on him, in CSS px.
@@ -129,7 +129,7 @@ export function addBlonkyWeatherSurfaces(root: HTMLElement): () => void {
 			}
 			body.ground[i] = Number.isNaN(top) || pointInPolygon({ x, y: top }, headOutline) ? Number.NaN : top - BODY_INK;
 		}
-		// The rain soaks his shirt, on the page.
+		// What soaks into his shirt, on the page.
 		body.soaks = {
 			parts: [shape.torso.surface, shape.leftArm.sleeveSurface, shape.rightArm.sleeveSurface].map((part) =>
 				part.map((point) => ({ x: onPage.a * point.x + onPage.c * point.y + onPage.e, y: onPage.b * point.x + onPage.d * point.y + onPage.f })),
