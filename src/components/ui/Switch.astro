@@ -1,0 +1,37 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends Omit<HTMLAttributes<'button'>, 'role' | 'aria-checked' | 'type'> {
+	/** When provided, the caller owns aria-checked and handles switch-change. */
+	checked?: boolean;
+	/** Initial state for a standalone switch. Ignored when checked is provided. */
+	defaultChecked?: boolean;
+}
+
+const { checked, defaultChecked = false, class: className, ...attributes } = Astro.props;
+---
+
+<button
+	{...attributes}
+	type="button"
+	role="switch"
+	aria-checked={checked ?? defaultChecked}
+	data-ui-switch
+	data-controlled={checked !== undefined ? '' : undefined}
+	class:list={[
+		'group relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-fill-strong transition-colors aria-checked:bg-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-overlay-to)] disabled:opacity-50',
+		className,
+	]}
+>
+	{/* aria-checked lives on the button, so the thumb reads it via `group-`. */}
+	<span
+		aria-hidden="true"
+		class="pointer-events-none ml-0.5 size-5 rounded-full bg-[var(--app-overlay-to)] shadow transition-transform group-aria-checked:translate-x-5 motion-reduce:transition-none"
+	></span>
+</button>
+
+<script>
+	import { initSwitches } from '../../lib/ui/switch';
+
+	initSwitches();
+</script>

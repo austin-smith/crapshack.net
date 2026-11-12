@@ -65,7 +65,7 @@ const portrait = BLONKY_VIEWPORTS.portrait;
 	/* In clay, the weather falls in front of everything, as in ink. */
 	.home-hero__weather {
 		position: absolute;
-		z-index: 3;
+		z-index: calc(var(--weather-ground-layer) + 3);
 		inset: 0;
 		display: block;
 		width: 100%;
@@ -108,7 +108,7 @@ const portrait = BLONKY_VIEWPORTS.portrait;
 
 	.home-hero__copy {
 		position: absolute;
-		z-index: 2;
+		z-index: calc(var(--weather-ground-layer) + 2);
 		top: clamp(6rem, 12svh, 9rem);
 		left: 50%;
 		width: min(42rem, calc(100% - 2rem));
@@ -123,9 +123,10 @@ const portrait = BLONKY_VIEWPORTS.portrait;
 		filter: drop-shadow(0 0.55rem 0.7rem rgb(0 0 0 / 0.16));
 	}
 
+	/* In front of what's pooled along the bottom (see weather.css). */
 	.home-hero__character {
 		position: absolute;
-		z-index: 1;
+		z-index: calc(var(--weather-ground-layer) + 1);
 		bottom: 0;
 		left: 50%;
 		/* Account for the portrait canvas's transparent padding as the viewport grows.

@@ -3,6 +3,7 @@
 // OS preference flipping while "system" is selected.
 
 import { registerShortcut } from '../lib/ui/shortcuts';
+import type { SwitchChangeEvent } from '../lib/ui/switch';
 import {
 	DEFAULT_THEME_PREFERENCE,
 	isThemePreference,
@@ -152,15 +153,13 @@ class ThemeController {
 			},
 		});
 
+		document.addEventListener('switch-change', ((e: SwitchChangeEvent) => {
+			if (!(e.target as HTMLElement).matches('[data-true-black-toggle]')) return;
+			this.setTrueBlack(e.detail.checked);
+		}) as EventListener);
+
 		document.addEventListener('click', (e) => {
 			const target = e.target as HTMLElement | null;
-
-			const swtch = target?.closest('[data-true-black-toggle]');
-			if (swtch instanceof HTMLElement) {
-				e.preventDefault();
-				this.setTrueBlack(swtch.getAttribute('aria-checked') !== 'true');
-				return;
-			}
 
 			const option = target?.closest('[data-theme-option]');
 			if (!(option instanceof HTMLElement)) return;
