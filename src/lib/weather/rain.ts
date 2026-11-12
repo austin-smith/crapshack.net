@@ -368,7 +368,9 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 
 	// ---- The loop ----
 
+	let gone: (() => void) | undefined;
 	const weather = createWeatherCanvas(container, {
+		finished: () => gone?.(),
 		resize: (nextWidth, nextHeight) => {
 			const first = width === 0;
 			// Each drop keeps its time to fall, whatever the height.
@@ -462,7 +464,8 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 
 	return {
 		accumulate: (on) => {
-			if (on === accumulating || !raining) return;
+			// Once it's stopped, it can only stop piling up.
+			if (on === accumulating || (on && !raining)) return;
 			accumulating = on;
 			if (on) {
 				pool = startPool();
@@ -473,7 +476,9 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 			// What's beaded on him drips off, past where the puddle was.
 			footings.clear();
 		},
-		stop: () => {
+		stop: (whenGone) => {
+			gone = whenGone;
+			if (!weather) gone?.();
 			pool?.destroy();
 			pool = undefined;
 			// What's beaded on things dries off rather than vanishing.

@@ -33,6 +33,8 @@ export interface WeatherCanvasHooks {
 	resize: (width: number, height: number) => void;
 	/** Steps and draws a frame, already cleared. Returns false once there's nothing left to draw. */
 	frame: (frame: WeatherFrame) => boolean;
+	/** It's finished, and gone. */
+	finished?: () => void;
 }
 
 export interface WeatherCanvas {
@@ -64,10 +66,16 @@ export interface WeatherOptions {
 
 /** Rain or snow, falling. */
 export interface WeatherEffect {
-	/** Lets it pile up from now on, or not. Turned off, what's piled up falls away. */
+	/**
+	 * Lets it pile up from now on, or not. Turned off, what's piled up falls
+	 * away, even once it's stopped falling.
+	 */
 	accumulate: (on: boolean) => void;
-	/** Stops it falling. What's settled on things dries or melts off first. */
-	stop: () => void;
+	/**
+	 * Stops it falling. What's settled on things dries or melts off first;
+	 * then it's gone, and `gone` is called.
+	 */
+	stop: (gone?: () => void) => void;
 }
 
 /** Whether `element` can be seen: it has a size, and nothing hides it. */
@@ -196,12 +204,16 @@ export function createWeatherCanvas(container: HTMLElement, hooks: WeatherCanvas
 	};
 	const stopWatching = watchSight(canvas, update);
 
+	let finished = false;
 	const finish = (): void => {
+		if (finished) return;
+		finished = true;
 		cancelAnimationFrame(request);
 		request = 0;
 		stopWatching();
 		canvas.remove();
 		removeLayers();
+		hooks.finished?.();
 	};
 	return { running: () => request !== 0, finish };
 }

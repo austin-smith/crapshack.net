@@ -14,6 +14,8 @@ class EffectsController {
   private container: HTMLElement | null = null;
   private ground: HTMLElement | undefined;
   private effect: WeatherEffect | null = null;
+  // Stopped, but still drying or melting off what it left.
+  private stopping = new Set<WeatherEffect>();
   private current: EffectName = 'rain'; // default to rain
   private accumulating = false;
 
@@ -54,10 +56,11 @@ class EffectsController {
   }
 
   private stopEffect() {
-    if (this.effect) {
-      this.effect.stop();
-      this.effect = null;
-    }
+    const effect = this.effect;
+    if (!effect) return;
+    this.effect = null;
+    this.stopping.add(effect);
+    effect.stop(() => this.stopping.delete(effect));
   }
 
   private startEffect(name: EffectName) {
@@ -90,6 +93,7 @@ class EffectsController {
     onAccumulationChange((on) => {
       this.accumulating = on;
       this.effect?.accumulate(on);
+      for (const effect of this.stopping) effect.accumulate(on);
       this.applyStateToDom();
     });
 

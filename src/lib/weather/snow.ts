@@ -464,7 +464,9 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 
 	// ---- The loop ----
 
+	let gone: (() => void) | undefined;
 	const weather = createWeatherCanvas(container, {
+		finished: () => gone?.(),
 		resize: (nextWidth, nextHeight) => {
 			const first = width === 0;
 			// Each flake keeps its time to fall, whatever the height.
@@ -563,7 +565,8 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 
 	return {
 		accumulate: (on) => {
-			if (on === accumulating || !snowing) return;
+			// Once it's stopped, it can only stop piling up.
+			if (on === accumulating || (on && !snowing)) return;
 			accumulating = on;
 			if (on) {
 				pool = startPool();
@@ -574,7 +577,9 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 			// What's settled on him falls off, past where the drift was.
 			footings.clear();
 		},
-		stop: () => {
+		stop: (whenGone) => {
+			gone = whenGone;
+			if (!weather) gone?.();
 			pool?.destroy();
 			pool = undefined;
 			// What's settled on things melts away rather than vanishing, and
