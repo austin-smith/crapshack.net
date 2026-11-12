@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="artwork/blonky-ribbon/blonky-no-ribbon.gif" alt="Blonky" width="200"/>
+  <img src="artwork/blonky-ribbon/blonky-no-ribbon.gif" alt="Blonky" width="320"/>
   <br>crapshack [dot] net
 </h1>
 
