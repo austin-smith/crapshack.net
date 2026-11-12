@@ -325,17 +325,19 @@ function drawRibbon(ctx: CanvasRenderingContext2D, ink: string): void {
 	ctx.restore();
 }
 
-/** The part of his bust space the picture shows: the circle, grown to take in the ribbon's tails. */
-function pictureView(): { x: number; y: number; w: number; h: number } {
+/** The part of his bust space the picture shows: the circle, grown to take in the ribbon's tails when it has one. */
+function pictureView(ribbon: boolean): { x: number; y: number; w: number; h: number } {
 	// Room for the outlines' ink and wobble.
 	const pad = 12;
 	const leftEnd = ribbonSide(-1);
 	const rightEnd = ribbonSide(1);
 	const shapes = [
 		...circlePoints(CIRCLE.r),
-		...band(-leftEnd.end, rightEnd.end, 0),
-		...band(-leftEnd.tailOut, -leftEnd.tailIn, leftEnd.drop),
-		...band(rightEnd.tailIn, rightEnd.tailOut, rightEnd.drop),
+		...(ribbon ? [
+			...band(-leftEnd.end, rightEnd.end, 0),
+			...band(-leftEnd.tailOut, -leftEnd.tailIn, leftEnd.drop),
+			...band(rightEnd.tailIn, rightEnd.tailOut, rightEnd.drop),
+		] : []),
 	];
 	const x = Math.min(...shapes.map((point) => point.x)) - pad;
 	const y = Math.min(...shapes.map((point) => point.y)) - pad;
@@ -344,8 +346,11 @@ function pictureView(): { x: number; y: number; w: number; h: number } {
 	return { x, y, w: right - x, h: bottom - y };
 }
 
-/** Draws frame `frame` of the loop onto `canvas`, `width` pixels wide, outside the circle and ribbon left transparent. */
-export function drawFrame(canvas: HTMLCanvasElement, frame: number, width: number): void {
+/**
+ * Draws frame `frame` of the loop onto `canvas`, `width` pixels wide, with or
+ * without the ribbon. Everything outside the drawing is left transparent.
+ */
+export function drawFrame(canvas: HTMLCanvasElement, frame: number, width: number, ribbon = true): void {
 	const ctx = canvas.getContext('2d');
 	if (!ctx) throw new Error('No 2D canvas context');
 	// His lines boil forward for half the loop and back for the rest, so the
@@ -354,7 +359,7 @@ export function drawFrame(canvas: HTMLCanvasElement, frame: number, width: numbe
 	const pose = loopPose(frame / FPS);
 	const ink = DEFAULT_BLONKY_PALETTE.outlineInk;
 
-	const view = pictureView();
+	const view = pictureView(ribbon);
 	const k = width / view.w;
 	canvas.width = width;
 	canvas.height = Math.round(view.h * k);
@@ -373,5 +378,5 @@ export function drawFrame(canvas: HTMLCanvasElement, frame: number, width: numbe
 	ctx.restore();
 
 	stroke(ctx, circlePoints(CIRCLE.r), 9001, { closed: true, seamlessClosed: true, width: 4.1, boil: 0.46, color: ink });
-	drawRibbon(ctx, ink);
+	if (ribbon) drawRibbon(ctx, ink);
 }

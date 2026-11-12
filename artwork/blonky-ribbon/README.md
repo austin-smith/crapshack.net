@@ -1,17 +1,18 @@
 # Blonky ribbon
 
-An animated GIF of Blonky idling in a hand-drawn circle, with a "crapshack"
-ribbon across his belly. He breathes, sways, and blinks on a seamless
-nine-second loop at his usual 8 fps. Outside the circle and ribbon is transparent.
+Animated GIFs of Blonky idling in a hand-drawn circle, one with a "crapshack"
+ribbon across his belly and one without. He breathes, sways, and blinks on a
+seamless nine-second loop at his usual 8 fps. Everything outside the drawing is
+transparent.
 
 - `frame.ts`: draws one frame. It uses Blonky's own ink drawing from
   `src/lib/blonky`, so he matches the site, and draws the circle, the ribbon,
   and the ribbon's lettering with the same pen. Every setting is a constant at
   the top of the file.
 - `render.mjs`: bundles `frame.ts`, draws every frame in headless Chromium,
-  and encodes them into `blonky-ribbon.gif`.
-- `blonky-ribbon.gif`: the output. Don't edit it by hand; change
-  `frame.ts` and render again.
+  and encodes them into both GIFs.
+- `blonky-ribbon.gif` and `blonky-no-ribbon.gif`: the output. Don't edit them
+  by hand; change `frame.ts` and render again.
 
 ## Render
 
@@ -30,9 +31,9 @@ Then, from the repo root:
 node artwork/blonky-ribbon/render.mjs
 ```
 
-It writes `artwork/blonky-ribbon/blonky-ribbon.gif`, or the path given as its
-first argument. Give a `.png` path, optionally followed by a frame number and a
-width, to draw a single frame instead. To use tools from another folder, set
+It writes both GIFs into `artwork/blonky-ribbon/`. To draw a single frame
+instead, give a `.png` path, optionally followed by a frame number, a width, and
+`--no-ribbon`. To use tools from another folder, set
 `BLONKY_RIBBON_TOOLS` to it. To use another Chromium build, set
 `BLONKY_RIBBON_CHROMIUM` to its executable.
 
