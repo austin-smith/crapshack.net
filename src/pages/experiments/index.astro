@@ -1,0 +1,378 @@
+---
+import { ArrowRight } from '@lucide/astro';
+import BlonkyCanvas from '../../components/BlonkyCanvas.astro';
+import BlonkyLabStage from '../../components/BlonkyLabStage.astro';
+import CrapStackPaper from '../../components/CrapStackPaper.astro';
+import CrapStackPile from '../../components/CrapStackPile.astro';
+import SameAsItEverWas from '../../components/SameAsItEverWas.astro';
+import SameAsItEverWasBoard from '../../components/SameAsItEverWasBoard.astro';
+import Layout from '../../layouts/Layout.astro';
+import '../../components/blonky-lab-palette.css';
+import '../../components/crap-stack-palette.css';
+import '../../components/same-as-it-ever-was-palette.css';
+---
+
+<Layout title="crapshack (experiments)" fullBleed>
+	<section class="experiments">
+		<h1 class="experiments__title font-mono text-3xl font-semibold bg-gradient-to-r from-[var(--experiment-accent)] to-[var(--experiment-ink)] bg-clip-text text-transparent">experiments</h1>
+
+		{/* Each experiment has a world: a picture of it, made of the experiment's own components, which
+		    carry its look. This page only sizes and places them, and writes its names in their colours.
+		    Here they are pictures behind the names, so they are hidden from assistive technology and
+		    carry no label of their own.
+		    With a pointer, the selected experiment's world fills the window behind the page;
+		    src/lib/experiments.ts moves data-selected to the experiment whose name is focused or pointed
+		    at, and back to the one it is served on, and moves the focus between names on Up and Down. */}
+		<ul class="experiments__list" data-experiments>
+			<li data-experiment="same-as-it-ever-was" data-selected>
+				<a href="/experiments/same-as-it-ever-was" class="group"><span class="squiggle-underline">same as it ever was<ArrowRight class="experiments__arrow" aria-hidden="true" /></span></a>
+				<SameAsItEverWasBoard class="world" aria-hidden="true">
+					<SameAsItEverWas class="world__figure" label="" />
+				</SameAsItEverWasBoard>
+			</li>
+			<li data-experiment="blonky">
+				<a href="/experiments/blonky" class="group"><span class="squiggle-underline">blonky<ArrowRight class="experiments__arrow" aria-hidden="true" /></span></a>
+				<BlonkyLabStage class="world" aria-hidden="true">
+					<BlonkyCanvas class="world__figure" id="experiments-blonky" view="debug" label="" />
+				</BlonkyLabStage>
+			</li>
+			<li data-experiment="crap-stack">
+				<a href="/experiments/crap-stack" class="group"><span class="squiggle-underline">crap stack<ArrowRight class="experiments__arrow" aria-hidden="true" /></span></a>
+				<CrapStackPaper class="world" aria-hidden="true">
+					<CrapStackPile class="world__figure" />
+				</CrapStackPaper>
+			</li>
+		</ul>
+	</section>
+</Layout>
+
+<script>
+	import { initExperiments } from '../../lib/experiments';
+
+	const list = document.querySelector<HTMLElement>('[data-experiments]');
+	if (list) initExperiments(list);
+</script>
+
+<style>
+	/* What the names and title are written in: an experiment's ink, and its
+	   accent for the title's near end and the underline. Registered as colours,
+	   so they can fade from one world's to the next as the worlds do. */
+	@property --experiment-ink {
+		syntax: '<color>';
+		inherits: true;
+		initial-value: white;
+	}
+
+	@property --experiment-accent {
+		syntax: '<color>';
+		inherits: true;
+		initial-value: white;
+	}
+
+	.experiments {
+		--fade: 220ms;
+		/* The site's own, until an experiment gives its own. */
+		--experiment-ink: var(--color-text);
+		--experiment-accent: var(--color-brand);
+		/* The page fills the window, so it keeps the site's usual margins itself. */
+		box-sizing: content-box;
+		max-width: 64rem;
+		margin-inline: auto;
+		padding: 4rem 1rem 1.5rem;
+		transition:
+			--experiment-ink var(--fade),
+			--experiment-accent var(--fade);
+	}
+
+	.experiments__title,
+	.experiments a {
+		position: relative;
+		z-index: 2;
+	}
+
+	.experiments__list {
+		display: grid;
+		justify-items: start;
+		margin-top: 3.5rem;
+	}
+
+	.experiments li {
+		/* The underline is drawn in the site's brand colour: here, the accent. */
+		--color-brand: var(--experiment-accent);
+	}
+
+	.experiments a {
+		display: inline-block;
+		/* Room on the right for its arrow, so that the arrow is part of the link. */
+		padding: 0.08em 0.95em 0.08em 0;
+		border-radius: 0.25rem;
+		color: var(--experiment-ink);
+		font-family: Georgia, 'Times New Roman', serif;
+		font-size: clamp(2rem, 5.25vw, 3.5rem);
+		line-height: 1.12;
+		letter-spacing: -0.05em;
+		transition: opacity var(--fade);
+	}
+
+	/* After a name, to say that it goes somewhere. Out of the flow, with no
+	   place given, so it stays where the name's last word ends, without
+	   widening the name or its underline. */
+	.experiments__arrow {
+		/* Inline, as the site makes icons blocks, which would start a new line. */
+		display: inline;
+		position: absolute;
+		width: 0.6em;
+		height: 0.6em;
+		margin: 0.34em 0 0 0.2em;
+		stroke-width: 2.5;
+		transition:
+			opacity var(--fade),
+			translate var(--fade);
+	}
+
+	/* While the script keeps the selection, the keyboard's focus selects a name,
+	   and the selected name's look is what shows it. Without the script, the
+	   browser's own outline does. */
+	.experiments__list[data-selecting] a:focus-visible {
+		outline: none;
+	}
+
+	.world {
+		position: fixed;
+		inset: 0;
+		z-index: 0;
+		overflow: hidden;
+		pointer-events: none;
+	}
+
+	/* Where each experiment stands in a world the size of the window. */
+
+	[data-experiment='same-as-it-ever-was'] .world__figure {
+		position: absolute;
+		top: 4svh;
+		right: 0;
+		/* Head, neck and tie fill the window; the width limit keeps him clear of the names. */
+		height: min(190svh, 130vw);
+	}
+
+	[data-experiment='blonky'] .world__figure {
+		position: absolute;
+		right: -12%;
+		bottom: 0;
+		width: min(70vw, 105svh);
+		/* His drawing stops short of its own foot; sink that below the window's. */
+		translate: 0 14%;
+	}
+
+	/* Crap stack's line runs between the title and the first name. */
+	[data-experiment='crap-stack'] .world {
+		--crap-stack-danger-line: 7.75rem;
+	}
+
+	/* The pile runs a little past both sides, on a floor just below the window's. */
+	[data-experiment='crap-stack'] .world__figure {
+		position: absolute;
+		bottom: -1rem;
+		left: -1%;
+		width: 102%;
+	}
+
+	/* Weather would fall across the worlds. */
+	:global(.weather-container) {
+		display: none;
+	}
+
+	/* With a pointer: only the selected experiment's world shows, and it fills the window. */
+	@media (hover: hover) and (width > 40rem) {
+		/* Tells src/lib/experiments.ts that one world shows at a time, so Up and
+		   Down should move between the names. */
+		.experiments__list {
+			--experiments-layout: window;
+		}
+
+		/* The newly selected world fades in over the one before it, which stays
+		   whole until it is covered, so the page never shows through. It stays
+		   for two fades, so it also outlasts a world selected a moment later. */
+		.world {
+			opacity: 0;
+			transition: opacity 0s calc(var(--fade) * 2);
+		}
+
+		.experiments li[data-selected] .world {
+			z-index: 1;
+			opacity: 1;
+			transition: opacity var(--fade);
+		}
+
+		/* The other names stand back, but stay readable on every world: this is
+		   the least that keeps them at 3:1 on the palest, the lab's light stage. */
+		/* Room between the names, so that one name's underline stands clear of the
+		   name below it. It is the names' own padding, so the pointer is never
+		   between two of them. */
+		.experiments a {
+			padding-block: 0.26em;
+		}
+
+		.experiments li:not([data-selected]) a {
+			opacity: 0.6;
+		}
+
+		/* Only the selected name shows its arrow, which slides out from the name. */
+		.experiments li:not([data-selected]) .experiments__arrow {
+			opacity: 0;
+			translate: -0.2em 0;
+		}
+
+		/* While the script keeps the selection, the underline goes with it, where
+		   elsewhere it goes with the pointer: a name pointed at while another has
+		   focus is not underlined. */
+		.experiments__list[data-selecting] li:not([data-selected]) .squiggle-underline::after {
+			transform: scaleX(0) rotate(var(--underline-angle));
+			animation: none;
+		}
+
+		.experiments li[data-selected] .squiggle-underline::after {
+			transform: scaleX(1) rotate(var(--underline-angle));
+			animation: squiggle-underline-wiggle 1s ease-in-out infinite;
+		}
+
+		/* The names and title are written in the selected world's colours. */
+		.experiments:has([data-experiment='same-as-it-ever-was'][data-selected]) {
+			--experiment-ink: var(--same-as-it-ever-was-white);
+		}
+
+		.experiments:has([data-experiment='blonky'][data-selected]) {
+			--experiment-ink: var(--blonky-lab-ink);
+			--experiment-accent: var(--blonky-lab-muted);
+		}
+
+		.experiments:has([data-experiment='crap-stack'][data-selected]) {
+			--experiment-ink: rgb(var(--crap-stack-paper-ink-rgb));
+			--experiment-accent: var(--crap-stack-combo-ink);
+		}
+	}
+
+	/* Without one, or on a phone: every world shows, stacked as bands that fill
+	   the window below the title, each with its name inside it, and a whole band
+	   is its link. */
+	@media (hover: none), (width <= 40rem) {
+		.experiments {
+			display: flex;
+			flex-direction: column;
+			box-sizing: border-box;
+			max-width: none;
+			min-height: 100svh;
+			padding: 4rem 0 0;
+		}
+
+		.experiments__title {
+			margin-inline: 1rem;
+		}
+
+		.experiments__list {
+			/* A name's size. */
+			--name: clamp(2rem, 4vw, 3rem);
+			/* Crap stack's line sits just under a name: below the band's padding and
+			   the name, which with its underline is 1.48 times its size tall. */
+			--line: calc(1.125rem + var(--name) * 1.48 + 0.17rem);
+			/* Its pile runs a little past both sides of the band, as in the window,
+			   but is never narrower than this, so a phone's band crops it. */
+			--pile-width: max(102cqw, 36.5rem);
+			/* A band is at least as tall as it takes for the pile, which is a quarter
+			   as tall as it is wide and stands on a floor 1rem below the band's, to
+			   stay 1.75rem under the line. Every band is as tall as the others. */
+			--band: calc(var(--line) + 1.75rem + var(--pile-width) / 4 - 1rem);
+			flex: 1;
+			grid-auto-rows: 1fr;
+			justify-items: stretch;
+			margin-top: 1.5rem;
+			/* So that 100cqw is a band's width. */
+			container-type: inline-size;
+		}
+
+		.experiments li {
+			position: relative;
+			min-height: var(--band);
+			padding: 1.125rem 1.25rem;
+			overflow: hidden;
+		}
+
+		/* Each name is written in its own world's colours. */
+		.experiments li[data-experiment='same-as-it-ever-was'] {
+			--experiment-ink: var(--same-as-it-ever-was-white);
+		}
+
+		.experiments li[data-experiment='blonky'] {
+			--experiment-ink: var(--blonky-lab-ink);
+			--experiment-accent: var(--blonky-lab-muted);
+		}
+
+		.experiments li[data-experiment='crap-stack'] {
+			--experiment-ink: rgb(var(--crap-stack-paper-ink-rgb));
+			--experiment-accent: var(--crap-stack-combo-ink);
+		}
+
+		.experiments a {
+			/* Unplaced, so its ::after can cover the band; the name itself is
+			   lifted over the world instead. */
+			position: static;
+			/* Narrow enough to break the longest name in two, clear of its figure. */
+			max-width: 6.55em;
+			font-size: var(--name);
+		}
+
+		.experiments a .squiggle-underline {
+			z-index: 2;
+		}
+
+		.experiments a::after {
+			position: absolute;
+			inset: 0;
+			z-index: 3;
+			content: '';
+		}
+
+		.world {
+			position: absolute;
+		}
+
+		/* Where each experiment stands in a band. The figures are sized from the
+		   least a band can be, and keep to its top or its floor if it is taller. */
+
+		/* He is 2.83 bands tall, so a band holds his head and neck. */
+		[data-experiment='same-as-it-ever-was'] .world__figure {
+			top: 0.875rem;
+			right: -0.875rem;
+			height: calc(var(--band) * 2.83);
+		}
+
+		/* He is 1.31 bands wide, so a band holds his head and shoulders, with a
+		   fifth of him past its right edge. */
+		[data-experiment='blonky'] .world__figure {
+			--width: calc(var(--band) * 1.31);
+			right: calc(var(--width) * -0.21);
+			width: var(--width);
+		}
+
+		[data-experiment='crap-stack'] .world {
+			--crap-stack-danger-line: var(--line);
+		}
+
+		/* Where the pile is wider than the band, a little under half of the
+		   excess is off the left edge. */
+		[data-experiment='crap-stack'] .world__figure {
+			left: calc((100% - var(--pile-width)) * 0.44);
+			width: var(--pile-width);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.experiments {
+			--fade: 0ms;
+		}
+
+		.experiments li[data-selected] .squiggle-underline::after {
+			animation: none;
+		}
+	}
+</style>
