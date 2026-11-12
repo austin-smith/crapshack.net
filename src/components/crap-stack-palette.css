@@ -1,0 +1,32 @@
+/*
+ * Crap stack's colours, page-wide, since what sits beside its paper takes them
+ * too. Each component or page that uses one imports this file.
+ */
+
+:root {
+	/* The game's own ink and pink, the same under every theme: tokens are always
+	   outlined in the ink, and the danger line is always the pink. */
+	--crap-stack-ink-rgb: 16 39 60;
+	--crap-stack-pink-rgb: 199 78 120;
+
+	/* The paper follows the site theme. On light paper its lines and words are
+	   the ink, and a combo is called in the pink. */
+	--crap-stack-paper: #f2f5ee;
+	--crap-stack-paper-ink-rgb: var(--crap-stack-ink-rgb);
+	--crap-stack-combo-ink: rgb(var(--crap-stack-pink-rgb));
+}
+
+html[data-theme]:not([data-theme='light']) {
+	--crap-stack-paper: var(--app-panel);
+	--crap-stack-paper-ink-rgb: var(--app-fg-rgb);
+	--crap-stack-combo-ink: var(--app-brand);
+}
+
+/* No-JS only; with JS, data-theme is always set. Mirrors the block above. */
+@media (prefers-color-scheme: dark) {
+	html:not([data-theme]) {
+		--crap-stack-paper: var(--app-panel);
+		--crap-stack-paper-ink-rgb: var(--app-fg-rgb);
+		--crap-stack-combo-ink: var(--app-brand);
+	}
+}

@@ -18,7 +18,7 @@ import {
 	type Pose,
 	type Pt,
 } from '../geometry';
-import { valueNoise } from '../noise';
+import { valueNoise } from '../../noise';
 import { BLONKY_BUST_HEIGHT, type BlonkyEmotePose, type BlonkyGaze } from '../types';
 
 /**

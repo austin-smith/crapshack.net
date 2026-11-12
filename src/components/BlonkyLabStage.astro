@@ -1,0 +1,44 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import './blonky-lab-palette.css';
+
+interface Props extends HTMLAttributes<'div'> {
+	/** The stage's element: a figure where it holds the lab's drawing. */
+	as?: 'div' | 'figure';
+	/**
+	 * Keeps the stage's light colours whatever the site theme, and fixed colours
+	 * for the words over it. The clay set needs this, being lit the same under
+	 * every theme. Rendered as `data-always-light`, which the lab's script
+	 * removes if ink has to stand in for the clay.
+	 */
+	alwaysLight?: boolean;
+}
+
+const { as: Element = 'div', alwaysLight = false, class: className, ...attributes } = Astro.props;
+---
+
+{/* The stage Blonky stands on in his lab: its ground and dot grid. Its parent gives it its size and place. */}
+<Element {...attributes} class:list={['blonky-lab-stage', className]} data-always-light={alwaysLight ? '' : undefined}>
+	<slot />
+</Element>
+
+<style>
+	.blonky-lab-stage {
+		/* Declared here, so the dots are mixed from the stage's own colours; the
+		   clay renderer paints the same grid onto its board from these. */
+		--blonky-lab-dot-color: color-mix(in srgb, var(--blonky-lab-line) 80%, var(--blonky-lab-muted));
+		--blonky-lab-dot-radius: 0.6px;
+		--blonky-lab-dot-spacing: 12px;
+		background: var(--blonky-lab-stage);
+		background-image: radial-gradient(var(--blonky-lab-dot-color) var(--blonky-lab-dot-radius), transparent var(--blonky-lab-dot-radius));
+		background-size: var(--blonky-lab-dot-spacing) var(--blonky-lab-dot-spacing);
+	}
+
+	.blonky-lab-stage[data-always-light] {
+		--blonky-lab-stage: var(--blonky-lab-light-stage);
+		--blonky-lab-muted: var(--blonky-lab-light-muted);
+		--blonky-lab-line: var(--blonky-lab-light-line);
+		--blonky-lab-title: #2e3534;
+		--blonky-lab-readout: #4c5655;
+	}
+</style>

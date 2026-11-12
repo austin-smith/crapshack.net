@@ -3,7 +3,7 @@ import SettingsGear from './icons/animated/SettingsGear.astro';
 import Button from './ui/Button.astro';
 import Tooltip from './ui/Tooltip.astro';
 import { buttonVariants } from './ui/button';
-import { LayoutGrid } from '@lucide/astro';
+import { FlaskConical, LayoutGrid } from '@lucide/astro';
 import packageJson from '../../package.json';
 import { apps } from '../data/apps';
 import { iconEntries, previewSrc } from '../data/app-icons';
@@ -88,6 +88,15 @@ if (!galleryIcon) throw new Error('No rex-rextty app icon for the sidebar: updat
 				/>
 			</a>
 			<a
+				href="/experiments"
+				aria-label="experiments"
+				data-tooltip="sidebar-experiments-tooltip"
+				data-tooltip-body="experiments"
+				class:list={[buttonVariants({ variant: 'ghost', size: 'icon' }), 'group']}
+			>
+				<FlaskConical aria-hidden="true" />
+			</a>
+			<a
 				href={repoUrl}
 				target="_blank"
 				rel="noopener noreferrer"
@@ -106,6 +115,7 @@ if (!galleryIcon) throw new Error('No rex-rextty app icon for the sidebar: updat
 	*/}
 	<Tooltip id="sidebar-knobs-tooltip" class="left-1 sm:left-2 w-max max-w-[calc(100%-1rem)]" />
 	<Tooltip id="sidebar-app-icons-tooltip" class="left-8 sm:left-9 w-max max-w-[calc(100%-1rem)]" />
+	<Tooltip id="sidebar-experiments-tooltip" class="left-16 sm:left-17 w-max max-w-[calc(100%-1rem)]" />
 	{/* Wider than its button, so it starts at the footer's edge; the caret still finds the button. */}
 	<Tooltip id="sidebar-github-tooltip" class="left-4 sm:left-5 w-max max-w-[calc(100%-2rem)] sm:max-w-[calc(100%-2.5rem)]">
 		<p class="flex items-baseline justify-between gap-3 text-[11px]">

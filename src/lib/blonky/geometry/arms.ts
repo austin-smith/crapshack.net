@@ -1,4 +1,4 @@
-import { hash } from '../noise';
+import { hash } from '../../noise';
 import { BLONKY_BUST_HEIGHT } from '../types';
 import type { Pose } from './pose';
 import {

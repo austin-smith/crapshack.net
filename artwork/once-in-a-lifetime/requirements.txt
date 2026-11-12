@@ -1,0 +1,5 @@
+# Exact versions, so trace.py reproduces the committed strokes. Needs Python 3.12 or newer.
+Pillow==13.0.0
+numpy==2.5.4
+scikit-image==0.26.0
+scipy==1.18.1
