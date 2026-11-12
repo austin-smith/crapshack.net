@@ -14,16 +14,19 @@ interface Soaking {
 	soaked: Float32Array;
 	/** When it was last wetted, ms. */
 	wetted: number;
-	/** The frames it was last dried and drawn in. */
+	/** The frames it was last dried and drawn in, and dried by weather that's still falling. */
 	dried: number;
 	drawn: number;
+	tended: number;
 }
 
 // How much a second it dries while it's still being wetted, and after.
 const DRY = 0.01;
 const DRY_AFTER = 0.12;
-// Wetted within this long, ms, it's still being wetted.
+// Wetted within this long, ms, it's still being wetted; dried by weather
+// that's still falling this long ago, ms, that weather's still drying it.
 const WETTING = 1000;
+const TENDING = 250;
 // How far down from the top a soaking goes, CSS px: this far damp, once
 // it's DAMP_AT soaked (less, less), and this much more soaked through.
 const DAMP = 8;
@@ -39,7 +42,13 @@ function soakingOf(surface: WeatherSurface): Soaking | undefined {
 	const columns = surface.ground.length;
 	let found = soakings.get(surface);
 	if (!found || found.soaked.length !== columns) {
-		found = { soaked: new Float32Array(columns), wetted: Number.NEGATIVE_INFINITY, dried: Number.NaN, drawn: Number.NaN };
+		found = {
+			soaked: new Float32Array(columns),
+			wetted: Number.NEGATIVE_INFINITY,
+			dried: Number.NaN,
+			drawn: Number.NaN,
+			tended: Number.NEGATIVE_INFINITY,
+		};
 		soakings.set(surface, found);
 	}
 	return found;
@@ -69,12 +78,17 @@ export function dry(surface: WeatherSurface): void {
 /**
  * Lets a surface dry for frame `time` (as requestAnimationFrame gives it),
  * if it's not already dried for it, slowly while it's still being wetted.
- * Returns whether any of it's still soaked enough to show.
+ * `falling` is whether the weather drying it is still falling. Returns
+ * whether that weather should keep going for it: any of it's still soaked
+ * enough to show, and, for weather that's stopped, no weather that's still
+ * falling is drying it, to see it dry.
  */
-export function drying<T>(footing: Footing<T>, time: number, seconds: number): boolean {
+export function drying<T>(footing: Footing<T>, time: number, seconds: number, falling: boolean): boolean {
 	const soaking = soakings.get(footing.surface);
 	if (!soaking) return false;
 	const { soaked } = soaking;
+	if (falling) soaking.tended = time;
+	else if (time - soaking.tended < TENDING) return false;
 	if (soaking.dried !== time) {
 		soaking.dried = time;
 		const amount = (time - soaking.wetted < WETTING ? DRY : DRY_AFTER) * seconds;

@@ -541,7 +541,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 					if (soaks) soak(footing, i, SOAK_MELTED * melted * footing.unitY);
 				}
 				release(footing);
-				const soaked = drying(footing, time, seconds);
+				const soaked = drying(footing, time, seconds, snowing);
 				if (!settled) settled = soaked || data.snow.some((depth) => depth > 0);
 				// In its place on the page, if it has one, behind what's in front of it.
 				if (soaked) drawSoaked(() => layer(footing.surface.layer), footing, time);

@@ -440,7 +440,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 			let lingering = false;
 			for (const footing of footings.values()) {
 				flow(footing, seconds);
-				const soaked = drying(footing, time, seconds);
+				const soaked = drying(footing, time, seconds, raining);
 				if (!lingering) lingering = soaked || footing.data.beads.length > 0;
 				// In its place on the page, if it has one, behind what's in front of it.
 				if (soaked) drawSoaked(() => layer(footing.surface.layer), footing, time);
