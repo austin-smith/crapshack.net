@@ -114,6 +114,13 @@ import '../../components/once-in-a-lifetime-palette.css';
 		transition: opacity var(--fade);
 	}
 
+	/* The site's underline is as thick as suits small text. At this size it is
+	   drawn finer, and close under the name. */
+	.experiments .squiggle-underline {
+		--underline-thickness: 0.17em;
+		--underline-offset: 0.03em;
+	}
+
 	/* After a name, to say that it goes somewhere. Out of the flow, with no
 	   place given, so it stays where the name's last word ends, without
 	   widening the name or its underline. */
@@ -208,7 +215,7 @@ import '../../components/once-in-a-lifetime-palette.css';
 		   name below it. It is the names' own padding, so the pointer is never
 		   between two of them. */
 		.experiments a {
-			padding-block: 0.26em;
+			padding-block: 0.14em;
 		}
 
 		.experiments li:not([data-selected]) a {
