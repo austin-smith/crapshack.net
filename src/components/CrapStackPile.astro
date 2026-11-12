@@ -1,0 +1,56 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import CrapStackToken from './CrapStackToken.astro';
+import { stickers } from '../data/crap-stack';
+
+type Props = HTMLAttributes<'div'>;
+
+const { class: className, ...attributes } = Astro.props;
+
+// A pile of tokens settled along a floor, as a game leaves them. It is an
+// arrangement made by hand, not a game's state. Each piece: which sticker, then
+// its left, bottom and width as a share of the pile's width, and its tilt in degrees.
+const pile = [
+	[9, 52.84, 0, 18.31, -8],
+	[8, 79.68, 0, 16.63, 6],
+	[7, 22.52, 0, 14.95, -4],
+	[6, 1.32, 0, 13.36, 9],
+	[5, 40.12, 0, 11.76, -6],
+	[4, 70.48, 8.38, 10.25, 4],
+	[3, 14.15, 5.71, 8.65, -7],
+	[2, 72.35, 0, 7.31, 5],
+	[1, 47.53, 10.49, 6.13, -3],
+	[0, 18.44, 0, 5.12, 6],
+	[3, 64.94, 16.19, 8.65, -5],
+	[2, 0, 12.4, 7.31, 7],
+	[1, 79.26, 15.12, 6.13, -9],
+	[0, 20.74, 12.39, 5.12, 3],
+	[4, 89.75, 14.74, 10.25, -6],
+	[2, 36.01, 9.35, 7.31, 8],
+	[0, 84.7, 18.33, 5.12, -2],
+	[1, 9.96, 11.96, 6.13, 5],
+].map(([sticker, left, bottom, width, tilt]) => ({ sticker: stickers[sticker], left, bottom, width, tilt }));
+---
+
+{/* As wide as it is given, and a quarter as tall, which is its tallest stack. The floor is its bottom edge. The parent places it. */}
+<div {...attributes} class:list={['crap-stack-pile', className]}>
+	{pile.map((piece) => (
+		<CrapStackToken
+			sticker={piece.sticker}
+			style={`left: ${piece.left}cqw; bottom: ${piece.bottom}cqw; width: ${piece.width}cqw; rotate: ${piece.tilt}deg`}
+		/>
+	))}
+</div>
+
+<style>
+	/* Its tokens are placed against it. Weighed below a parent's own class, so
+	   whatever position its parent gives it wins. */
+	:where(.crap-stack-pile) {
+		position: relative;
+	}
+
+	.crap-stack-pile {
+		aspect-ratio: 4 / 1;
+		container-type: inline-size;
+	}
+</style>

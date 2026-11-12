@@ -1,6 +1,6 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import BlonkyLab from '../../components/BlonkyLab.astro';
+import Layout from '../../../layouts/Layout.astro';
+import BlonkyLab from '../../../components/BlonkyLab.astro';
 ---
 
 <Layout title="crapshack (clay blonky)" noIndex={true} fullBleed={true}>
@@ -8,8 +8,8 @@ import BlonkyLab from '../../components/BlonkyLab.astro';
 </Layout>
 
 <script>
-	import { fallBackToInk, labStagePattern, registerBlonkyDebugLifecycle } from '../../lib/blonky/debug';
-	import { createClayRenderer } from '../../lib/blonky/clay/renderer';
+	import { fallBackToInk, labStagePattern, registerBlonkyDebugLifecycle } from '../../../lib/blonky/debug';
+	import { createClayRenderer } from '../../../lib/blonky/clay/renderer';
 
 	registerBlonkyDebugLifecycle({
 		painters: {

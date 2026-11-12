@@ -1,6 +1,6 @@
 import { CRY_LINGER_FRAMES } from '../emotes/cry';
 import { heldEnvelope, INK_FRAME_SECONDS } from '../motion';
-import { valueNoise } from '../noise';
+import { valueNoise } from '../../noise';
 import type { HeadGeometry } from './head';
 import type { Pose } from './pose';
 import {

@@ -1,4 +1,4 @@
-import { hash, valueNoise } from '../noise';
+import { hash, valueNoise } from '../../noise';
 import type { Pose } from './pose';
 import { add, densify, mul, norm, quadratic, type Pt } from './points';
 

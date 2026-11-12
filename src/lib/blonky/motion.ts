@@ -1,4 +1,4 @@
-import { hash } from './noise';
+import { hash } from '../noise';
 import { BLONKY_FPS } from './types';
 
 export const INK_FRAME_SECONDS = 1 / BLONKY_FPS;

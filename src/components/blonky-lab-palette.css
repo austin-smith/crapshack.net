@@ -1,0 +1,42 @@
+/*
+ * The Blonky lab's colours, page-wide, since its console beside the stage takes
+ * them too. Each component or page that uses one imports this file.
+ */
+
+:root {
+	/* The stage's light colours keep their own names for a stage that stays
+	   light whatever the site theme (see BlonkyLabStage.astro). */
+	--blonky-lab-light-stage: #dce3e1;
+	--blonky-lab-light-muted: #626d6c;
+	--blonky-lab-light-line: #c8cfcb;
+
+	--blonky-lab-stage: var(--blonky-lab-light-stage);
+	--blonky-lab-panel: #f8f5ef;
+	--blonky-lab-ink: #303c3e;
+	--blonky-lab-muted: var(--blonky-lab-light-muted);
+	--blonky-lab-line: var(--blonky-lab-light-line);
+	/* The words over the stage: his name, and the playback readout. */
+	--blonky-lab-title: var(--app-overlay);
+	--blonky-lab-readout: var(--blonky-lab-muted);
+}
+
+html[data-theme]:not([data-theme='light']) {
+	--blonky-lab-stage: var(--app-canvas);
+	--blonky-lab-panel: var(--app-panel);
+	--blonky-lab-ink: var(--app-text);
+	--blonky-lab-muted: var(--app-subtle);
+	--blonky-lab-line: var(--app-line-strong);
+	--blonky-lab-title: var(--blonky-lab-ink);
+}
+
+/* No-JS only; with JS, data-theme is always set. Mirrors the block above. */
+@media (prefers-color-scheme: dark) {
+	html:not([data-theme]) {
+		--blonky-lab-stage: var(--app-canvas);
+		--blonky-lab-panel: var(--app-panel);
+		--blonky-lab-ink: var(--app-text);
+		--blonky-lab-muted: var(--app-subtle);
+		--blonky-lab-line: var(--app-line-strong);
+		--blonky-lab-title: var(--blonky-lab-ink);
+	}
+}

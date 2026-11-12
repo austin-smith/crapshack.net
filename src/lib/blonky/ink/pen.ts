@@ -10,7 +10,7 @@ import {
 	type Pt,
 } from '../geometry/points';
 import { smoothstep } from '../motion';
-import { hash, valueNoise } from '../noise';
+import { hash, valueNoise } from '../../noise';
 import { FACE_INK } from './palette';
 
 export const TAU = Math.PI * 2;

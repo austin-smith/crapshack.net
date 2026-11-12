@@ -1,5 +1,6 @@
 ---
 import { Infinity, Pause, Play, Repeat2, Shuffle, StepBack, StepForward } from '@lucide/astro';
+import BlonkyLabStage from './BlonkyLabStage.astro';
 import Button from './ui/Button.astro';
 import Toggle from './ui/Toggle.astro';
 import Slider from './ui/Slider.astro';
@@ -9,6 +10,7 @@ import Tooltip from './ui/Tooltip.astro';
 import { buttonVariants } from './ui/button';
 import { BLONKY_EMOTES } from '../lib/blonky';
 import { BLONKY_SHADINGS, BLONKY_VIEWPORTS } from '../lib/blonky/types';
+import './blonky-lab-palette.css';
 
 interface Props {
 	/** Ink draws on a 2D canvas; clay renders the same poses in WebGL. */
@@ -25,15 +27,15 @@ const restLabels = {
 const restLabel = restLabels[renderer];
 const viewport = BLONKY_VIEWPORTS.debug;
 const renderers = [
-	{ value: 'ink', label: 'ink', href: '/blonky' },
-	{ value: 'clay', label: 'clay', href: '/blonky/clay' },
+	{ value: 'ink', label: 'ink', href: '/experiments/blonky' },
+	{ value: 'clay', label: 'clay', href: '/experiments/blonky/clay' },
 ];
 ---
 
-<section class:list={['blonky-debug', `blonky-debug--${renderer}`]} data-blonky-page-root data-blonky-renderer={renderer}>
+<section class="blonky-debug" data-blonky-page-root data-blonky-renderer={renderer}>
 	<div class="lab-workspace">
 		<div class="console">
-			<figure class="console__stage" data-blonky-stage>
+			<BlonkyLabStage as="figure" class="console__stage" alwaysLight={renderer === 'clay'} data-blonky-stage>
 				<header class="console__header">
 					<h1>blonky</h1>
 					<p class="blonky-debug__readout" aria-label="Animation state">
@@ -64,7 +66,7 @@ const renderers = [
 						This browser can't render the clay, so here's the ink drawing.
 					</p>
 				)}
-			</figure>
+			</BlonkyLabStage>
 
 			<fieldset class="console__emotes">
 				<legend class="sr-only">emotes</legend>
@@ -227,23 +229,15 @@ const renderers = [
 
 <style>
 		.blonky-debug {
-		/* The light stage, which the clay set keeps whatever the site theme. */
-		--lab-light-stage: #dce3e1;
-		--lab-light-muted: #626d6c;
-		--lab-light-line: #c8cfcb;
-		--lab-panel: #f8f5ef;
-		--lab-stage: var(--lab-light-stage);
-		--lab-ink: #303c3e;
-		--lab-muted: var(--lab-light-muted);
-		--lab-line: var(--lab-light-line);
-		--ui-control-color: var(--lab-ink);
-		--ui-control-muted: var(--lab-muted);
-		--ui-control-border: var(--lab-line);
-		--ui-control-surface: var(--lab-panel);
-		--ui-control-hover: color-mix(in srgb, var(--lab-line) 32%, transparent);
-		--ui-control-selected: var(--lab-stage);
-		--ui-control-selected-hover: color-mix(in srgb, var(--lab-stage) 90%, var(--lab-ink));
-		--ui-control-focus: var(--lab-ink);
+		/* The lab's colours, and how they follow the site theme, are in blonky-lab-palette.css. */
+		--ui-control-color: var(--blonky-lab-ink);
+		--ui-control-muted: var(--blonky-lab-muted);
+		--ui-control-border: var(--blonky-lab-line);
+		--ui-control-surface: var(--blonky-lab-panel);
+		--ui-control-hover: color-mix(in srgb, var(--blonky-lab-line) 32%, transparent);
+		--ui-control-selected: var(--blonky-lab-stage);
+		--ui-control-selected-hover: color-mix(in srgb, var(--blonky-lab-stage) 90%, var(--blonky-lab-ink));
+		--ui-control-focus: var(--blonky-lab-ink);
 		--palette: 17rem;
 		--stage: min(60rem, calc(100svw - 5rem - var(--palette)), max(34rem, calc((100svh - 15rem) * 1.175)));
 		min-height: 100svh;
@@ -254,17 +248,8 @@ const renderers = [
 		gap: 1rem;
 		padding: 3.5rem 2rem 1.5rem;
 		background: var(--app-canvas);
-		color: var(--lab-ink);
+		color: var(--blonky-lab-ink);
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-	}
-
-	:global(html[data-theme='dark']) .blonky-debug,
-	:global(html[data-theme='black']) .blonky-debug {
-		--lab-panel: var(--app-panel);
-		--lab-stage: var(--app-canvas);
-		--lab-ink: var(--app-text);
-		--lab-muted: var(--app-subtle);
-		--lab-line: var(--app-line-strong);
 	}
 
 	.lab-workspace, .blonky-debug__shortcuts {
@@ -273,9 +258,9 @@ const renderers = [
 	}
 
 	.lab-workspace {
-		border: 1px solid var(--lab-line);
+		border: 1px solid var(--blonky-lab-line);
 		border-radius: 1rem;
-		background: var(--lab-panel);
+		background: var(--blonky-lab-panel);
 		box-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.2);
 	}
 
@@ -286,10 +271,7 @@ const renderers = [
 		font-weight: 400;
 		letter-spacing: -0.07em;
 		line-height: 1;
-	}
-
-	:global(html[data-theme='light']) .blonky-debug--ink h1 {
-		color: var(--app-overlay);
+		color: var(--blonky-lab-title);
 	}
 
 	.console {
@@ -305,14 +287,6 @@ const renderers = [
 		overflow: hidden;
 		margin: 0;
 		border-radius: calc(1rem - 1px) 0 0 0;
-		/* The stage's dot grid, which the clay renderer paints onto its board
-		   too. Declared here, so it's mixed from the stage's own colours. */
-		--lab-dot-color: color-mix(in srgb, var(--lab-line) 80%, var(--lab-muted));
-		--lab-dot-radius: 0.6px;
-		--lab-dot-spacing: 12px;
-		background: var(--lab-stage);
-		background-image: radial-gradient(var(--lab-dot-color) var(--lab-dot-radius), transparent var(--lab-dot-radius));
-		background-size: var(--lab-dot-spacing) var(--lab-dot-spacing);
 	}
 
 	.console__header {
@@ -331,7 +305,7 @@ const renderers = [
 		align-items: baseline;
 		gap: 0.4rem;
 		margin: 0;
-		color: var(--lab-muted);
+		color: var(--blonky-lab-readout);
 		font-size: 0.625rem;
 		padding-top: 0.25rem;
 		font-variant-numeric: tabular-nums;
@@ -357,7 +331,7 @@ const renderers = [
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
-		border-left: 1px solid var(--lab-line);
+		border-left: 1px solid var(--blonky-lab-line);
 		padding: 0.8rem;
 	}
 
@@ -377,7 +351,7 @@ const renderers = [
 	}
 
 	.console__emotes-header output {
-		color: var(--lab-muted);
+		color: var(--blonky-lab-muted);
 		font-size: 0.58rem;
 		font-weight: 400;
 		text-align: right;
@@ -407,28 +381,11 @@ const renderers = [
 		padding-top: 0.75rem;
 	}
 
-	/* The clay set is lit the same whatever the site theme, so its stage keeps
-	   the light colours, and with them the dot grid painted on its board; its
-	   overlay text keeps fixed colors. */
-	.blonky-debug--clay .console__stage {
-		--lab-stage: var(--lab-light-stage);
-		--lab-muted: var(--lab-light-muted);
-		--lab-line: var(--lab-light-line);
-	}
-
-	.blonky-debug--clay .console__header {
-		color: #2e3534;
-	}
-
-	.blonky-debug--clay .blonky-debug__readout {
-		color: #4c5655;
-	}
-
 	.console__fallback {
 		position: absolute;
 		inset: auto 1.1rem 0.9rem;
 		margin: 0;
-		color: var(--lab-muted);
+		color: var(--blonky-lab-muted);
 		font-size: 0.65rem;
 		text-align: center;
 	}
@@ -446,7 +403,7 @@ const renderers = [
 		flex-wrap: wrap;
 		gap: 0.6rem 1rem;
 		padding: 0.75rem;
-		border-top: 1px solid var(--lab-line);
+		border-top: 1px solid var(--blonky-lab-line);
 	}
 
 	.timeline {
@@ -463,7 +420,7 @@ const renderers = [
 
 	.timeline__duration {
 		flex-shrink: 0;
-		color: var(--lab-muted);
+		color: var(--blonky-lab-muted);
 		font-size: 0.56rem;
 		text-align: right;
 		font-variant-numeric: tabular-nums;
@@ -528,7 +485,7 @@ const renderers = [
 		}
 		.console__emotes {
 			border-left: 0;
-			border-top: 1px solid var(--lab-line);
+			border-top: 1px solid var(--blonky-lab-line);
 		}
 		.console__emote-list {
 			grid-template-columns: repeat(4, minmax(0, 1fr));

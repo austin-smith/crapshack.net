@@ -1,0 +1,19 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import './once-in-a-lifetime-palette.css';
+
+type Props = HTMLAttributes<'div'>;
+
+const { class: className, ...attributes } = Astro.props;
+---
+
+{/* The dark board he is chalked on, whatever the site theme. Its parent gives it its size, shape and place. */}
+<div {...attributes} class:list={['once-in-a-lifetime-board', className]}>
+	<slot />
+</div>
+
+<style>
+	.once-in-a-lifetime-board {
+		background: var(--once-in-a-lifetime-board);
+	}
+</style>
