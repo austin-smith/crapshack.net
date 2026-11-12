@@ -262,7 +262,11 @@ export function createBlonkyAnimator(
 			destroy();
 			return;
 		}
-		draw(animationTime(now));
+		// Faded out or hidden, as he is on /experiments while another experiment
+		// is selected: nothing to redraw.
+		if (canvas.checkVisibility?.({ opacityProperty: true, visibilityProperty: true }) !== false) {
+			draw(animationTime(now));
+		}
 		scheduleAnimation();
 	};
 
