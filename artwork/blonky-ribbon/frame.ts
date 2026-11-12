@@ -18,7 +18,7 @@ export const FPS = BLONKY_FPS;
 export const FRAMES = Math.round(LOOP_SECONDS * FPS);
 
 // Everything is laid out in his own 900 × 800 bust units, so every line weight is his.
-const CIRCLE = { x: 450, y: 365, r: 360 };
+const CIRCLE = { x: 450, y: 345, r: 360 };
 // How freehand the ribbon is: 0 is nearly geometric.
 const HAND = 1;
 // How far the circle strays from round: 0 is a true circle.
