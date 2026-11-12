@@ -6,7 +6,7 @@ import { blinkPoseAt } from '../../src/lib/blonky/motion';
 import { drawUpperBody } from '../../src/lib/blonky/ink/body';
 import { drawHead } from '../../src/lib/blonky/ink/head';
 import { DEFAULT_BLONKY_PALETTE } from '../../src/lib/blonky/ink/palette';
-import { hash, valueNoise } from '../../src/lib/blonky/noise';
+import { hash, valueNoise } from '../../src/lib/noise';
 import { beginInkFrame, fill, hatch, polygonPath, stipple, stroke } from '../../src/lib/blonky/ink/pen';
 import { BLONKY_FPS } from '../../src/lib/blonky/types';
 
