@@ -106,6 +106,9 @@ export function polygonTop(points: readonly { x: number; y: number }[], x: numbe
 }
 
 const surfaces = new Set<WeatherSurface>();
+// Weather that looked for surfaces this recently, ms, is still looking.
+const LOOKING = 1000;
+let lastLooked = Number.NEGATIVE_INFINITY;
 
 /** Lets the weather land on `surface`, until the returned function is called. */
 export function addWeatherSurface(surface: WeatherSurface): () => void {
@@ -115,6 +118,17 @@ export function addWeatherSurface(surface: WeatherSurface): () => void {
 	};
 }
 
+/** The surfaces the weather can land on, for weather that's looking for them. */
 export function weatherSurfaces(): ReadonlySet<WeatherSurface> {
+	lastLooked = performance.now();
 	return surfaces;
+}
+
+/**
+ * Whether any weather is looking for surfaces: some that's piling up, or
+ * still melting or drying off what it left. While none is, a surface
+ * needn't keep itself up to date.
+ */
+export function weatherSurfacesWanted(): boolean {
+	return performance.now() - lastLooked < LOOKING;
 }

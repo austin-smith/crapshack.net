@@ -6,6 +6,7 @@ import {
 	rotation,
 	scaling,
 	translation,
+	weatherSurfacesWanted,
 	type Matrix,
 	type WeatherSurface,
 } from '../weather/surfaces';
@@ -84,6 +85,8 @@ export function addBlonkyWeatherSurfaces(root: HTMLElement): () => void {
 	let removeBody: (() => void) | undefined;
 	const update = (event: Event): void => {
 		if (!(event instanceof CustomEvent)) return;
+		// Nothing's landing on him: no need to work out where he is.
+		if (!weatherSurfacesWanted()) return;
 		const { time, emote, gaze, rate, view } = event.detail as BlonkyFrame & { time: number };
 		const rect = canvas()?.getBoundingClientRect();
 		if (!rect || rect.width === 0) return;
