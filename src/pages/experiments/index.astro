@@ -125,9 +125,6 @@ import '../../components/once-in-a-lifetime-palette.css';
 		height: 0.6em;
 		margin: 0.34em 0 0 0.2em;
 		stroke-width: 2.5;
-		transition:
-			opacity var(--fade),
-			translate var(--fade);
 	}
 
 	/* While the script keeps the selection, the keyboard's focus selects a name,
@@ -215,12 +212,6 @@ import '../../components/once-in-a-lifetime-palette.css';
 
 		.experiments li:not([data-selected]) a {
 			opacity: 0.6;
-		}
-
-		/* Only the selected name shows its arrow, which slides out from the name. */
-		.experiments li:not([data-selected]) .experiments__arrow {
-			opacity: 0;
-			translate: -0.2em 0;
 		}
 
 		/* While the script keeps the selection, the underline goes with it, where
