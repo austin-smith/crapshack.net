@@ -233,13 +233,15 @@ export function hasGround<T>(footing: Footing<T>, column: number): boolean {
  * (x, y), a dialog or a menu: what falls in front of that can't reach the
  * surface there, nor can anything coming off the surface there be seen.
  * Only a surface with a `layer` can tell; what's in front of it is
- * whatever's topmost there that isn't in that element.
+ * whatever's topmost there that isn't in that element. Nor is it what the
+ * element's in, the page itself, which is all that's found where nothing
+ * takes the pointer: as everywhere outside an open context menu.
  */
 export function coveredAt<T>(footing: Footing<T>, x: number, y: number): boolean {
 	const element = footing.surface.layer;
 	if (!element) return false;
 	const top = document.elementFromPoint(x, y);
-	return top !== null && !element.contains(top);
+	return top !== null && !element.contains(top) && !top.contains(element);
 }
 
 /**
