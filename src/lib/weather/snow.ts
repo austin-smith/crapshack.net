@@ -9,7 +9,7 @@
  * fall from view.
  */
 
-import { createWeatherCanvas, type WeatherEffect } from './canvas';
+import { createWeatherCanvas, type WeatherEffect, type WeatherOptions } from './canvas';
 import {
 	columnAt,
 	columnX,
@@ -17,32 +17,16 @@ import {
 	coveredAt,
 	createFootings,
 	hasGround,
+	joltAt,
 	landingOn,
 	lastPagePoint,
 	pagePoint,
+	SHAKES_OFF,
+	wasMoving,
 	type Footing,
 } from './footing';
 import { createPool } from './pool';
 import { drawSoaked, drying, dry, soak } from './soak';
-
-interface WeatherOptions {
-	/** Particle count. Fewer for small containers such as the settings previews. */
-	count?: number;
-	/** Multiplies particle size, so a preview tile is not full of full-size flakes. */
-	scale?: number;
-	/** Multiplies fall time. A short fall needs a short time to fall it. */
-	speed?: number;
-	/** Lets flakes land on the page's weather surfaces. */
-	settle?: boolean;
-	/** About how long the drift along the bottom takes to fill, in seconds. */
-	fillSeconds?: number;
-	/** sessionStorage key to keep the drift along the bottom from page to page. */
-	persist?: string;
-	/** Where the drift along the bottom goes, if not in the container: behind what's in front of the page. */
-	ground?: HTMLElement;
-	/** Lets what falls pile up: in the drift, and with `settle`, on surfaces. */
-	accumulate?: boolean;
-}
 
 interface Flake {
 	x: number;
@@ -107,10 +91,9 @@ const CLUMP_MAX = 60;
 const GRAVITY = 900;
 const CLUMP_FALL = 150;
 const CLUMP_FALL_PER_PX = 30;
-// A jolt (change in velocity between drawings, CSS px) past this starts
-// shaking snow off, more the harder it is, up to SHAKE_MOST of it at once.
-// He jolts about 3.5 px noticing something, and about 20 jerking awake.
-const SHAKE_START = 4.5;
+// A jolt harder than one that shakes things off (see ./footing) shakes
+// more snow off the harder it is: SHAKE_MOST of it, at once, by this much
+// harder, CSS px.
 const SHAKE_RANGE = 20;
 const SHAKE_MOST = 0.55;
 // Settled snow melts this many CSS px a second once it stops snowing.
@@ -282,7 +265,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 			};
 		},
 		changed: (footing, before) => {
-			const { data, surface, jolt, motion } = footing;
+			const { data, surface } = footing;
 			const columns = surface.ground.length;
 			data.settling = true;
 			if (before !== undefined && data.snow.length !== columns) {
@@ -304,20 +287,13 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 					data.snow[i] = 0;
 					continue;
 				}
-				// A jolt: how suddenly it changed course. Pushing up into the
-				// snow only packs it down; stopping short on the way up,
-				// dropping away, or swinging back the other way throws it.
-				const joltX = jolt[i * 2];
-				const joltY = jolt[i * 2 + 1];
-				const strength = Math.hypot(joltX, Math.max(joltY, -joltY * 0.25));
-				const share = Math.min(SHAKE_MOST, Math.max(0, (strength - SHAKE_START) / SHAKE_RANGE));
+				const share = Math.min(SHAKE_MOST, Math.max(0, (joltAt(footing, i) - SHAKES_OFF) / SHAKE_RANGE));
 				if (share <= 0) continue;
 				const amount = data.snow[i] * share;
 				data.snow[i] -= amount;
 				// It carries on the way it was going.
-				const wasX = (motion[i * 2] - joltX) * surface.pace;
-				const wasY = (motion[i * 2 + 1] - joltY) * surface.pace;
-				loosen(footing, i, amount, wasX, Math.min(0, wasY) - 30 * Math.random());
+				const was = wasMoving(footing, i);
+				loosen(footing, i, amount, was.x, Math.min(0, was.y) - 30 * Math.random());
 			}
 		},
 		removed: (footing) => {
@@ -568,9 +544,8 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 				const soaked = drying(footing, time, seconds);
 				if (!settled) settled = soaked || data.snow.some((depth) => depth > 0);
 				// In its place on the page, if it has one, behind what's in front of it.
-				const on = (): CanvasRenderingContext2D => (footing.surface.layer ? layer(footing.surface.layer) : context);
-				if (soaked) drawSoaked(on, footing, time);
-				drawDrift(on(), footing);
+				if (soaked) drawSoaked(() => layer(footing.surface.layer), footing, time);
+				drawDrift(layer(footing.surface.layer), footing);
 			}
 			// What's falling goes into the drift, wherever that's drawn.
 			context.save();

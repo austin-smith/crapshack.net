@@ -22,9 +22,10 @@ export interface WeatherFrame {
 	 * Somewhere to draw in `element`'s place on the page rather than in front
 	 * of everything: whatever's in front of it is in front of this too. It
 	 * takes page coordinates, as `context` does, and is cleared each frame.
-	 * `element` has to be positioned, and not scaled or rotated.
+	 * `element` has to be positioned, and not scaled or rotated. Without one,
+	 * it's `context`, in front of everything.
 	 */
-	layer: (element: HTMLElement) => CanvasRenderingContext2D;
+	layer: (element?: HTMLElement) => CanvasRenderingContext2D;
 }
 
 export interface WeatherCanvasHooks {
@@ -39,6 +40,26 @@ export interface WeatherCanvas {
 	running: () => boolean;
 	/** Stops and removes it. */
 	finish: () => void;
+}
+
+/** How rain or snow falls (see ./rain, ./snow). */
+export interface WeatherOptions {
+	/** Particle count. Fewer for small containers such as the settings previews. */
+	count?: number;
+	/** Multiplies particle size, so a preview tile is not full of full-size drops or flakes. */
+	scale?: number;
+	/** Multiplies fall time. A short fall needs a short time to fall it. */
+	speed?: number;
+	/** Lets what falls land on the page's weather surfaces (see ./surfaces). */
+	settle?: boolean;
+	/** About how long the puddle or drift along the bottom takes to fill, in seconds. */
+	fillSeconds?: number;
+	/** sessionStorage key to keep the puddle or drift from page to page. */
+	persist?: string;
+	/** Where the puddle or drift along the bottom goes, if not in the container: behind what's in front of the page. */
+	ground?: HTMLElement;
+	/** Lets what falls pile up: along the bottom, and with `settle`, on surfaces. */
+	accumulate?: boolean;
 }
 
 /** Rain or snow, falling. */
@@ -91,7 +112,8 @@ export function createWeatherCanvas(container: HTMLElement, hooks: WeatherCanvas
 	let last = 0;
 	const layers = new Map<HTMLElement, { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D; drawn: boolean }>();
 
-	const layer = (element: HTMLElement): CanvasRenderingContext2D => {
+	const layer = (element?: HTMLElement): CanvasRenderingContext2D => {
+		if (!element) return context;
 		let found = layers.get(element);
 		if (!found) {
 			const layerCanvas = document.createElement('canvas');

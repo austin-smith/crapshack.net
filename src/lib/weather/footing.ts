@@ -143,6 +143,35 @@ export function createFootings<T>(hooks: FootingHooks<T>) {
 }
 
 /**
+ * A jolt (see `jolt`) harder than this, CSS px, shakes off what's settled.
+ * Blonky jolts about 3.5 px noticing something, and about 20 jerking awake.
+ */
+export const SHAKES_OFF = 4.5;
+
+/**
+ * How hard a column was jolted at its last move, CSS px. Pushing up into
+ * what's settled only packs it down; stopping short on the way up, dropping
+ * away, or swinging back the other way throws it.
+ */
+export function joltAt<T>(footing: Footing<T>, column: number): number {
+	const x = footing.jolt[column * 2];
+	const y = footing.jolt[column * 2 + 1];
+	return Math.hypot(x, Math.max(y, -y * 0.25));
+}
+
+/**
+ * How a column was moving before its last jolt, CSS px a second: the way
+ * what it throws off carries on.
+ */
+export function wasMoving<T>(footing: Footing<T>, column: number): { x: number; y: number } {
+	const { motion, jolt, surface } = footing;
+	return {
+		x: (motion[column * 2] - jolt[column * 2]) * surface.pace,
+		y: (motion[column * 2 + 1] - jolt[column * 2 + 1]) * surface.pace,
+	};
+}
+
+/**
  * A surface's ground at `column` (fractional, between columns), lifted
  * `lift` local units, on the page. NaN where there's no ground.
  */

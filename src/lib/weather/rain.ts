@@ -9,29 +9,22 @@
  * (see ./accumulation); otherwise drops just fall from view.
  */
 
-import { createWeatherCanvas, type WeatherEffect } from './canvas';
-import { columnAt, coveredAt, createFootings, hasGround, landingOn, lastPagePoint, pagePoint, type Footing } from './footing';
+import { createWeatherCanvas, type WeatherEffect, type WeatherOptions } from './canvas';
+import {
+	columnAt,
+	coveredAt,
+	createFootings,
+	hasGround,
+	joltAt,
+	landingOn,
+	lastPagePoint,
+	pagePoint,
+	SHAKES_OFF,
+	wasMoving,
+	type Footing,
+} from './footing';
 import { createPool } from './pool';
 import { drawSoaked, drying, dry, soak } from './soak';
-
-interface WeatherOptions {
-	/** Particle count. Fewer for small containers such as the settings previews. */
-	count?: number;
-	/** Multiplies particle length, so a preview tile is not full of full-size drops. */
-	scale?: number;
-	/** Multiplies fall time. A short fall needs a short time to fall it. */
-	speed?: number;
-	/** Lets drops land on the page's weather surfaces. */
-	settle?: boolean;
-	/** About how long the puddle takes to fill, in seconds. */
-	fillSeconds?: number;
-	/** sessionStorage key to keep the puddle from page to page. */
-	persist?: string;
-	/** Where the puddle along the bottom goes, if not in the container: behind what's in front of the page. */
-	ground?: HTMLElement;
-	/** Lets what falls pile up: in the puddle, and with `settle`, on surfaces. */
-	accumulate?: boolean;
-}
 
 interface Raindrop {
 	x: number;
@@ -126,10 +119,8 @@ const GATHER = 7;
 // what it's on (see ./soak), and how much.
 const SOAK_REACH = 10;
 const SOAK = 0.12;
-// A jolt (change in velocity between drawings, CSS px) past this starts
-// flinging beads off; by START + RANGE, all of them go. He jolts about 3.5 px
-// noticing something, and about 20 jerking awake.
-const SHAKE_START = 4.5;
+// A jolt this much harder, CSS px, than one that shakes things off (see
+// ./footing) flings every bead off; less, fewer of them.
 const SHAKE_RANGE = 8;
 const GRAVITY = 1400;
 const FASTEST = 900;
@@ -280,7 +271,6 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 	const footings = createFootings<Wet>({
 		create: () => ({ beads: [] }),
 		changed: (footing) => {
-			const { jolt, motion, surface } = footing;
 			for (const bead of footing.data.beads) {
 				const column = Math.round(bead.at);
 				if (!hasGround(footing, column)) {
@@ -288,14 +278,10 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 					detach(footing, bead, 0, 0);
 					continue;
 				}
-				const joltX = jolt[column * 2];
-				const joltY = jolt[column * 2 + 1];
-				const strength = Math.hypot(joltX, Math.max(joltY, -joltY * 0.25));
-				if (Math.random() >= (strength - SHAKE_START) / SHAKE_RANGE) continue;
+				if (Math.random() >= (joltAt(footing, column) - SHAKES_OFF) / SHAKE_RANGE) continue;
 				// Flung on the way it was going.
-				const wasX = (motion[column * 2] - joltX) * surface.pace;
-				const wasY = (motion[column * 2 + 1] - joltY) * surface.pace;
-				detach(footing, bead, wasX + (Math.random() - 0.5) * 40, Math.min(0, wasY) - Math.random() * 60);
+				const was = wasMoving(footing, column);
+				detach(footing, bead, was.x + (Math.random() - 0.5) * 40, Math.min(0, was.y) - Math.random() * 60);
 			}
 			footing.data.beads = footing.data.beads.filter((bead) => bead.volume > 0);
 		},
@@ -457,7 +443,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 				const soaked = drying(footing, time, seconds);
 				if (!lingering) lingering = soaked || footing.data.beads.length > 0;
 				// In its place on the page, if it has one, behind what's in front of it.
-				if (soaked) drawSoaked(() => (footing.surface.layer ? layer(footing.surface.layer) : context), footing, time);
+				if (soaked) drawSoaked(() => layer(footing.surface.layer), footing, time);
 			}
 			// What's falling goes into the puddle, wherever that's drawn.
 			context.save();
