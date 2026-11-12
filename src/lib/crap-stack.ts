@@ -1,9 +1,4 @@
-type Sticker = {
-	name: string;
-	source: string;
-	color: string;
-	artScale: number;
-};
+import { stickers } from '../data/crap-stack';
 
 type Piece = {
 	id: number;
@@ -75,9 +70,9 @@ const NUDGE_CAPACITY = 2;
 const MERGES_PER_NUDGE = 5;
 const NUDGE_COOLDOWN = 0.85;
 
-// Fraction of the board height the danger line sits at. Keep in sync with the
-// `top`/`height` of `.crap-stack-danger` and `.crap-stack-guide` in CrapStack.astro.
-const DANGER_LINE = 0.17;
+// Fraction of the board height the danger line sits at. CrapStackPaper.astro
+// draws the line there, and CrapStack.astro ends the aiming guide at it.
+export const DANGER_LINE = 0.17;
 // A freshly dropped piece passes through the danger band on its way down, so it
 // only starts accruing danger once it has had time to fall clear of it.
 const DANGER_GRACE = 1.15;
@@ -226,7 +221,7 @@ function dropClassWhenAnimationEnds(element: HTMLElement, className: string): vo
 // Higher rungs first appear mid-game, straight out of a merge. Fetching the
 // whole ladder once the page has loaded keeps them from popping in blank, and
 // holding the images keeps them in the page's memory cache.
-function preloadStickers(stickers: Sticker[], into: HTMLImageElement[]): void {
+function preloadStickers(into: HTMLImageElement[]): void {
 	for (const sticker of stickers) {
 		const image = new Image();
 		image.src = sticker.source;
@@ -235,17 +230,16 @@ function preloadStickers(stickers: Sticker[], into: HTMLImageElement[]): void {
 }
 
 export function initCrapStack(root: HTMLElement): void {
-	const stickers = JSON.parse(root.dataset.stickers ?? '[]') as Sticker[];
-	if (stickers.length < 2) return;
-
 	const topLevel = stickers.length - 1;
 
 	const stage = requiredElement<HTMLElement>(root, '[data-crap-stack-stage]');
 	const piecesLayer = requiredElement<HTMLElement>(root, '[data-crap-stack-pieces]');
+	// A token for the script to copy: each piece in play is one.
+	const pieceTemplate = requiredElement<HTMLTemplateElement>(root, 'template[data-crap-stack-piece]');
 	const currentToken = requiredElement<HTMLElement>(root, '[data-crap-stack-current]');
 	const currentImage = requiredElement<HTMLImageElement>(currentToken, 'img');
 	const nextToken = requiredElement<HTMLElement>(root, '[data-crap-stack-next-token]');
-	const nextImage = requiredElement<HTMLImageElement>(root, '[data-crap-stack-next]');
+	const nextImage = requiredElement<HTMLImageElement>(nextToken, 'img');
 	const nextName = requiredElement<HTMLElement>(root, '[data-crap-stack-next-name]');
 	const achievedName = requiredElement<HTMLElement>(root, '[data-crap-stack-achieved-name]');
 	const progressMarkers = [...root.querySelectorAll<HTMLElement>('[data-crap-stack-progress]')];
@@ -308,8 +302,8 @@ export function initCrapStack(root: HTMLElement): void {
 	const preloadedStickers: HTMLImageElement[] = [];
 
 	bestElement.textContent = String(best);
-	if (document.readyState === 'complete') preloadStickers(stickers, preloadedStickers);
-	else window.addEventListener('load', () => preloadStickers(stickers, preloadedStickers), { once: true });
+	if (document.readyState === 'complete') preloadStickers(preloadedStickers);
+	else window.addEventListener('load', () => preloadStickers(preloadedStickers), { once: true });
 
 	function radiusFor(level: number): number {
 		return width * RADIUS_FACTORS[level];
@@ -381,14 +375,11 @@ export function initCrapStack(root: HTMLElement): void {
 	}
 
 	function makePiece(level: number, x: number, y: number, merged = false): Piece {
-		const element = document.createElement('div');
-		element.className = `crap-stack-piece${merged ? ' is-merged' : ''}`;
+		const element = pieceTemplate.content.firstElementChild?.cloneNode(true);
+		if (!(element instanceof HTMLDivElement)) throw new Error('Crap Stack is missing its piece token');
+		element.classList.toggle('is-merged', merged);
 		styleToken(element, level);
-		const image = document.createElement('img');
-		image.src = stickers[level].source;
-		image.alt = '';
-		image.draggable = false;
-		element.append(image);
+		requiredElement<HTMLImageElement>(element, 'img').src = stickers[level].source;
 		piecesLayer.append(element);
 		if (merged) window.setTimeout(() => element.classList.remove('is-merged'), 290);
 

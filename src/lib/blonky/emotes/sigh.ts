@@ -1,7 +1,7 @@
 import { heldEnvelope, INK_FRAME_SECONDS } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteSample } from '../types';
 
-export function sampleSighEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleSighEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	// Build the inhale over five ink frames. During the exhale, shoulders lead,
 	// torso displacement stays smaller, and head motion begins three frames later.
 	const inhale = heldEnvelope(
@@ -57,3 +57,10 @@ export function sampleSighEmote(elapsed: number, direction: -1 | 1): BlonkyEmote
 		rightEyeOpen: 1 - heavyLids * 0.38 - headFollow * 0.06,
 	};
 }
+
+export const sighEmote: BlonkyEmoteDefinition = {
+	label: 'sigh',
+	duration: 2.75,
+	menuIcon: '😮‍💨',
+	sample: sampleSighEmote,
+};

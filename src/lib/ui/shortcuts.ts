@@ -17,8 +17,13 @@ function isTyping(target: EventTarget | null): boolean {
 	);
 }
 
+// An open dropdown holds the keyboard until it closes, as it does the pointer.
+function isDropdownOpen(): boolean {
+	return document.documentElement.hasAttribute('data-dropdown-open');
+}
+
 function onKeyDown(event: KeyboardEvent): void {
-	if (event.defaultPrevented || isTyping(event.target)) return;
+	if (event.defaultPrevented || isTyping(event.target) || isDropdownOpen()) return;
 
 	const mod = event.metaKey || event.ctrlKey;
 	const key = event.key.toLowerCase();

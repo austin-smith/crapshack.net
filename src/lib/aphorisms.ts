@@ -33,7 +33,8 @@ const aphorisms: Aphorism[] = [
 	{ text: 'uniquely, completely, imperially' },
 	{ text: 'despite all the gin' },
 	{ text: 'profoundly meaningless' },
-	{ text: "i'm happier when ur gone" },
+	{ text: 'happier when ur gone' },
+	{ text: 'some infinite thing' },
 ];
 
 export function pickAphorism(excludeText?: string): Aphorism | null {

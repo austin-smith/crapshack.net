@@ -8,7 +8,14 @@ import ContextMenuEntry, {
 
 interface ContextMenuRadioGroup {
 	name: string;
-	value: string;
+	/**
+	 * When provided, the caller owns the selection: choosing an item only
+	 * dispatches context-menu-select, and the caller selects the value with
+	 * setContextMenuRadioValue.
+	 */
+	value?: string;
+	/** Initial selection for a group that owns its state. Ignored when value is provided. */
+	defaultValue?: string;
 	items: ContextMenuActionItem[];
 }
 
@@ -72,8 +79,11 @@ const isSubItem = (item: ContextMenuEntryItem | ContextMenuSubItem): item is Con
 						const ItemIcon = typeof item.icon === 'string' ? undefined : item.icon;
 						const iconText = typeof item.icon === 'string' ? item.icon : undefined;
 						const submenuId = `${id}-submenu-${index}-${itemIndex}`;
+						const selectedValue = 'radioGroup' in item
+							? item.radioGroup.value ?? item.radioGroup.defaultValue
+							: undefined;
 						const selectedRadioItem = 'radioGroup' in item
-							? item.radioGroup.items.find((radioItem) => radioItem.value === item.radioGroup.value)
+							? item.radioGroup.items.find((radioItem) => radioItem.value === selectedValue)
 							: undefined;
 						return (
 							<div class="context-menu-sub">
@@ -113,7 +123,8 @@ const isSubItem = (item: ContextMenuEntryItem | ContextMenuSubItem): item is Con
 										<div
 											role="group"
 											data-context-menu-radio-group={item.radioGroup.name}
-											data-context-menu-value={item.radioGroup.value}
+											data-context-menu-value={selectedValue}
+											data-controlled={item.radioGroup.value !== undefined ? '' : undefined}
 										>
 											<div class="context-menu-label">{item.label}</div>
 											{item.radioGroup.items.map((radioItem) => (
@@ -124,7 +135,7 @@ const isSubItem = (item: ContextMenuEntryItem | ContextMenuSubItem): item is Con
 													tabindex="-1"
 													disabled={radioItem.disabled}
 													aria-disabled={radioItem.disabled ? 'true' : undefined}
-													aria-checked={radioItem.value === item.radioGroup.value}
+													aria-checked={radioItem.value === selectedValue}
 													data-context-menu-item
 													data-context-menu-value={radioItem.value}
 												>

@@ -1,5 +1,5 @@
 import { heldEnvelope, INK_FRAME_SECONDS, smoothstep } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteSample } from '../types';
 
 // One reversal per frame at the start, damping as conviction runs out. Faster
 // and shallower than smh's deliberate sweeps.
@@ -14,7 +14,7 @@ function shakeAt(elapsed: number): number {
 	return SHAKE_KEYS[index] + (SHAKE_KEYS[index + 1] - SHAKE_KEYS[index]) * amount;
 }
 
-export function sampleDenyEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleDenyEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	// Brows shoot up and the head recoils before the shake begins; the wide-eyed
 	// alarm outlasts the shake, and the shoulders drop in a late exhale so the
 	// settle still reads as rattled. The brow on the shake's leading side jumps a
@@ -82,3 +82,10 @@ export function sampleDenyEmote(elapsed: number, direction: -1 | 1): BlonkyEmote
 		rightEyeOpen: leftLeads ? lagEyeOpen : leadEyeOpen,
 	};
 }
+
+export const denyEmote: BlonkyEmoteDefinition = {
+	label: 'deny',
+	duration: 1.875,
+	menuIcon: '🙅',
+	sample: sampleDenyEmote,
+};

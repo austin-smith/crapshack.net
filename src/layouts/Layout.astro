@@ -86,7 +86,7 @@ const { title, ogImage, noIndex, fullBleed = false, lockScroll = false } = Astro
 			<div class="header-inner">
 				<button
 					id="sidebar-toggle"
-					class="group fixed right-3 top-3 z-[110] p-1.5 rounded-md text-[var(--color-text)] hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] aria-[expanded=false]:bg-[var(--color-sidebar-bg)] transition-colors"
+					class="group fixed right-[calc(0.75rem+var(--scroll-lock-gap,0px))] top-3 z-[110] p-1.5 rounded-md text-[var(--color-text)] hover:text-[var(--color-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] aria-[expanded=false]:bg-[var(--color-sidebar-bg)] transition-colors"
 					aria-label="Open menu"
 					aria-controls="site-sidebar"
 					aria-expanded="false"

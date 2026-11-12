@@ -2,6 +2,8 @@
  * Dialog utility functions for programmatic control
  */
 
+import { lockScroll } from './scroll-lock';
+
 /** Track the element that opened the dialog to return focus */
 const triggerMap = new WeakMap<HTMLElement, HTMLElement>();
 
@@ -10,6 +12,9 @@ const initializedDialogs = new WeakSet<HTMLElement>();
 
 /** Track currently open dialog IDs (stack order) */
 const openDialogStack: string[] = [];
+
+/** Each open dialog's hold on the page's scroll lock */
+const scrollLocks = new WeakMap<HTMLElement, () => void>();
 
 /** Ensure we only bind one global Escape handler */
 let escapeHandlerBound = false;
@@ -36,7 +41,25 @@ function bindGlobalEscapeHandler(): void {
 	});
 }
 
-/** Track currently focused element within dialog for focus trap */
+/** As Radix's FocusScope: invisible, or inside a hidden subtree below the dialog */
+function isHidden(element: HTMLElement, dialog: HTMLElement): boolean {
+	if (getComputedStyle(element).visibility === 'hidden') return true;
+	for (let node: HTMLElement | null = element; node && node !== dialog; node = node.parentElement) {
+		if (getComputedStyle(node).display === 'none') return true;
+	}
+	return false;
+}
+
+/** Tab skips a radio group's unchecked radios once one is checked */
+function isSkippedRadio(element: HTMLElement): boolean {
+	if (!(element instanceof HTMLInputElement) || element.type !== 'radio' || !element.name || element.checked) return false;
+	// A group is every radio with the same name and form owner
+	return Array.from(element.ownerDocument.querySelectorAll<HTMLInputElement>('input[type="radio"]')).some(
+		(radio) => radio.checked && radio.name === element.name && radio.form === element.form,
+	);
+}
+
+/** The dialog's Tab stops in order, which bound the focus trap */
 function getFocusableElements(dialog: HTMLElement): HTMLElement[] {
 	const selector = [
 		'button:not([disabled])',
@@ -44,9 +67,12 @@ function getFocusableElements(dialog: HTMLElement): HTMLElement[] {
 		'input:not([disabled])',
 		'select:not([disabled])',
 		'textarea:not([disabled])',
-		'[tabindex]:not([tabindex="-1"])',
+		'[tabindex]',
 	].join(', ');
-	return Array.from(dialog.querySelectorAll<HTMLElement>(selector));
+	// tabIndex rules out roving-tabindex items, as in Radix's FocusScope
+	return Array.from(dialog.querySelectorAll<HTMLElement>(selector)).filter(
+		(element) => element.tabIndex >= 0 && !isSkippedRadio(element) && !isHidden(element, dialog),
+	);
 }
 
 /** Reads the DOM, not the stack: what is on screen is the thing callers care about. */
@@ -75,8 +101,12 @@ export function openDialog(id: string): void {
 		triggerMap.set(dialog, activeElement);
 	}
 
+	// Start at the top each time, as Radix does by mounting fresh content
+	const content = dialog.querySelector<HTMLElement>('[data-dialog-content]');
+	if (content) content.scrollTop = 0;
+
 	// Prevent body scroll
-	document.body.style.overflow = 'hidden';
+	scrollLocks.set(dialog, lockScroll(dialog.querySelector('[data-dialog-container]') ?? dialog));
 
 	// Open the dialog
 	dialog.dataset.open = 'true';
@@ -117,9 +147,8 @@ export function closeDialog(id: string): void {
 	}
 
 	// Restore body scroll
-	if (openDialogStack.length === 0) {
-		document.body.style.overflow = '';
-	}
+	scrollLocks.get(dialog)?.();
+	scrollLocks.delete(dialog);
 
 	// Return focus to trigger element
 	const trigger = triggerMap.get(dialog);
@@ -159,11 +188,15 @@ export function initDialog(dialog: HTMLElement): void {
 
 			const first = focusable[0];
 			const last = focusable[focusable.length - 1];
+			// The container focused on open sits before the first element, so it wraps too
+			const active = document.activeElement;
+			const atStart = active === first || (active !== null && Boolean(first.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_PRECEDING));
+			const atEnd = active === last || (active !== null && Boolean(last.compareDocumentPosition(active) & Node.DOCUMENT_POSITION_FOLLOWING));
 
-			if (e.shiftKey && document.activeElement === first) {
+			if (e.shiftKey && atStart) {
 				e.preventDefault();
 				last.focus();
-			} else if (!e.shiftKey && document.activeElement === last) {
+			} else if (!e.shiftKey && atEnd) {
 				e.preventDefault();
 				first.focus();
 			}

@@ -1,11 +1,12 @@
-import { createBlonkyAnimator, type BlonkyAnimator } from './animator';
+import { createBlonkyAnimator, type BlonkyAnimator, type BlonkyPainter } from './animator';
 import {
 	BLONKY_EMOTES,
 	isBlonkyEmote,
-	type BlonkyEmoteInfo,
+	type BlonkyEmoteDefinition,
 } from './emotes';
-import { BLONKY_FPS } from './types';
+import { BLONKY_FPS, BLONKY_SHADINGS, isBlonkyShading } from './types';
 import type { ToggleChangeEvent } from '../ui/toggle';
+import type { ClayBoardPattern } from './clay/renderer';
 
 const isTextEntry = (target: EventTarget | null): boolean => (
 	target instanceof HTMLElement
@@ -20,12 +21,25 @@ const isDropdownOpen = (root: HTMLElement): boolean => (
 	root.querySelector('[data-dropdown-trigger][aria-expanded="true"]') !== null
 );
 
+type BlonkyPainterFactory = (canvas: HTMLCanvasElement) => BlonkyPainter | undefined;
+
+interface BlonkyLabOptions {
+	/** Renderers other than ink, keyed by the lab's data-blonky-renderer. */
+	painters?: Record<string, BlonkyPainterFactory>;
+}
+
 let lifecycleRegistered = false;
+const painters = new Map<string, BlonkyPainterFactory>();
 let mountedRoot: HTMLElement | null = null;
+let mountedPainter: BlonkyPainterFactory | undefined;
 let destroyMountedPage: (() => void) | undefined;
 
-function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
-	const canvas = root.querySelector<HTMLCanvasElement>('[data-blonky-page-canvas]');
+/**
+ * Mounts the lab on its page, drawn with the painter if given, or with ink
+ * and its fallback note if the painter can't run or has already failed.
+ */
+function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory, failed = false): (() => void) | undefined {
+	const pageCanvas = root.querySelector<HTMLCanvasElement>('[data-blonky-page-canvas]');
 	const playbackButton = root.querySelector<HTMLButtonElement>('[data-blonky-playback]');
 	const playIcon = root.querySelector<HTMLElement>('[data-blonky-playback-icon="play"]');
 	const pauseIcon = root.querySelector<HTMLElement>('[data-blonky-playback-icon="pause"]');
@@ -33,6 +47,7 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	const headVisibilityButton = root.querySelector<HTMLButtonElement>('[data-blonky-head-visibility]');
 	const bodyVisibilityButton = root.querySelector<HTMLButtonElement>('[data-blonky-body-visibility]');
 	const armsVisibilityButton = root.querySelector<HTMLButtonElement>('[data-blonky-arms-visibility]');
+	const shadingDropdown = root.querySelector<HTMLElement>('#blonky-shading');
 	const emoteStateOutput = root.querySelector<HTMLOutputElement>('[data-blonky-emote-state]');
 	const speedDropdown = root.querySelector<HTMLElement>('#blonky-speed');
 	const stateOutput = root.querySelector<HTMLOutputElement>('[data-blonky-state]');
@@ -44,14 +59,11 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	const surpriseButton = root.querySelector<HTMLButtonElement>('[data-blonky-surprise]');
 	const status = root.querySelector<HTMLElement>('[data-blonky-page-status]');
 	if (
-		!canvas
+		!pageCanvas
 		|| !playbackButton
 		|| !playIcon
 		|| !pauseIcon
 		|| !resetButton
-		|| !headVisibilityButton
-		|| !bodyVisibilityButton
-		|| !armsVisibilityButton
 		|| !emoteStateOutput
 		|| !speedDropdown
 		|| !stateOutput
@@ -64,7 +76,10 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		|| !status
 	) return;
 
+	// Replaced by a fresh canvas if the requested renderer fails.
+	let canvas: HTMLCanvasElement = pageCanvas;
 	const emoteRows = [...root.querySelectorAll<HTMLButtonElement>('[data-blonky-emote]')];
+	let restLabel = canvas.getAttribute('aria-label') ?? 'Blonky at rest';
 	const listeners = new AbortController();
 	let activeRow: HTMLButtonElement | null = null;
 	let clipEnd = 0;
@@ -74,7 +89,7 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	const clearActiveRow = (): void => {
 		activeRow?.setAttribute('aria-pressed', 'false');
 		activeRow = null;
-		canvas.setAttribute('aria-label', 'Blonky, a hand-drawn character at rest');
+		canvas.setAttribute('aria-label', restLabel);
 		emoteStateOutput.value = 'idle';
 		timeline.disabled = true;
 		timeline.value = '0';
@@ -100,14 +115,56 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		status.textContent = playing ? 'Blonky animation playing' : 'Blonky animation paused';
 	};
 
-	const animator = createBlonkyAnimator(canvas, {
+	const animatorOptions = {
 		autoPauseOffscreen: false,
 		onFrame: syncFrame,
 		onPlaybackChange: syncPlayback,
 		showArms: true,
 		view: 'debug',
-	});
+	} as const;
+	let painted = false;
+	let animator: BlonkyAnimator | undefined;
+	if (!failed) {
+		try {
+			animator = createBlonkyAnimator(canvas, {
+				...animatorOptions,
+				painter: painter && ((target) => {
+					const result = painter(target);
+					painted = result !== undefined;
+					return result;
+				}),
+			});
+		} catch (error) {
+			// Failing partway, even on its first frame, is no different from
+			// not running at all.
+			console.error(error);
+			painted = false;
+		}
+	}
+	// The renderer may have taken the canvas before failing, leaving it no use
+	// to ink, so ink starts again on a fresh one.
+	if (!animator && painter) {
+		const fresh = canvas.cloneNode(true) as HTMLCanvasElement;
+		canvas.replaceWith(fresh);
+		canvas = fresh;
+		animator = createBlonkyAnimator(canvas, animatorOptions);
+	}
 	if (!animator) return;
+	// The ink drawing stands in when the requested renderer is unsupported,
+	// styled and described as the ink lab, and without the controls that
+	// only the clay answers to.
+	const unsupported = Boolean(painter) && !painted;
+	if (unsupported) {
+		// Ink isn't lit like the clay set, so its stage follows the site theme.
+		root.querySelector<HTMLElement>('[data-blonky-stage]')?.removeAttribute('data-always-light');
+		restLabel = canvas.dataset.blonkyFallbackLabel ?? restLabel;
+		canvas.setAttribute('aria-label', restLabel);
+	}
+	const fallback = root.querySelector<HTMLElement>('[data-blonky-renderer-fallback]');
+	if (fallback) fallback.hidden = !unsupported;
+	for (const controls of root.querySelectorAll<HTMLElement>('[data-blonky-clay-controls]')) {
+		controls.hidden = unsupported;
+	}
 	frameAnimator = animator;
 
 	const togglePlayback = (): void => {
@@ -129,12 +186,12 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 		activeRow = row;
 		row.setAttribute('aria-pressed', 'true');
 		emoteStateOutput.value = BLONKY_EMOTES[emote].label;
-		const emoteInfo: BlonkyEmoteInfo = BLONKY_EMOTES[emote];
-		clipEnd = emoteInfo.duration + (emoteInfo.holds ? 2 : 0.5);
+		const definition: BlonkyEmoteDefinition = BLONKY_EMOTES[emote];
+		clipEnd = definition.duration + (definition.holds ? 2 : 0.5);
 		timeline.max = String(Math.round(clipEnd * BLONKY_FPS));
 		timeline.disabled = false;
 		durationOutput.value = `${clipEnd.toFixed(3)} s`;
-		canvas.setAttribute('aria-label', `Blonky: ${emoteInfo.label}`);
+		canvas.setAttribute('aria-label', `Blonky: ${definition.label}`);
 		animator.playEmote(emote);
 		// An explicitly selected expression stays still when reduced motion is set.
 		if (!matchMedia('(prefers-reduced-motion: reduce)').matches) animator.play();
@@ -172,23 +229,26 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 
 	playbackButton.addEventListener('click', togglePlayback, { signal: listeners.signal });
 	resetButton.addEventListener('click', reset, { signal: listeners.signal });
-	headVisibilityButton.addEventListener('toggle-change', ((event: ToggleChangeEvent) => {
-		const visible = event.detail.pressed;
-		animator.setHeadVisible(visible);
-		headVisibilityButton.setAttribute('aria-pressed', String(visible));
-		status.textContent = `Blonky head ${visible ? 'shown' : 'hidden'}`;
-	}) as EventListener, { signal: listeners.signal });
-	bodyVisibilityButton.addEventListener('toggle-change', ((event: ToggleChangeEvent) => {
-		const visible = event.detail.pressed;
-		animator.setBodyVisible(visible);
-		bodyVisibilityButton.setAttribute('aria-pressed', String(visible));
-		status.textContent = `Blonky body ${visible ? 'shown' : 'hidden'}`;
-	}) as EventListener, { signal: listeners.signal });
-	armsVisibilityButton.addEventListener('toggle-change', ((event: ToggleChangeEvent) => {
-		const visible = event.detail.pressed;
-		animator.setArmsVisible(visible);
-		armsVisibilityButton.setAttribute('aria-pressed', String(visible));
-		status.textContent = `Blonky arms ${visible ? 'shown' : 'hidden'}`;
+	// Component toggles exist only where the figure is drawn in parts (ink).
+	const components: [HTMLButtonElement | null, string, (visible: boolean) => void][] = [
+		[headVisibilityButton, 'head', animator.setHeadVisible],
+		[bodyVisibilityButton, 'body', animator.setBodyVisible],
+		[armsVisibilityButton, 'arms', animator.setArmsVisible],
+	];
+	for (const [button, part, setVisible] of components) {
+		button?.addEventListener('toggle-change', ((event: ToggleChangeEvent) => {
+			const visible = event.detail.pressed;
+			setVisible(visible);
+			button.setAttribute('aria-pressed', String(visible));
+			status.textContent = `Blonky ${part} ${visible ? 'shown' : 'hidden'}`;
+		}) as EventListener, { signal: listeners.signal });
+	}
+	// Shading views exist only where the figure is lit (clay).
+	shadingDropdown?.addEventListener('dropdown-change', ((event: CustomEvent<{ value: string }>) => {
+		const shading = event.detail.value;
+		if (!isBlonkyShading(shading)) return;
+		animator.setShading(shading);
+		status.textContent = `Showing ${BLONKY_SHADINGS[shading]}`;
 	}) as EventListener, { signal: listeners.signal });
 	speedDropdown.addEventListener('dropdown-change', ((event: CustomEvent<{ value: string }>) => {
 		animator.setPlaybackRate(Number(event.detail.value));
@@ -235,23 +295,92 @@ function initBlonkyPage(root: HTMLElement): (() => void) | undefined {
 	};
 }
 
+/**
+ * Puts the lab's ink fallback in place of a renderer that stopped working
+ * after it started, as when its context couldn't be restored.
+ */
+export function fallBackToInk(canvas: HTMLCanvasElement): void {
+	const root = canvas.closest<HTMLElement>('[data-blonky-page-root]');
+	if (!root || root !== mountedRoot) return;
+	destroyMountedPage?.();
+	destroyMountedPage = initBlonkyPage(root, mountedPainter, true);
+}
+
 const unmountBlonkyPage = (): void => {
 	destroyMountedPage?.();
 	destroyMountedPage = undefined;
 	mountedRoot = null;
+	mountedPainter = undefined;
 };
 
 const mountBlonkyPage = (): void => {
 	const root = document.querySelector<HTMLElement>('[data-blonky-page-root]');
-	if (!root || root === mountedRoot) return;
+	if (!root) return;
+	const painter = painters.get(root.dataset.blonkyRenderer ?? '');
+	if (root === mountedRoot && painter === mountedPainter) return;
 	unmountBlonkyPage();
-	const cleanup = initBlonkyPage(root);
+	const cleanup = initBlonkyPage(root, painter);
 	if (!cleanup) return;
 	mountedRoot = root;
+	mountedPainter = painter;
 	destroyMountedPage = cleanup;
 };
 
-export function registerBlonkyDebugLifecycle(): void {
+/** A computed CSS colour, `rgb()` or `color(srgb ...)`, as sRGB from 0 to 1. */
+function parseComputedColor(value: string): [number, number, number] | undefined {
+	const srgb = value.match(/color\(srgb\s+([\d.e+-]+)\s+([\d.e+-]+)\s+([\d.e+-]+)/);
+	if (srgb) return [Number(srgb[1]), Number(srgb[2]), Number(srgb[3])];
+	const rgb = value.match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/);
+	if (rgb) return [Number(rgb[1]) / 255, Number(rgb[2]) / 255, Number(rgb[3]) / 255];
+	return undefined;
+}
+
+/**
+ * The lab stage's dot grid, as the clay renderer paints it onto its board:
+ * read from the stage's --blonky-lab-dot-* properties, which its background uses
+ * too, so the two match. Its colours are resolved again if the site theme
+ * changes; where the canvas sits on the grid is read each exposure.
+ */
+export function labStagePattern(canvas: HTMLCanvasElement): () => ClayBoardPattern | undefined {
+	let theme: string | undefined;
+	let look: Omit<ClayBoardPattern, 'offset'> | undefined;
+	const resolve = (stage: HTMLElement): Omit<ClayBoardPattern, 'offset'> | undefined => {
+		const style = getComputedStyle(stage);
+		const spacing = Number.parseFloat(style.getPropertyValue('--blonky-lab-dot-spacing'));
+		const radius = Number.parseFloat(style.getPropertyValue('--blonky-lab-dot-radius'));
+		// Custom properties compute to their tokens; a probe resolves the colour.
+		const probe = document.createElement('span');
+		probe.style.color = 'var(--blonky-lab-dot-color)';
+		stage.append(probe);
+		const dot = parseComputedColor(getComputedStyle(probe).color);
+		probe.remove();
+		const ground = parseComputedColor(style.backgroundColor);
+		if (!dot || !ground || !(spacing > 0) || !(radius > 0)) return undefined;
+		return { dot, ground, spacing, radius };
+	};
+	return () => {
+		const stage = canvas.closest<HTMLElement>('[data-blonky-stage]');
+		if (!stage) return undefined;
+		if (!look || theme !== document.documentElement.dataset.theme) {
+			theme = document.documentElement.dataset.theme;
+			look = resolve(stage);
+		}
+		if (!look) return undefined;
+		// The grid starts at the stage's padding box, as its background does.
+		const stageRect = stage.getBoundingClientRect();
+		const canvasRect = canvas.getBoundingClientRect();
+		return {
+			...look,
+			offset: {
+				x: canvasRect.left - stageRect.left - stage.clientLeft,
+				y: canvasRect.top - stageRect.top - stage.clientTop,
+			},
+		};
+	};
+}
+
+export function registerBlonkyDebugLifecycle(options: BlonkyLabOptions = {}): void {
+	for (const [name, painter] of Object.entries(options.painters ?? {})) painters.set(name, painter);
 	mountBlonkyPage();
 	if (lifecycleRegistered) return;
 	lifecycleRegistered = true;

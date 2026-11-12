@@ -1,11 +1,11 @@
 import { blinkPoseAt, heldEnvelope, INK_FRAME_SECONDS, inkFrameTime } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteSample } from '../types';
 
-export function sampleNoticeEmote(
+function sampleNoticeEmote(
 	elapsed: number,
 	direction: -1 | 1,
 	heldElapsed?: number,
-): BlonkyEmoteOffset {
+): BlonkyEmoteSample {
 	// Gaze, head, shoulders, and belly arrive on successive ink frames.
 	const firstEyeBeat = heldEnvelope(elapsed, 0, 0.125, 0, 0.125);
 	const secondEyeBeat = heldEnvelope(elapsed, 0.125, 0.125, 0, 0.125);
@@ -49,3 +49,10 @@ export function sampleNoticeEmote(
 		rightEyeOpen: (heldBlink?.rightEyeOpen ?? 1 - rightEyeClosure) + gaze * 0.035,
 	};
 }
+
+export const noticeEmote: BlonkyEmoteDefinition = {
+	label: 'notice',
+	duration: 0.625,
+	holds: true,
+	sample: sampleNoticeEmote,
+};

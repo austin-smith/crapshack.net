@@ -6,26 +6,40 @@ import {
 	isBlonkyEmote,
 	sampleBlonkyEmoteOffset,
 	type BlonkyEmote,
-	type BlonkyEmoteInfo,
+	type BlonkyEmoteDefinition,
 	type BlonkyEmoteOffset,
 	type BlonkyEmotePose,
 } from './emotes';
-import { DEFAULT_BLONKY_PALETTE, drawBlonky } from './drawing';
+import { createBlonkyGaze } from './gaze';
+import { drawBlonky } from './ink/drawing';
+import { DEFAULT_BLONKY_PALETTE } from './ink/palette';
 import {
 	BLONKY_FPS,
 	BLONKY_VIEWPORTS,
+	type BlonkyDrawOptions,
 	type BlonkyPalette,
+	type BlonkyShading,
 	type BlonkyView,
 } from './types';
 
+/** An alternate renderer that owns the canvas instead of the ink drawing. */
+export interface BlonkyPainter {
+	destroy: () => void;
+	draw: (time: number, options: BlonkyDrawOptions) => void;
+}
+
 interface BlonkyAnimatorOptions {
 	autoPauseOffscreen?: boolean;
+	/** Looks at the pointer, or what the keyboard focuses, while he's animating. */
+	followGaze?: boolean;
 	initiallyPaused?: boolean;
 	onFrame?: (time: number) => void;
 	onPlaybackChange?: (playing: boolean) => void;
 	showArms?: boolean;
 	showBody?: boolean;
 	showHead?: boolean;
+	/** Replaces the ink drawing; ink remains the fallback if this returns nothing. */
+	painter?: (canvas: HTMLCanvasElement) => BlonkyPainter | undefined;
 	view?: BlonkyView;
 }
 
@@ -36,7 +50,12 @@ export interface BlonkyAnimator {
 	isArmsVisible: () => boolean;
 	isBodyVisible: () => boolean;
 	isHeadVisible: () => boolean;
+	getShading: () => BlonkyShading;
 	isPlaying: () => boolean;
+	/** The emote in progress, if any, so another animator can take it up. */
+	getEmote: () => ActiveEmote | undefined;
+	/** Takes up an emote from another animator, just as it was. */
+	resumeEmote: (emote: ActiveEmote) => void;
 	pause: () => void;
 	play: () => void;
 	playEmote: (kind: BlonkyEmote) => void;
@@ -46,6 +65,7 @@ export interface BlonkyAnimator {
 	setArmsVisible: (visible: boolean) => void;
 	setBodyVisible: (visible: boolean) => void;
 	setHeadVisible: (visible: boolean) => void;
+	setShading: (shading: BlonkyShading) => void;
 	setPlaybackRate: (rate: number) => void;
 	step: (frames: number) => void;
 }
@@ -85,8 +105,9 @@ export function createBlonkyAnimator(
 	canvas: HTMLCanvasElement,
 	options: BlonkyAnimatorOptions = {},
 ): BlonkyAnimator | undefined {
-	const context = canvas.getContext('2d');
-	if (!context) return;
+	const painter = options.painter?.(canvas);
+	const context = painter ? null : canvas.getContext('2d');
+	if (!painter && !context) return;
 
 	const view = options.view ?? 'bust';
 	const viewport = BLONKY_VIEWPORTS[view];
@@ -114,6 +135,8 @@ export function createBlonkyAnimator(
 	let armsVisible = options.showArms ?? bodyVisible;
 	let armsVisibilityOverridden = options.showArms !== undefined;
 	let headVisible = options.showHead ?? true;
+	let shading: BlonkyShading = 'lit';
+	const gazeTracker = options.followGaze ? createBlonkyGaze(canvas, view) : undefined;
 
 	const reportPlayback = (): void => {
 		if (reportedPlayback === running) return;
@@ -138,16 +161,16 @@ export function createBlonkyAnimator(
 				transitionFrom: emote.transitionFrom,
 			};
 		}
-		const emoteInfo: BlonkyEmoteInfo = BLONKY_EMOTES[emote.kind];
-		const holds = emoteInfo.holds === true;
-		if (emoteElapsed >= Math.max(emoteInfo.duration, blonkyTransitionSeconds(emote.transitionFrom)) && !holds) return;
+		const definition: BlonkyEmoteDefinition = BLONKY_EMOTES[emote.kind];
+		const holds = definition.holds === true;
+		if (emoteElapsed >= Math.max(definition.duration, blonkyTransitionSeconds(emote.transitionFrom)) && !holds) return;
 		return {
 			kind: emote.kind,
-			elapsed: holds ? Math.min(emoteElapsed, emoteInfo.duration) : emoteElapsed,
+			elapsed: holds ? Math.min(emoteElapsed, definition.duration) : emoteElapsed,
 			direction: emote.direction,
-			heldElapsed: !holds || emoteElapsed <= emoteInfo.duration
+			heldElapsed: !holds || emoteElapsed <= definition.duration
 				? undefined
-				: emoteElapsed - emoteInfo.duration,
+				: emoteElapsed - definition.duration,
 			transitionFrom: emote.transitionFrom,
 		};
 	};
@@ -184,16 +207,33 @@ export function createBlonkyAnimator(
 		// Keep the last performance so the lab can seek back through it. Sample
 		// the pose on the same clock as the ink for reproducible exported frames.
 		const emotePose = emotePoseAt(nextFrame / BLONKY_FPS);
+		// His look moves on with each new drawing, and holds while he's still.
+		// Reduced motion keeps him looking straight out.
+		if (running && nextFrame !== lastFrame) gazeTracker?.step();
+		const gaze = !reducedMotion || reducedMotionOverride ? gazeTracker?.current() : undefined;
 
-		context.setTransform(canvas.width / viewport.width, 0, 0, canvas.height / viewport.height, 0, 0);
-		drawBlonky(context, time, {
-			palette,
-			emote: emotePose,
-			showArms: armsVisible,
-			showBody: bodyVisible,
-			showHead: headVisible,
-			view,
-		});
+		if (painter) {
+			painter.draw(time, {
+				emote: emotePose,
+				gaze,
+				showArms: armsVisible,
+				showBody: bodyVisible,
+				showHead: headVisible,
+				shading,
+				view,
+			});
+		} else if (context) {
+			context.setTransform(canvas.width / viewport.width, 0, 0, canvas.height / viewport.height, 0, 0);
+			drawBlonky(context, time, {
+				palette,
+				emote: emotePose,
+				gaze,
+				showArms: armsVisible,
+				showBody: bodyVisible,
+				showHead: headVisible,
+				view,
+			});
+		}
 		lastFrame = nextFrame;
 		options.onFrame?.(time);
 	};
@@ -222,7 +262,11 @@ export function createBlonkyAnimator(
 			destroy();
 			return;
 		}
-		draw(animationTime(now));
+		// Faded out or hidden, as he is on /experiments while another experiment
+		// is selected: nothing to redraw.
+		if (canvas.checkVisibility?.({ opacityProperty: true, visibilityProperty: true }) !== false) {
+			draw(animationTime(now));
+		}
 		scheduleAnimation();
 	};
 
@@ -302,6 +346,13 @@ export function createBlonkyAnimator(
 		draw(animationTime(), true);
 	};
 
+	const setShading = (nextShading: BlonkyShading): void => {
+		if (shading === nextShading) return;
+		shading = nextShading;
+		lastFrame = -1;
+		draw(animationTime(), true);
+	};
+
 	const step = (frames: number): void => {
 		pause();
 		const nextTime = Math.max(0, animationTime() + frames / BLONKY_FPS);
@@ -318,6 +369,8 @@ export function createBlonkyAnimator(
 			? sampleBlonkyEmoteOffset(outgoingPose)
 			: undefined;
 		emoteDirection = emoteDirection === -1 ? 1 : -1;
+		// He plays to the visitor, and looks back to them afterward.
+		gazeTracker?.lookAtVisitor();
 		emote = {
 			kind,
 			direction: emoteDirection,
@@ -340,6 +393,7 @@ export function createBlonkyAnimator(
 		const time = Math.floor(animationTime() * BLONKY_FPS) / BLONKY_FPS;
 		const outgoingPose = emotePoseAt(time);
 		if (!outgoingPose || outgoingPose.kind === 'rest') return;
+		gazeTracker?.lookAtVisitor();
 		emote = {
 			kind: 'rest',
 			direction: outgoingPose.direction,
@@ -361,6 +415,7 @@ export function createBlonkyAnimator(
 		resizeObserver?.disconnect();
 		themeObserver?.disconnect();
 		listeners.abort();
+		painter?.destroy();
 	};
 
 	motionPreference.addEventListener('change', (event) => {
@@ -407,7 +462,14 @@ export function createBlonkyAnimator(
 	});
 
 	configureCanvas();
-	draw(0, true);
+	// A renderer that fails its first frame leaves nothing to show: take
+	// everything down again, and let whoever mounted it recover.
+	try {
+		draw(0, true);
+	} catch (error) {
+		destroy();
+		throw error;
+	}
 	syncPlayback();
 	reportPlayback();
 
@@ -415,9 +477,15 @@ export function createBlonkyAnimator(
 		destroy,
 		getPlaybackRate: () => playbackRate,
 		getTime: () => animationTime(),
+		getEmote: () => emote && { ...emote },
+		resumeEmote: (next) => {
+			emote = { ...next };
+			emoteDirection = next.direction;
+		},
 		isArmsVisible: () => armsVisible,
 		isBodyVisible: () => bodyVisible,
 		isHeadVisible: () => headVisible,
+		getShading: () => shading,
 		isPlaying: () => running,
 		pause,
 		play,
@@ -428,38 +496,99 @@ export function createBlonkyAnimator(
 		setArmsVisible,
 		setBodyVisible,
 		setHeadVisible,
+		setShading,
 		setPlaybackRate,
 		step,
 	};
 }
 
+type BlonkyPainterFactory = NonNullable<BlonkyAnimatorOptions['painter']>;
+
+function mountBlonkyCanvas(root: HTMLElement, painter?: BlonkyPainterFactory): BlonkyAnimator | undefined {
+	const canvas = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
+	if (!canvas) return;
+	const requested = canvas.dataset.blonkyView;
+	const view: BlonkyView = requested !== undefined && Object.hasOwn(BLONKY_VIEWPORTS, requested)
+		? (requested as BlonkyView)
+		: 'portrait';
+	const animator = createBlonkyAnimator(canvas, {
+		followGaze: canvas.dataset.blonkyGaze === 'true',
+		painter,
+		showHead: canvas.dataset.blonkyShowHead !== 'false',
+		view,
+	});
+	if (!animator) return;
+
+	const handleEmote = (event: Event): void => {
+		if (!(event instanceof CustomEvent)) return;
+		const kind = event.detail?.kind;
+		if (isBlonkyEmote(kind)) animator.playEmote(kind);
+	};
+	root.addEventListener(BLONKY_EMOTE_EVENT, handleEmote);
+
+	const mounted = {
+		...animator,
+		destroy: () => {
+			root.removeEventListener(BLONKY_EMOTE_EVENT, handleEmote);
+			animator.destroy();
+		},
+	};
+	mountedCanvases.set(root, mounted);
+	return mounted;
+}
+
 export function mountBlonkyCanvases(scope: ParentNode = document): void {
 	for (const root of scope.querySelectorAll<HTMLElement>('[data-blonky-root]')) {
-		if (mountedCanvases.has(root)) continue;
-		const canvas = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
-		if (!canvas) continue;
-		const view = canvas.dataset.blonkyView === 'bust' ? 'bust' : 'portrait';
-		const animator = createBlonkyAnimator(canvas, {
-			showHead: canvas.dataset.blonkyShowHead !== 'false',
-			view,
-		});
-		if (!animator) continue;
-
-		const handleEmote = (event: Event): void => {
-			if (!(event instanceof CustomEvent)) return;
-			const kind = event.detail?.kind;
-			if (isBlonkyEmote(kind)) animator.playEmote(kind);
-		};
-		root.addEventListener(BLONKY_EMOTE_EVENT, handleEmote);
-
-		mountedCanvases.set(root, {
-			...animator,
-			destroy: () => {
-				root.removeEventListener(BLONKY_EMOTE_EVENT, handleEmote);
-				animator.destroy();
-			},
-		});
+		if (!mountedCanvases.has(root)) mountBlonkyCanvas(root);
 	}
+}
+
+/**
+ * Redraws a mounted Blonky with another renderer (ink when `painter` is
+ * omitted), picking up where he was, mid-emote included. Returns whether the
+ * new renderer took over; if it can't run here, he stays in ink.
+ */
+export function setBlonkyRenderer(id: string, painter?: BlonkyPainterFactory): boolean {
+	const root = document.querySelector<HTMLElement>(`[data-blonky-id="${CSS.escape(id)}"]`);
+	const current = root && mountedCanvases.get(root);
+	const canvas = root?.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
+	if (!root || !current || !canvas) return false;
+	const time = current.getTime();
+	const rate = current.getPlaybackRate();
+	const emote = current.getEmote();
+	current.destroy();
+	mountedCanvases.delete(root);
+	// A canvas keeps the kind of context it first handed out, so each
+	// renderer draws on a fresh one.
+	const remount = (factory?: BlonkyPainterFactory): boolean => {
+		const previous = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
+		previous?.replaceWith(previous.cloneNode(true));
+		let painted = false;
+		const next = mountBlonkyCanvas(root, factory && ((target) => {
+			const result = factory(target);
+			painted = result !== undefined;
+			return result;
+		}));
+		if (emote) next?.resumeEmote(emote);
+		next?.seek(time);
+		next?.setPlaybackRate(rate);
+		return painted;
+	};
+	if (painter) {
+		try {
+			if (remount(painter)) return true;
+		} catch (error) {
+			// Failing partway, even on its first frame, is no different from
+			// not running at all.
+			console.error(error);
+		}
+		// The renderer may have taken the canvas before failing, leaving it no
+		// use to ink, so ink starts again on another fresh one.
+		mountedCanvases.get(root)?.destroy();
+		mountedCanvases.delete(root);
+	}
+	remount();
+	return !painter;
 }
 
 export function unmountBlonkyCanvases(): void {

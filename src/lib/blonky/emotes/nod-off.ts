@@ -1,7 +1,7 @@
 import { heldEnvelope, INK_FRAME_SECONDS } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteSample } from '../types';
 
-export function sampleNodOffEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleNodOffEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	// The eyelids lead, followed by the head, shoulders, and torso on successive
 	// ink frames. Every part reaches the sleeping pose before the final dip.
 	const firstLid = heldEnvelope(
@@ -105,3 +105,10 @@ export function sampleNodOffEmote(elapsed: number, direction: -1 | 1): BlonkyEmo
 		rightEyeOpen: 1 - rightLid * 0.88 - finalDip * 0.1 + wake * 0.22 - sheepishBlink * 0.82,
 	};
 }
+
+export const nodOffEmote: BlonkyEmoteDefinition = {
+	label: 'nod off',
+	duration: 3,
+	menuIcon: '😴',
+	sample: sampleNodOffEmote,
+};

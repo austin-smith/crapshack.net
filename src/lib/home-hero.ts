@@ -1,8 +1,12 @@
 import { createAphorismController } from './aphorism';
+import { setContextMenuRadioValue, type ContextMenuSelectEvent } from './ui/context-menu';
+import type { ClaySet } from './blonky/clay/set';
+import type { ClayWeather, ClayWeatherKind } from './blonky/clay/weather';
 import {
 	isBlonkyEmote,
 	playBlonkyEmote,
 	setBlonkyPlaybackRate,
+	setBlonkyRenderer,
 	releaseBlonkyEmote,
 	type BlonkyEmote,
 } from './blonky';
@@ -32,6 +36,8 @@ function pickBlonkyReaction(): BlonkyEmote {
 	return bucket.emotes[Math.floor(Math.random() * bucket.emotes.length)];
 }
 
+type BlonkyStyle = 'ink' | 'clay';
+
 let lifecycleRegistered = false;
 let mountedRoot: HTMLElement | null = null;
 let destroyMountedHero: (() => void) | undefined;
@@ -46,7 +52,123 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 	if (!aphorism) return;
 
 	const listeners = new AbortController();
+	const logo = root.querySelector<HTMLImageElement>('.home-hero__logo');
+	let setCanvas = root.querySelector<HTMLCanvasElement>('[data-home-hero-set]');
+	let set: ClaySet | undefined;
+	const weatherCanvas = root.querySelector<HTMLCanvasElement>('[data-home-hero-weather]');
+	let weather: ClayWeather | undefined;
+	const motion = matchMedia('(prefers-reduced-motion: reduce)');
+	// The page's weather setting, in clay; none when motion is reduced, as
+	// in ink.
+	const weatherKind = (): ClayWeatherKind | undefined => {
+		const effect = document.documentElement.getAttribute('data-effect');
+		return !motion.matches && (effect === 'rain' || effect === 'snow') ? effect : undefined;
+	};
+	const syncWeather = (): void => weather?.setKind(weatherKind());
+	const weatherWatcher = new MutationObserver(syncWeather);
+	weatherWatcher.observe(document.documentElement, { attributes: true, attributeFilter: ['data-effect'] });
+	motion.addEventListener('change', syncWeather);
+	let style: BlonkyStyle = 'ink';
+	// The style asked for most recently. One change runs at a time, and it
+	// keeps going until what's shown is what was asked for last.
+	let requestedStyle: BlonkyStyle = 'ink';
+	let changingStyle = false;
 	let requestSequence = 0;
+
+	/** Takes the clay set down, leaving a fresh canvas for the next one. */
+	const strikeSet = (): void => {
+		set?.destroy();
+		set = undefined;
+		weather?.destroy();
+		weather = undefined;
+		if (weatherCanvas) weatherCanvas.hidden = true;
+		if (!setCanvas) return;
+		setCanvas.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext();
+		const fresh = setCanvas.cloneNode(false) as HTMLCanvasElement;
+		fresh.hidden = true;
+		setCanvas.replaceWith(fresh);
+		setCanvas = fresh;
+	};
+
+	/**
+	 * Show the page in ink or clay: Blonky, and in clay the set around him.
+	 * The clay code is only loaded once it's asked for. Resolves to the style
+	 * shown: ink, if clay can't run here.
+	 */
+	const setStyle = async (next: BlonkyStyle): Promise<BlonkyStyle> => {
+		if (next === 'ink') {
+			if (!setBlonkyRenderer(HOME_BLONKY_ID)) return 'clay';
+			strikeSet();
+			delete root.dataset.homeHeroStyle;
+			return 'ink';
+		}
+		const [{ createClayRenderer }, { createClaySet }, { createClayWeather }] = await Promise.all([
+			import('./blonky/clay/renderer'),
+			import('./blonky/clay/set'),
+			import('./blonky/clay/weather'),
+		]);
+		// Asked for ink while clay loaded, or the page has gone: leave it be.
+		if (requestedStyle !== 'clay' || listeners.signal.aborted) return style;
+		// The set stands in for the page's logo and aphorism, so the page only
+		// turns to clay once the set is up; otherwise it stays in ink.
+		if (!setCanvas || !logo) return 'ink';
+		setCanvas.hidden = false;
+		// If the set or Blonky's clay renderer stops working later (its context
+		// can't be restored), the page goes back to ink.
+		const onFail = (): void => void requestStyle('ink');
+		set = createClaySet(setCanvas, {
+			logo,
+			aphorism: aphorismButton,
+			figure: () => root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]'),
+			onFail,
+		});
+		if (!set) {
+			strikeSet();
+			return 'ink';
+		}
+		const painted = setBlonkyRenderer(HOME_BLONKY_ID, (canvas) => createClayRenderer(canvas, {
+			transparent: true,
+			onExpose: (frame, outline) => {
+				set?.expose(frame, outline);
+				weather?.expose(frame);
+			},
+			onFail,
+		}));
+		if (!painted) {
+			strikeSet();
+			return 'ink';
+		}
+		root.dataset.homeHeroStyle = 'clay';
+		// The page's own weather gives way only to clay weather that's running.
+		weather = weatherCanvas ? createClayWeather(weatherCanvas) : undefined;
+		if (weather && weatherCanvas) {
+			weatherCanvas.hidden = false;
+			syncWeather();
+		}
+		return 'clay';
+	};
+	const requestStyle = async (next: BlonkyStyle): Promise<void> => {
+		requestedStyle = next;
+		if (changingStyle) return;
+		changingStyle = true;
+		try {
+			while (style !== requestedStyle && !listeners.signal.aborted) {
+				const wanted = requestedStyle;
+				style = await setStyle(wanted);
+				// Clay can't run here: settle for what's shown.
+				if (style !== wanted && requestedStyle === wanted) requestedStyle = style;
+			}
+		} catch (error) {
+			// The clay code failed to load, or a change failed partway: back to
+			// ink, which always runs, for the next choice to try again.
+			console.error(error);
+			style = await setStyle('ink');
+			requestedStyle = style;
+		} finally {
+			changingStyle = false;
+			setContextMenuRadioValue(root, 'style', style);
+		}
+	};
 	let napTimer: number | undefined;
 	let cancelBeat: (() => void) | undefined;
 
@@ -96,12 +218,13 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 	characterButton.addEventListener('click', () => {
 		void cycleAphorism(true);
 	}, { signal: listeners.signal });
-	root.addEventListener('context-menu-select', ((event: CustomEvent<{
-		group?: string;
-		value: string;
-	}>) => {
+	root.addEventListener('context-menu-select', ((event: ContextMenuSelectEvent) => {
 		if (event.detail.group === 'speed') {
 			setBlonkyPlaybackRate(HOME_BLONKY_ID, Number(event.detail.value));
+			return;
+		}
+		if (event.detail.group === 'style') {
+			void requestStyle(event.detail.value === 'clay' ? 'clay' : 'ink');
 			return;
 		}
 		if (!isBlonkyEmote(event.detail.value)) return;
@@ -119,6 +242,9 @@ function initHomeHero(root: HTMLElement): (() => void) | undefined {
 		requestSequence += 1;
 		stopWaiting();
 		listeners.abort();
+		weatherWatcher.disconnect();
+		motion.removeEventListener('change', syncWeather);
+		strikeSet();
 		aphorism.destroy();
 	};
 }

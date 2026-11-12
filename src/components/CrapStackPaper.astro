@@ -1,0 +1,43 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import { DANGER_LINE } from '../lib/crap-stack';
+import './crap-stack-palette.css';
+
+type Props = HTMLAttributes<'div'>;
+
+const { class: className, ...attributes } = Astro.props;
+---
+
+{/* Crap stack's gridded paper, with its danger line across it. Its parent gives it its size and place.
+    The line runs where the game's rule puts it, unless the parent sets --crap-stack-danger-line to how
+    far down the paper it should be. The parent may also say which layer the line is on among what it
+    puts on the paper, with --crap-stack-danger-layer. */}
+<div {...attributes} class:list={['crap-stack-paper', className]}>
+	<div class="crap-stack-danger" style={`--crap-stack-danger-rule: calc(${DANGER_LINE} * 100%)`} aria-hidden="true"></div>
+	<slot />
+</div>
+
+<style>
+	/* What is put on it is placed against it. Weighed below a parent's own
+	   class, so whatever position its parent gives it wins. */
+	:where(.crap-stack-paper) {
+		position: relative;
+	}
+
+	.crap-stack-paper {
+		background:
+			linear-gradient(rgb(var(--crap-stack-paper-ink-rgb) / 0.055) 1px, transparent 1px),
+			linear-gradient(90deg, rgb(var(--crap-stack-paper-ink-rgb) / 0.055) 1px, transparent 1px),
+			var(--crap-stack-paper);
+		background-size: 24px 24px;
+	}
+
+	.crap-stack-danger {
+		position: absolute;
+		inset-inline: 0;
+		top: var(--crap-stack-danger-line, var(--crap-stack-danger-rule));
+		z-index: var(--crap-stack-danger-layer, auto);
+		border-top: 2px dashed rgb(var(--crap-stack-pink-rgb) / 0.72);
+		pointer-events: none;
+	}
+</style>

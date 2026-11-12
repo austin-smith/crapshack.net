@@ -1,11 +1,15 @@
 ---
+import type { HTMLAttributes } from 'astro/types';
 import {
 	BLONKY_VIEWPORTS,
 	type BlonkyView,
 } from '../lib/blonky';
 
-interface Props {
-	class?: string;
+/** Other attributes go on the root, so a parent can place it with its own scoped class. */
+interface Props extends Omit<HTMLAttributes<'div'>, 'id'> {
+	/** Looks at the pointer, or what the keyboard focuses. */
+	followGaze?: boolean;
+	/** Names this Blonky to the script, as `data-blonky-id`. It is not the element's id. */
 	id: string;
 	label?: string;
 	showHead?: boolean;
@@ -14,18 +18,21 @@ interface Props {
 
 const {
 	class: className,
+	followGaze = false,
 	id,
 	label = 'Blonky, a hand-drawn character at rest',
 	showHead = true,
 	view = 'portrait',
+	...attributes
 } = Astro.props;
 const viewport = BLONKY_VIEWPORTS[view];
 ---
 
-<div class:list={['blonky', className]} data-blonky-root data-blonky-id={id}>
+<div {...attributes} class:list={['blonky', className]} data-blonky-root data-blonky-id={id}>
 	<canvas
 		class="blonky__canvas"
 		data-blonky-canvas
+		data-blonky-gaze={followGaze ? 'true' : undefined}
 		data-blonky-show-head={String(showHead)}
 		data-blonky-view={view}
 		width={viewport.width}

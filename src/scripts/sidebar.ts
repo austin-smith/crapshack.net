@@ -61,15 +61,6 @@ class SidebarController {
         else this.open();
       },
     });
-    registerShortcut({
-      key: 'i',
-      run: () => {
-        if (!this.isOpen || isAnyDialogOpen()) return;
-        const infoEl = document.getElementById('sidebar-info');
-        infoEl?.classList.toggle('hidden');
-        infoEl?.classList.toggle('flex');
-      },
-    });
 
     // Close after clicking any link within the sidebar (but not ctrl/cmd/middle-click for new tab)
     this.sidebar.addEventListener('click', (e) => {

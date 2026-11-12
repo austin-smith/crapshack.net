@@ -1,11 +1,11 @@
 import { heldEnvelope } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteSample } from '../types';
 
 const WAVE_PACE = 0.8;
-export const WAVE_DURATION = 5 / WAVE_PACE;
+const WAVE_DURATION = 5 / WAVE_PACE;
 export const WAVE_RELEASE_SECONDS = 1.25;
 
-export function sampleWaveEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleWaveEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	const time = elapsed * WAVE_PACE;
 	const lift = heldEnvelope(time, 0.125, 1.5, 1.75, 1.5);
 	const greeting = heldEnvelope(time, 1.875, 0.125, 1, 0.25);
@@ -45,3 +45,11 @@ export function sampleWaveEmote(elapsed: number, direction: -1 | 1): BlonkyEmote
 		rightEyeOpen: 1,
 	};
 }
+
+export const waveEmote: BlonkyEmoteDefinition = {
+	label: 'wave',
+	duration: WAVE_DURATION,
+	stillFrame: 21,
+	menuIcon: '👋',
+	sample: sampleWaveEmote,
+};

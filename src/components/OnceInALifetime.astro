@@ -1,0 +1,54 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import { VIEW } from '../lib/once-in-a-lifetime';
+import './once-in-a-lifetime-palette.css';
+
+interface Props extends Omit<HTMLAttributes<'div'>, 'style'> {
+	/** What the drawing is announced as. */
+	label?: string;
+	/** Where its parent puts it. Added after the drawing's own. */
+	style?: string;
+}
+
+const {
+	class: className,
+	label = 'A hand-drawn man with a very long neck, in a blue shirt, red tie and yellow shorts, standing under the words "and the days go by, same as it ever was", every line of him jittering',
+	style,
+	...attributes
+} = Astro.props;
+const shape = `aspect-ratio: ${VIEW.width} / ${VIEW.height}`;
+---
+
+{/* The drawing, in his inks. Its parent places it and gives it a width or a height; it takes his shape from that. */}
+<div {...attributes} class:list={['once-in-a-lifetime', className]} style={[shape, style].filter(Boolean).join('; ')}>
+	<canvas
+		class="once-in-a-lifetime__canvas"
+		data-once-in-a-lifetime
+		width={VIEW.width}
+		height={VIEW.height}
+		role="img"
+		aria-label={label}
+	>
+		{label}
+	</canvas>
+</div>
+
+<script>
+	import { initOnceInALifetime } from '../lib/once-in-a-lifetime';
+
+	for (const canvas of document.querySelectorAll<HTMLCanvasElement>('[data-once-in-a-lifetime]')) {
+		initOnceInALifetime(canvas);
+	}
+</script>
+
+<style>
+	.once-in-a-lifetime,
+	.once-in-a-lifetime__canvas {
+		display: block;
+	}
+
+	.once-in-a-lifetime__canvas {
+		width: 100%;
+		height: 100%;
+	}
+</style>

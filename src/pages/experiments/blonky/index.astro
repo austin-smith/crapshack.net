@@ -1,0 +1,20 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import BlonkyLab from '../../../components/BlonkyLab.astro';
+---
+
+<Layout title="crapshack (blonky)" noIndex={true} fullBleed={true}>
+	<BlonkyLab renderer="ink" />
+</Layout>
+
+<script>
+	import { registerBlonkyDebugLifecycle } from '../../../lib/blonky/debug';
+
+	registerBlonkyDebugLifecycle();
+</script>
+
+<style>
+	:global(.weather-container) {
+		display: none;
+	}
+</style>

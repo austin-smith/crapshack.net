@@ -22,3 +22,9 @@
 - For UI issues, include screenshots. Include a short video when motion or interaction is relevant.
 - Link any related issues and pull requests.
 - Apply the appropriate existing label: `bug` for bugs, `enhancement` for feature requests, and `documentation` for documentation work.
+
+## UI Components
+
+- Build UI from the shared controls in `src/components/ui`, with their behavior in `src/lib/ui`. Read `src/components/ui/README.md` before adding or changing a control, and extend an existing control rather than building a one-off.
+- Match how the equivalent shadcn/ui or Radix component behaves, unless the README documents why not.
+- Keep the README accurate whenever a control's behavior or API changes.

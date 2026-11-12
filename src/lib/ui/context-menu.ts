@@ -1,3 +1,14 @@
+/**
+ * Requests a menu item's value: `group` names its radio group, if it's in
+ * one. Cancelable. An uncontrolled radio group selects the value after
+ * dispatch unless the event was canceled; a controlled one leaves that to its
+ * controller, through `setContextMenuRadioValue`.
+ */
+export type ContextMenuSelectEvent = CustomEvent<{ value: string; group?: string }>;
+
+/** A menu is opening or has closed: dispatched on its root before it is shown, and after it closes. */
+export type ContextMenuOpenChangeEvent = CustomEvent<{ open: boolean }>;
+
 const LONG_PRESS_DELAY_MS = 600;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 const VIEWPORT_MARGIN_PX = 8;
@@ -38,6 +49,92 @@ function getMenu(root: HTMLElement): HTMLElement | null {
 	return root.querySelector<HTMLElement>('[data-context-menu-content]');
 }
 
+function getRadioGroup(root: HTMLElement, group: string): HTMLElement | null {
+	return getMenu(root)?.querySelector<HTMLElement>(
+		`[data-context-menu-radio-group="${CSS.escape(group)}"]`,
+	) ?? null;
+}
+
+function getSubmenuTrigger(submenu: HTMLElement): HTMLElement | null {
+	return document.querySelector<HTMLElement>(
+		`[data-context-menu-sub-trigger][aria-controls="${CSS.escape(submenu.id)}"]`,
+	);
+}
+
+/** The submenu trigger that opens a radio group. */
+function getRadioGroupTrigger(radioGroup: HTMLElement): HTMLElement | null {
+	const submenu = radioGroup.closest<HTMLElement>('[data-context-menu-sub-content]');
+	return submenu ? getSubmenuTrigger(submenu) : null;
+}
+
+/** Checks the radio item with `value`, and shows its label on the group's trigger. */
+function selectRadioValue(radioGroup: HTMLElement, value: string): void {
+	let selectedLabel = value;
+	radioGroup.dataset.contextMenuValue = value;
+	radioGroup.querySelectorAll<HTMLElement>('[role="menuitemradio"]').forEach((radioItem) => {
+		const checked = radioItem.dataset.contextMenuValue === value;
+		radioItem.setAttribute('aria-checked', String(checked));
+		if (checked) selectedLabel = radioItem.textContent?.trim() || value;
+	});
+	const trigger = getRadioGroupTrigger(radioGroup);
+	const triggerValue = trigger?.querySelector<HTMLElement>('[data-context-menu-sub-value]');
+	if (triggerValue) triggerValue.textContent = selectedLabel;
+	if (trigger?.dataset.contextMenuSubLabel) {
+		trigger.setAttribute('aria-label', `${trigger.dataset.contextMenuSubLabel}, ${selectedLabel}`);
+	}
+}
+
+/**
+ * Selects `value` in a controlled radio group: the controller's counterpart
+ * to an uncontrolled group selecting on its own.
+ */
+export function setContextMenuRadioValue(root: HTMLElement, group: string, value: string): void {
+	const radioGroup = getRadioGroup(root, group);
+	if (radioGroup) selectRadioValue(radioGroup, value);
+}
+
+/** Enables or disables the submenu holding a radio group. */
+export function setContextMenuRadioGroupDisabled(root: HTMLElement, group: string, disabled: boolean): void {
+	const radioGroup = getRadioGroup(root, group);
+	const trigger = radioGroup && getRadioGroupTrigger(radioGroup);
+	if (!trigger) return;
+	if (disabled) {
+		// Keyboard focus on the trigger or in its submenu would be stranded, so
+		// it moves on to a neighbouring item first.
+		const submenu = getSubmenu(trigger);
+		const focused = document.activeElement;
+		if (focused instanceof Node && (trigger.contains(focused) || submenu?.contains(focused))) {
+			focusNeighbor(trigger);
+		}
+		if (trigger.getAttribute('aria-expanded') === 'true') closeSubmenu(trigger);
+		trigger.setAttribute('aria-disabled', 'true');
+	} else {
+		trigger.removeAttribute('aria-disabled');
+	}
+	trigger.toggleAttribute('disabled', disabled);
+}
+
+/** Focuses the nearest enabled item after `item` in its menu, or else before it, or else the menu. */
+function focusNeighbor(item: HTMLElement): void {
+	const menu = getOwningMenu(item);
+	if (!menu) return;
+	const siblings = Array.from(menu.querySelectorAll<HTMLElement>('[data-context-menu-item]'))
+		.filter((candidate) => getOwningMenu(candidate) === menu);
+	const enabled = getItems(menu);
+	const index = siblings.indexOf(item);
+	const next = siblings.slice(index + 1).find((candidate) => enabled.includes(candidate))
+		?? siblings.slice(0, Math.max(index, 0)).reverse().find((candidate) => enabled.includes(candidate));
+	(next ?? menu).focus({ preventScroll: true });
+}
+
+function dispatchOpenChange(root: HTMLElement, open: boolean): void {
+	const change: ContextMenuOpenChangeEvent = new CustomEvent('context-menu-open-change', {
+		detail: { open },
+		bubbles: true,
+	});
+	root.dispatchEvent(change);
+}
+
 function getItems(menu: HTMLElement): HTMLElement[] {
 	return Array.from(menu.querySelectorAll<HTMLElement>('[data-context-menu-item]'))
 		.filter((item) => (
@@ -55,12 +152,6 @@ function getSubmenu(trigger: HTMLElement): HTMLElement | null {
 	const id = trigger.getAttribute('aria-controls');
 	const menu = id ? document.getElementById(id) : null;
 	return menu instanceof HTMLElement ? menu : null;
-}
-
-function getSubmenuTrigger(menu: HTMLElement): HTMLElement | null {
-	return activeMenu?.menu.querySelector<HTMLElement>(
-		`[data-context-menu-sub-trigger][aria-controls="${CSS.escape(menu.id)}"]`,
-	) ?? null;
 }
 
 function closeSubmenu(trigger: HTMLElement, restoreFocus = false): void {
@@ -149,6 +240,7 @@ function closeContextMenu(restoreFocus = false): void {
 	activeMenu = undefined;
 
 	if (restoreFocus) trigger.focus();
+	dispatchOpenChange(root, false);
 }
 
 function openContextMenu(
@@ -162,6 +254,8 @@ function openContextMenu(
 	if (!trigger || !menu) return;
 
 	closeContextMenu();
+	// Before it's shown, so a controller can bring its items up to date.
+	dispatchOpenChange(root, true);
 	activeMenu = { root, trigger, menu };
 	root.setAttribute('data-open', '');
 	// While a menu is open the rest of the page is inert to the pointer, as with
@@ -309,27 +403,14 @@ export function initContextMenus(): void {
 		const value = item.dataset.contextMenuValue;
 		if (value !== undefined) {
 			const radioGroup = item.closest<HTMLElement>('[data-context-menu-radio-group]');
-			if (radioGroup) {
-				radioGroup.dataset.contextMenuValue = value;
-				radioGroup.querySelectorAll<HTMLElement>('[role="menuitemradio"]').forEach((radioItem) => {
-					radioItem.setAttribute('aria-checked', String(radioItem === item));
-				});
-				const submenu = radioGroup.closest<HTMLElement>('.context-menu-sub');
-				const triggerValue = submenu?.querySelector<HTMLElement>('[data-context-menu-sub-value]');
-				const selectedLabel = item.textContent?.trim() ?? value;
-				if (triggerValue) triggerValue.textContent = selectedLabel;
-				const submenuTrigger = submenu?.querySelector<HTMLElement>('[data-context-menu-sub-trigger]');
-				if (submenuTrigger?.dataset.contextMenuSubLabel) {
-					submenuTrigger.setAttribute(
-						'aria-label',
-						`${submenuTrigger.dataset.contextMenuSubLabel}, ${selectedLabel}`,
-					);
-				}
-			}
-			item.dispatchEvent(new CustomEvent('context-menu-select', {
+			const select: ContextMenuSelectEvent = new CustomEvent('context-menu-select', {
 				bubbles: true,
+				cancelable: true,
 				detail: { value, group: radioGroup?.dataset.contextMenuRadioGroup },
-			}));
+			});
+			if (item.dispatchEvent(select) && radioGroup && !radioGroup.hasAttribute('data-controlled')) {
+				selectRadioValue(radioGroup, value);
+			}
 		}
 		closeContextMenu(value !== undefined);
 	});

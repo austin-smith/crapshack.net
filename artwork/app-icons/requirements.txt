@@ -1,0 +1,5 @@
+# Exact versions, so the generators and build.py reproduce the committed files
+# byte for byte. Needs Python 3.12 or newer.
+Pillow==13.0.0
+numpy==2.5.4
+opencv-python-headless==5.0.0.93

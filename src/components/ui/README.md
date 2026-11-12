@@ -108,6 +108,51 @@ Native Enter/Space activation is retained. The delegated listener initializes on
 Toggle is a button, not a form checkbox; use a checkbox for submitted boolean form values.
 The existing `ToggleGroup` is a separate radio selector with its own sliding indicator and `{ value }` change event. It is not interchangeable with independent toggles.
 
+## ContextMenu
+
+```astro
+<ContextMenu
+  id="character-menu"
+  ariaLabel="Character actions"
+  groups={[{
+    items: [
+      // Owns its state.
+      { label: 'speed', radioGroup: { name: 'speed', defaultValue: '1', items: speedItems } },
+      // The page controller owns its state.
+      { label: 'style', radioGroup: { name: 'style', value: 'ink', items: styleItems } },
+    ],
+  }]}
+>
+  <button slot="trigger" type="button">Character</button>
+</ContextMenu>
+```
+
+Choosing an item that has a value dispatches `context-menu-select` from that item. It bubbles, is cancelable, and has `detail: { value, group }`, where `group` names the item's radio group, if any.
+A radio group with `defaultValue` selects the requested value after dispatch unless the event was canceled.
+A radio group with `value` is controlled: the prop supplies the initial selection, and the controller selects values with `setContextMenuRadioValue`. As with `Toggle`, `value` opts into controlled behavior, not client reactivity.
+
+`context-menu-open-change` bubbles from the menu's root with `detail: { open }`. It fires before the menu is shown, so a controller can update items first, and again after the menu closes.
+`setContextMenuRadioGroupDisabled` enables or disables the submenu that holds a radio group. Items can also be disabled statically with `disabled`.
+
+```ts
+import {
+  setContextMenuRadioGroupDisabled,
+  setContextMenuRadioValue,
+  type ContextMenuOpenChangeEvent,
+  type ContextMenuSelectEvent,
+} from '../../lib/ui/context-menu';
+
+root.addEventListener('context-menu-select', ((event: ContextMenuSelectEvent) => {
+  if (event.detail.group !== 'style') return;
+  // Apply the requested application state, then reflect what was applied.
+  setContextMenuRadioValue(root, 'style', applyStyle(event.detail.value));
+}) as EventListener);
+
+root.addEventListener('context-menu-open-change', ((event: ContextMenuOpenChangeEvent) => {
+  if (event.detail.open) setContextMenuRadioGroupDisabled(root, 'style', isBusy());
+}) as EventListener);
+```
+
 ## Slider
 
 ```astro
@@ -130,3 +175,31 @@ Controls fall back to site theme tokens. A contrasting surface may supply these 
 Define these on the surrounding surface, not separately on each button. The Blonky page demonstrates this mapping.
 Dropdown has one shared size: 36px-high triggers and options with 14px text. It has no size prop. The `default` and `outline` variants control appearance only; consumers can set layout width through `class`.
 Component-specific `--dropdown-*` hooks remain available for cases not covered by the variants; prefer the shared surface properties first.
+
+An open dropdown behaves like [Radix Select](https://www.radix-ui.com/primitives/docs/components/select): choosing an option, Escape, its trigger, or a press anywhere outside closes it, and Tab stays in the list. Until it closes, the page behind it doesn't scroll, take the pointer, or run keyboard shortcuts. While it's open, `html` has `data-dropdown-open`, which the shortcut registry checks.
+
+## Dialog
+
+```astro
+<Dialog id="guide-dialog" ariaLabel="Guide" maxWidth="max-w-3xl">
+  …
+</Dialog>
+```
+
+```ts
+import { closeDialog, isAnyDialogOpen, openDialog } from '../../lib/ui/dialog';
+
+openDialog('guide-dialog');
+```
+
+Opening remembers what had focus, holds the scroll lock, scrolls the content back to the top, and focuses the dialog's container. Escape closes the most recently opened dialog, as do its close button and a press on the backdrop. Closing returns focus to whatever had it before.
+
+As in Radix's `FocusScope`, Tab and Shift+Tab wrap between the dialog's first and last Tab stops. Only elements Tab can reach count. Hidden elements, elements with a negative `tabIndex` (such as the theme and weather pickers' unselected options), and the unchecked radios in a group with a checked one are skipped.
+
+Unlike Radix Dialog, opening focuses the container rather than the first control, and focus that leaves another way than Tab isn't pulled back.
+
+## Scroll lock
+
+Dialogs and open dropdowns share `lockScroll(content)` from `lib/ui/scroll-lock.ts`, as Radix's overlays share `react-remove-scroll`. It returns the function that releases the hold. The page stays locked until every hold is released, and only the most recent holder's content scrolls; wheel and touch scrolling anywhere else is cancelled. New overlays should hold the lock rather than set `overflow` on the body.
+
+While the page is locked, the body is padded by a classic scrollbar's width, so nothing shifts. A fixed element anchored to the right edge should add `--scroll-lock-gap` to its offset, as the sidebar toggle does: `right-[calc(0.75rem+var(--scroll-lock-gap,0px))]`.

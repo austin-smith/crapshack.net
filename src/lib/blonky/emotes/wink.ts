@@ -1,7 +1,7 @@
 import { heldEnvelope } from '../motion';
-import type { BlonkyEmoteOffset } from '../types';
+import type { BlonkyEmoteDefinition, BlonkyEmoteSample } from '../types';
 
-export function sampleWinkEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteOffset {
+function sampleWinkEmote(elapsed: number, direction: -1 | 1): BlonkyEmoteSample {
 	// A quick, deliberate squeeze: half-close, two shut drawings, half-open.
 	// Keep the accompanying smirk small enough to retain his deadpan face.
 	const presence = heldEnvelope(elapsed, 0, 0.125, 0.875, 0.5);
@@ -38,3 +38,11 @@ export function sampleWinkEmote(elapsed: number, direction: -1 | 1): BlonkyEmote
 		rightWink: left ? 0 : wink,
 	};
 }
+
+export const winkEmote: BlonkyEmoteDefinition = {
+	label: 'wink',
+	duration: 1.5,
+	stillFrame: 3,
+	menuIcon: '😉',
+	sample: sampleWinkEmote,
+};
