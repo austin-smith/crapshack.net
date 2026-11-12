@@ -1,14 +1,14 @@
 ---
-import SameAsItEverWas from '../../components/SameAsItEverWas.astro';
-import SameAsItEverWasBoard from '../../components/SameAsItEverWasBoard.astro';
+import OnceInALifetime from '../../components/OnceInALifetime.astro';
+import OnceInALifetimeBoard from '../../components/OnceInALifetimeBoard.astro';
 import Layout from '../../layouts/Layout.astro';
-import { VIEW } from '../../lib/same-as-it-ever-was';
+import { VIEW } from '../../lib/once-in-a-lifetime';
 ---
 
-<Layout title="crapshack (same as it ever was)" noIndex fullBleed>
-	<SameAsItEverWasBoard class="card" style={`--shape: ${VIEW.width / VIEW.height}`}>
-		<SameAsItEverWas />
-	</SameAsItEverWasBoard>
+<Layout title="crapshack (once in a lifetime)" noIndex fullBleed>
+	<OnceInALifetimeBoard class="card" style={`--shape: ${VIEW.width / VIEW.height}`}>
+		<OnceInALifetime />
+	</OnceInALifetimeBoard>
 </Layout>
 
 <style>

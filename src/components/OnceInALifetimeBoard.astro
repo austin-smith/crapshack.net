@@ -1,6 +1,6 @@
 ---
 import type { HTMLAttributes } from 'astro/types';
-import './same-as-it-ever-was-palette.css';
+import './once-in-a-lifetime-palette.css';
 
 type Props = HTMLAttributes<'div'>;
 
@@ -8,12 +8,12 @@ const { class: className, ...attributes } = Astro.props;
 ---
 
 {/* The dark board he is chalked on, whatever the site theme. Its parent gives it its size, shape and place. */}
-<div {...attributes} class:list={['same-as-it-ever-was-board', className]}>
+<div {...attributes} class:list={['once-in-a-lifetime-board', className]}>
 	<slot />
 </div>
 
 <style>
-	.same-as-it-ever-was-board {
-		background: var(--same-as-it-ever-was-board);
+	.once-in-a-lifetime-board {
+		background: var(--once-in-a-lifetime-board);
 	}
 </style>

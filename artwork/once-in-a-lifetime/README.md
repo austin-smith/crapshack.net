@@ -1,23 +1,23 @@
-# Same as it ever was
+# Once in a lifetime
 
-Source for the `/experiments/same-as-it-ever-was` page: a drawing, animated
+Source for the `/experiments/once-in-a-lifetime` page: a drawing, animated
 from its own pen strokes. The site reads only
-`src/data/same-as-it-ever-was.json`, so its build needs no Python.
+`src/data/once-in-a-lifetime.json`, so its build needs no Python.
 
 - `references/`: the drawing, as two screenshots that overlap. `lower.png`
   carries on from `upper.png`.
 - `trace.py`: follows the centre of every line in the drawing and writes the
   strokes: each one's ink, its width, and its points.
 
-The motion itself lives in `src/lib/same-as-it-ever-was.ts`. The figure stands
+The motion itself lives in `src/lib/once-in-a-lifetime.ts`. The figure stands
 still; every line is redrawn a little differently several times a second.
 
 ## Retrace
 
 ```sh
-python3 -m venv ~/.venvs/same-as-it-ever-was
-~/.venvs/same-as-it-ever-was/bin/pip install -r artwork/same-as-it-ever-was/requirements.txt
-~/.venvs/same-as-it-ever-was/bin/python artwork/same-as-it-ever-was/trace.py parts.png
+python3 -m venv ~/.venvs/once-in-a-lifetime
+~/.venvs/once-in-a-lifetime/bin/pip install -r artwork/once-in-a-lifetime/requirements.txt
+~/.venvs/once-in-a-lifetime/bin/python artwork/once-in-a-lifetime/trace.py parts.png
 ```
 
 `parts.png` is optional. The tracer names each stroke for the part of the

@@ -1,12 +1,12 @@
 """Trace the drawing into the pen strokes the page redraws.
 
 Reads the two screenshots in references/, follows the centre of every pen line
-and writes src/data/same-as-it-ever-was.json. Each stroke is named for the part
+and writes src/data/once-in-a-lifetime.json. Each stroke is named for the part
 of the figure it belongs to; the names only decide the order strokes are written
 in, and are not written themselves. Pass a path to also save a picture of the
 strokes coloured by part.
 
-Usage: python artwork/same-as-it-ever-was/trace.py [parts.png]
+Usage: python artwork/once-in-a-lifetime/trace.py [parts.png]
 """
 import colorsys
 import json
@@ -20,7 +20,7 @@ from scipy import ndimage
 from skimage.morphology import skeletonize
 
 HERE = Path(__file__).parent
-OUT = HERE.parents[1] / 'src/data/same-as-it-ever-was.json'
+OUT = HERE.parents[1] / 'src/data/once-in-a-lifetime.json'
 
 # The lower screenshot continues the upper one at this offset, at the same scale.
 LOWER_AT = (74, 1272)

@@ -5,11 +5,11 @@
  */
 
 :root {
-	--same-as-it-ever-was-board: #1e1e1e;
+	--once-in-a-lifetime-board: #1e1e1e;
 	/* His inks: one for each name in the traced strokes' `inks`, which the
-	   renderer in src/lib/same-as-it-ever-was.ts reads from the canvas. */
-	--same-as-it-ever-was-white: #ffffff;
-	--same-as-it-ever-was-blue: #3b85a9;
-	--same-as-it-ever-was-red: #eb5232;
-	--same-as-it-ever-was-yellow: #c8a336;
+	   renderer in src/lib/once-in-a-lifetime.ts reads from the canvas. */
+	--once-in-a-lifetime-white: #ffffff;
+	--once-in-a-lifetime-blue: #3b85a9;
+	--once-in-a-lifetime-red: #eb5232;
+	--once-in-a-lifetime-yellow: #c8a336;
 }

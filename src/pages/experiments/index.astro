@@ -4,12 +4,12 @@ import BlonkyCanvas from '../../components/BlonkyCanvas.astro';
 import BlonkyLabStage from '../../components/BlonkyLabStage.astro';
 import CrapStackPaper from '../../components/CrapStackPaper.astro';
 import CrapStackPile from '../../components/CrapStackPile.astro';
-import SameAsItEverWas from '../../components/SameAsItEverWas.astro';
-import SameAsItEverWasBoard from '../../components/SameAsItEverWasBoard.astro';
+import OnceInALifetime from '../../components/OnceInALifetime.astro';
+import OnceInALifetimeBoard from '../../components/OnceInALifetimeBoard.astro';
 import Layout from '../../layouts/Layout.astro';
 import '../../components/blonky-lab-palette.css';
 import '../../components/crap-stack-palette.css';
-import '../../components/same-as-it-ever-was-palette.css';
+import '../../components/once-in-a-lifetime-palette.css';
 ---
 
 <Layout title="crapshack (experiments)" fullBleed>
@@ -24,11 +24,11 @@ import '../../components/same-as-it-ever-was-palette.css';
 		    src/lib/experiments.ts moves data-selected to the experiment whose name is focused or pointed
 		    at, and back to the one it is served on, and moves the focus between names on Up and Down. */}
 		<ul class="experiments__list" data-experiments>
-			<li data-experiment="same-as-it-ever-was" data-selected>
-				<a href="/experiments/same-as-it-ever-was" class="group"><span class="squiggle-underline">same as it ever was<ArrowRight class="experiments__arrow" aria-hidden="true" /></span></a>
-				<SameAsItEverWasBoard class="world" aria-hidden="true">
-					<SameAsItEverWas class="world__figure" label="" />
-				</SameAsItEverWasBoard>
+			<li data-experiment="once-in-a-lifetime" data-selected>
+				<a href="/experiments/once-in-a-lifetime" class="group"><span class="squiggle-underline">once in a lifetime<ArrowRight class="experiments__arrow" aria-hidden="true" /></span></a>
+				<OnceInALifetimeBoard class="world" aria-hidden="true">
+					<OnceInALifetime class="world__figure" label="" />
+				</OnceInALifetimeBoard>
 			</li>
 			<li data-experiment="blonky">
 				<a href="/experiments/blonky" class="group"><span class="squiggle-underline">blonky<ArrowRight class="experiments__arrow" aria-hidden="true" /></span></a>
@@ -147,7 +147,7 @@ import '../../components/same-as-it-ever-was-palette.css';
 
 	/* Where each experiment stands in a world the size of the window. */
 
-	[data-experiment='same-as-it-ever-was'] .world__figure {
+	[data-experiment='once-in-a-lifetime'] .world__figure {
 		position: absolute;
 		top: 4svh;
 		right: 0;
@@ -237,8 +237,8 @@ import '../../components/same-as-it-ever-was-palette.css';
 		}
 
 		/* The names and title are written in the selected world's colours. */
-		.experiments:has([data-experiment='same-as-it-ever-was'][data-selected]) {
-			--experiment-ink: var(--same-as-it-ever-was-white);
+		.experiments:has([data-experiment='once-in-a-lifetime'][data-selected]) {
+			--experiment-ink: var(--once-in-a-lifetime-white);
 		}
 
 		.experiments:has([data-experiment='blonky'][data-selected]) {
@@ -298,8 +298,8 @@ import '../../components/same-as-it-ever-was-palette.css';
 		}
 
 		/* Each name is written in its own world's colours. */
-		.experiments li[data-experiment='same-as-it-ever-was'] {
-			--experiment-ink: var(--same-as-it-ever-was-white);
+		.experiments li[data-experiment='once-in-a-lifetime'] {
+			--experiment-ink: var(--once-in-a-lifetime-white);
 		}
 
 		.experiments li[data-experiment='blonky'] {
@@ -340,7 +340,7 @@ import '../../components/same-as-it-ever-was-palette.css';
 		   least a band can be, and keep to its top or its floor if it is taller. */
 
 		/* He is 2.83 bands tall, so a band holds his head and neck. */
-		[data-experiment='same-as-it-ever-was'] .world__figure {
+		[data-experiment='once-in-a-lifetime'] .world__figure {
 			top: 0.875rem;
 			right: -0.875rem;
 			height: calc(var(--band) * 2.83);

@@ -1,8 +1,8 @@
-import drawing from '../data/same-as-it-ever-was.json';
+import drawing from '../data/once-in-a-lifetime.json';
 import { valueNoise } from './noise';
 
 /**
- * The drawing, traced stroke for stroke by artwork/same-as-it-ever-was. He
+ * The drawing, traced stroke for stroke by artwork/once-in-a-lifetime. He
  * just stands there; it is the line that moves. Every line is redrawn a
  * little differently several times a second, so nothing in it sits still.
  */
@@ -58,20 +58,20 @@ function readStrokes(): Stroke[] {
 	});
 }
 
-/** Each ink's colour, in the order the strokes number them. same-as-it-ever-was-palette.css declares the colours. */
+/** Each ink's colour, in the order the strokes number them. once-in-a-lifetime-palette.css declares the colours. */
 function readInkColors(canvas: HTMLCanvasElement): string[] {
 	const styles = getComputedStyle(canvas);
-	return drawing.inks.map((ink) => styles.getPropertyValue(`--same-as-it-ever-was-${ink}`).trim());
+	return drawing.inks.map((ink) => styles.getPropertyValue(`--once-in-a-lifetime-${ink}`).trim());
 }
 
-interface SameAsItEverWasPainter {
+interface OnceInALifetimePainter {
 	/** Draws the figure `seconds` after it first appeared. */
 	draw(seconds: number): void;
 	/** Draws the figure exactly as it was drawn. */
 	drawStill(): void;
 }
 
-function createSameAsItEverWasPainter(ctx: CanvasRenderingContext2D): SameAsItEverWasPainter {
+function createOnceInALifetimePainter(ctx: CanvasRenderingContext2D): OnceInALifetimePainter {
 	const inkColors = readInkColors(ctx.canvas);
 	// One path per ink and line width, so a frame is a few dozen strokes of the pen.
 	const batches = new Map<string, Stroke[]>();
@@ -140,10 +140,10 @@ function createSameAsItEverWasPainter(ctx: CanvasRenderingContext2D): SameAsItEv
 }
 
 /** Sizes the canvas to its box and keeps the lines moving while the page is open. */
-export function initSameAsItEverWas(canvas: HTMLCanvasElement): void {
+export function initOnceInALifetime(canvas: HTMLCanvasElement): void {
 	const ctx = canvas.getContext('2d');
 	if (!ctx) return;
-	const painter = createSameAsItEverWasPainter(ctx);
+	const painter = createOnceInALifetimePainter(ctx);
 	const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 	const started = performance.now();
 	let lastFrame = -1;
