@@ -1,0 +1,27 @@
+---
+import SameAsItEverWas from '../../components/SameAsItEverWas.astro';
+import SameAsItEverWasBoard from '../../components/SameAsItEverWasBoard.astro';
+import Layout from '../../layouts/Layout.astro';
+import { VIEW } from '../../lib/same-as-it-ever-was';
+---
+
+<Layout title="crapshack (same as it ever was)" noIndex fullBleed>
+	<SameAsItEverWasBoard class="card" style={`--shape: ${VIEW.width / VIEW.height}`}>
+		<SameAsItEverWas />
+	</SameAsItEverWasBoard>
+</Layout>
+
+<style>
+	.card {
+		/* As wide as still lets him stand in the window from head to shoes. */
+		width: min(100% - 1.5rem, 48rem, max(14rem, (100svh - 7.5rem) * var(--shape)));
+		margin: 3.5rem auto 1rem;
+		padding: 1rem 0;
+		border-radius: 1rem;
+	}
+
+	/* Keep weather off the board. */
+	:global(.weather-container) {
+		display: none;
+	}
+</style>

@@ -1,0 +1,54 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import { VIEW } from '../lib/same-as-it-ever-was';
+import './same-as-it-ever-was-palette.css';
+
+interface Props extends Omit<HTMLAttributes<'div'>, 'style'> {
+	/** What the drawing is announced as. */
+	label?: string;
+	/** Where its parent puts it. Added after the drawing's own. */
+	style?: string;
+}
+
+const {
+	class: className,
+	label = 'A hand-drawn man with a very long neck, in a blue shirt, red tie and yellow shorts, standing under the words "and the days go by, same as it ever was", every line of him jittering',
+	style,
+	...attributes
+} = Astro.props;
+const shape = `aspect-ratio: ${VIEW.width} / ${VIEW.height}`;
+---
+
+{/* The drawing, in his inks. Its parent places it and gives it a width or a height; it takes his shape from that. */}
+<div {...attributes} class:list={['same-as-it-ever-was', className]} style={[shape, style].filter(Boolean).join('; ')}>
+	<canvas
+		class="same-as-it-ever-was__canvas"
+		data-same-as-it-ever-was
+		width={VIEW.width}
+		height={VIEW.height}
+		role="img"
+		aria-label={label}
+	>
+		{label}
+	</canvas>
+</div>
+
+<script>
+	import { initSameAsItEverWas } from '../lib/same-as-it-ever-was';
+
+	for (const canvas of document.querySelectorAll<HTMLCanvasElement>('[data-same-as-it-ever-was]')) {
+		initSameAsItEverWas(canvas);
+	}
+</script>
+
+<style>
+	.same-as-it-ever-was,
+	.same-as-it-ever-was__canvas {
+		display: block;
+	}
+
+	.same-as-it-ever-was__canvas {
+		width: 100%;
+		height: 100%;
+	}
+</style>

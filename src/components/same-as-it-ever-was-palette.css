@@ -1,0 +1,15 @@
+/*
+ * The drawing's colours, page-wide, since words beside him take his chalk too.
+ * Each component or page that uses one imports this file. They are the same
+ * under every site theme.
+ */
+
+:root {
+	--same-as-it-ever-was-board: #1e1e1e;
+	/* His inks: one for each name in the traced strokes' `inks`, which the
+	   renderer in src/lib/same-as-it-ever-was.ts reads from the canvas. */
+	--same-as-it-ever-was-white: #ffffff;
+	--same-as-it-ever-was-blue: #3b85a9;
+	--same-as-it-ever-was-red: #eb5232;
+	--same-as-it-ever-was-yellow: #c8a336;
+}
