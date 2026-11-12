@@ -450,6 +450,9 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 				// In its place on the page, if it has one, behind what's in front of it.
 				if (soaked) drawSoaked(() => layer(footing.surface.layer), footing, time);
 			}
+			leftOnThings = lingering;
+			// Nothing's left on them, and nothing more will be: let them go.
+			if (!accumulating && !lingering) footings.clear();
 			// What's falling goes into the puddle, wherever that's drawn.
 			context.save();
 			pooling?.clipAbove(context, container);
@@ -457,7 +460,6 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 			drawSprays(context);
 			if (raining) drawDrops(context);
 			context.restore();
-			leftOnThings = lingering;
 			// Once it's stopped and everything's dried or fallen, it's done.
 			return raining || lingering || falling.length > 0 || sprays.length > 0;
 		},

@@ -427,8 +427,11 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 		}
 	};
 
-	/** Each run of settled snow on a surface, as one soft-topped shape. */
-	const drawDrift = (context: CanvasRenderingContext2D, footing: Footing<Drift>): void => {
+	/**
+	 * Each run of settled snow on a surface, as one soft-topped shape. `on`
+	 * is where to draw it, asked for only if there's any to draw.
+	 */
+	const drawDrift = (on: () => CanvasRenderingContext2D, footing: Footing<Drift>): void => {
 		const { ground } = footing.surface;
 		const { snow } = footing.data;
 		const columns = ground.length;
@@ -448,6 +451,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 			if (end === start) continue;
 			const topX = (j: number): number => columnX(footing, j, snow[j]);
 			const topY = (j: number): number => columnY(footing, j, snow[j]);
+			const context = on();
 			context.beginPath();
 			context.moveTo(columnX(footing, start), columnY(footing, start));
 			context.lineTo(topX(start), topY(start));
@@ -552,16 +556,19 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 				const soaked = drying(footing, time, seconds, snowing);
 				if (!settled) settled = soaked || data.snow.some((depth) => depth > 0);
 				// In its place on the page, if it has one, behind what's in front of it.
-				if (soaked) drawSoaked(() => layer(footing.surface.layer), footing, time);
-				drawDrift(layer(footing.surface.layer), footing);
+				const where = (): CanvasRenderingContext2D => layer(footing.surface.layer);
+				if (soaked) drawSoaked(where, footing, time);
+				drawDrift(where, footing);
 			}
+			leftOnThings = settled;
+			// Nothing's left on them, and nothing more will be: let them go.
+			if (!accumulating && !settled) footings.clear();
 			// What's falling goes into the drift, wherever that's drawn.
 			context.save();
 			pooling?.clipAbove(context, container);
 			drawClumps(context);
 			if (snowing) drawFlakes(context);
 			context.restore();
-			leftOnThings = settled;
 			// Once it's stopped and everything's melted, fallen, or dried, it's done.
 			return snowing || settled || clumps.length > 0;
 		},

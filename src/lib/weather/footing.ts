@@ -130,6 +130,11 @@ export function createFootings<T>(hooks: FootingHooks<T>) {
 				footings.delete(surface);
 			}
 		},
+		/** Lets go of every surface, as if each had gone from the page. */
+		clear: (): void => {
+			for (const footing of footings.values()) hooks.removed(footing);
+			footings.clear();
+		},
 		values: (): IterableIterator<Footing<T>> => footings.values(),
 		get size(): number {
 			return footings.size;
