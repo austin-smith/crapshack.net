@@ -19,6 +19,12 @@ export const FRAMES = Math.round(LOOP_SECONDS * FPS);
 
 // Everything is laid out in his own 900 × 800 bust units, so every line weight is his.
 const CIRCLE = { x: 450, y: 365, r: 360 };
+// How freehand the ribbon is: 0 is nearly geometric.
+const HAND = 1;
+// How far the circle strays from round: 0 is a true circle.
+const CIRCLE_HAND = 1;
+// How freehand the lettering is: 0 is steady to the point of looking typeset.
+const LETTER_HAND = 1;
 // The site's light canvas blue.
 const DISC = '#67a3d9';
 const TEXT = 'crapshack';
@@ -65,13 +71,19 @@ function loopPose(time: number): Pose {
 	return pose;
 }
 
-/** A hand-drawn circle: slightly out of round. */
+/** A freehand circle: a little squashed and tilted, with lumps and flat spots. */
 function circlePoints(r: number): P[] {
 	const points: P[] = [];
-	const steps = 72;
+	const steps = 96;
 	for (let i = 0; i < steps; i++) {
-		const a = -2 + (i / steps) * Math.PI * 2;
-		const rr = r * (1 + 0.008 * Math.sin(a * 2 + 0.6) + 0.005 * Math.sin(a * 3 + 2.1));
+		const a = (i / steps) * Math.PI * 2;
+		const lumps = CIRCLE_HAND * (
+			0.035 * Math.cos(2 * (a - 0.5))
+			+ 0.014 * Math.sin(a * 3 + 2.1)
+			+ 0.008 * Math.sin(a * 4 + 0.9)
+			+ 0.005 * Math.sin(a * 5 + 4.2)
+		);
+		const rr = r * (1 + lumps);
 		points.push({ x: CIRCLE.x + Math.cos(a) * rr, y: CIRCLE.y + Math.sin(a) * rr });
 	}
 	return points;
@@ -86,52 +98,53 @@ function arcStroke(cx: number, cy: number, rx: number, ry: number, a0: number, a
 	return points;
 }
 
-// Single-stroke capitals in a box one unit tall; each glyph is a list of strokes.
+// Single-stroke capitals in a box one unit tall, a little condensed, as a
+// practised hand letters a sign; each glyph is a list of strokes.
 const GLYPHS: Record<string, { w: number; strokes: P[][] }> = {
-	C: { w: 0.66, strokes: [arcStroke(0.38, 0.5, 0.38, 0.5, -0.72, -5.56)] },
+	C: { w: 0.6, strokes: [arcStroke(0.33, 0.5, 0.33, 0.5, -0.85, -5.43)] },
 	R: {
-		w: 0.6,
+		w: 0.56,
 		strokes: [
 			[{ x: 0, y: 1 }, { x: 0, y: 0 }],
-			[{ x: 0, y: 0 }, { x: 0.36, y: 0 }, { x: 0.54, y: 0.08 }, { x: 0.59, y: 0.25 }, { x: 0.52, y: 0.42 }, { x: 0.32, y: 0.5 }, { x: 0, y: 0.5 }],
-			[{ x: 0.3, y: 0.5 }, { x: 0.62, y: 1 }],
+			[{ x: 0, y: 0 }, { x: 0.32, y: 0 }, { x: 0.48, y: 0.06 }, { x: 0.54, y: 0.2 }, { x: 0.5, y: 0.36 }, { x: 0.34, y: 0.47 }, { x: 0, y: 0.48 }],
+			[{ x: 0.26, y: 0.48 }, { x: 0.56, y: 1 }],
 		],
 	},
 	A: {
-		w: 0.72,
+		w: 0.62,
 		strokes: [
-			[{ x: 0, y: 1 }, { x: 0.36, y: 0 }, { x: 0.72, y: 1 }],
-			[{ x: 0.15, y: 0.64 }, { x: 0.57, y: 0.63 }],
+			[{ x: 0, y: 1 }, { x: 0.31, y: 0 }, { x: 0.62, y: 1 }],
+			[{ x: 0.13, y: 0.64 }, { x: 0.49, y: 0.64 }],
 		],
 	},
 	P: {
-		w: 0.58,
+		w: 0.54,
 		strokes: [
 			[{ x: 0, y: 1 }, { x: 0, y: 0 }],
-			[{ x: 0, y: 0 }, { x: 0.36, y: 0 }, { x: 0.54, y: 0.09 }, { x: 0.58, y: 0.27 }, { x: 0.5, y: 0.45 }, { x: 0.3, y: 0.53 }, { x: 0, y: 0.53 }],
+			[{ x: 0, y: 0 }, { x: 0.32, y: 0 }, { x: 0.48, y: 0.06 }, { x: 0.54, y: 0.22 }, { x: 0.49, y: 0.39 }, { x: 0.32, y: 0.5 }, { x: 0, y: 0.5 }],
 		],
 	},
 	S: {
-		w: 0.6,
+		w: 0.54,
 		strokes: [[
-			...arcStroke(0.3, 0.255, 0.28, 0.245, -0.4, -Math.PI * 1.5),
-			...arcStroke(0.3, 0.75, 0.3, 0.25, -Math.PI / 2, Math.PI + 0.35).slice(1),
+			...arcStroke(0.27, 0.25, 0.25, 0.25, -0.45, -Math.PI * 1.5),
+			...arcStroke(0.27, 0.75, 0.27, 0.25, -Math.PI / 2, Math.PI + 0.4).slice(1),
 		]],
 	},
 	H: {
-		w: 0.62,
+		w: 0.56,
 		strokes: [
 			[{ x: 0, y: 0 }, { x: 0, y: 1 }],
-			[{ x: 0.62, y: 0 }, { x: 0.62, y: 1 }],
-			[{ x: 0, y: 0.5 }, { x: 0.62, y: 0.49 }],
+			[{ x: 0.56, y: 0 }, { x: 0.56, y: 1 }],
+			[{ x: 0, y: 0.5 }, { x: 0.56, y: 0.5 }],
 		],
 	},
 	K: {
-		w: 0.6,
+		w: 0.56,
 		strokes: [
 			[{ x: 0, y: 0 }, { x: 0, y: 1 }],
-			[{ x: 0.58, y: 0 }, { x: 0.01, y: 0.6 }],
-			[{ x: 0.21, y: 0.39 }, { x: 0.62, y: 1 }],
+			[{ x: 0.54, y: 0 }, { x: 0.02, y: 0.58 }],
+			[{ x: 0.19, y: 0.4 }, { x: 0.57, y: 1 }],
 		],
 	},
 };
@@ -144,14 +157,14 @@ function wander(theta: number, seed: number, wavelength: number, amount: number)
 
 /** A point on the ribbon: theta 0 is straight down its bend, offset is downward from its centreline. */
 function onRibbon(theta: number, offset: number): P {
-	const r = RIBBON.R + offset + wander(theta, 7831, 260, 9);
+	const r = RIBBON.R + offset + wander(theta, 7831, 260, 9 * (1 + HAND));
 	return { x: RIBBON.x + Math.sin(theta) * r, y: RIBBON.y + Math.cos(theta) * r };
 }
 
 /** The ribbon's top edge (-1) or bottom edge (1), shifted down by shift, at theta. */
 function ribbonEdge(theta: number, edge: -1 | 1, shift: number): P {
 	const seed = edge < 0 ? 7811 : 7823;
-	return onRibbon(theta, shift + edge * (RIBBON.half + wander(theta, seed, 85, 7)));
+	return onRibbon(theta, shift + edge * (RIBBON.half + wander(theta, seed, 85, 7 * (1 + 0.6 * HAND))));
 }
 
 /** A length of ribbon: its top edge from t0 to t1, then its bottom edge back from b1 to b0. */
@@ -172,8 +185,10 @@ function ribbonSide(side: -1 | 1) {
 	return {
 		end: end * (left ? 0.985 : 1.02),
 		// The cut at the end of the front leans a little, rather than running square.
-		endTop: (left ? 0.004 : 0.007),
-		endBottom: (left ? -0.006 : -0.003),
+		endTop: (left ? 0.004 : 0.007) * (1 + 1.5 * HAND),
+		endBottom: (left ? -0.006 : -0.003) * (1 + 1.5 * HAND),
+		// The fold's outer edge leans too, instead of dropping plumb.
+		foldLean: (left ? 0.006 : -0.004) * HAND,
 		tailIn,
 		tailOut: tailOut * (left ? 1.03 : 0.97),
 		drop: drop * (left ? 1 : 0.88),
@@ -187,6 +202,48 @@ function paper(ctx: CanvasRenderingContext2D, polygon: P[], id: number, count: n
 	if (shade) fill(ctx, polygon, RIBBON_SHADE, shade);
 	stipple(ctx, polygon, id, count, RIBBON_TEXTURE, 0.42);
 	hatch(ctx, polygon, id + 1, { spacing: 38, angle: -0.78, alpha: 0.045, width: 0.68, color: RIBBON_TEXTURE });
+}
+
+/**
+ * A stroke as a hand draws it: no line runs ruler straight, so each one bows
+ * gently to one side, and its ends run on a touch past where they were aimed.
+ */
+function handStroke(points: P[], id: number, loose: number): P[] {
+	const length = points.slice(1).reduce((sum, point, index) => sum + Math.hypot(point.x - points[index].x, point.y - points[index].y), 0);
+	const steps = Math.max(2, Math.round(length / 0.06));
+	// Walk the stroke at even spacing.
+	const even: P[] = [];
+	let segment = 0;
+	let segmentStart = 0;
+	for (let i = 0; i <= steps; i++) {
+		const target = (length * i) / steps;
+		while (segment < points.length - 2) {
+			const next = segmentStart + Math.hypot(points[segment + 1].x - points[segment].x, points[segment + 1].y - points[segment].y);
+			if (next >= target) break;
+			segmentStart = next;
+			segment++;
+		}
+		const from = points[segment];
+		const to = points[segment + 1];
+		const span = Math.hypot(to.x - from.x, to.y - from.y) || 1;
+		const t = Math.min(1, Math.max(0, (target - segmentStart) / span));
+		even.push({ x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t });
+	}
+	const bow = (hash(id, 1, 31) - 0.5) * 2 * 0.045 * loose * Math.min(1, length);
+	const sway = (hash(id, 2, 37) - 0.5) * 2 * 0.012 * loose;
+	const run = 0.03 * loose;
+	return even.map((point, i) => {
+		const t = i / steps;
+		const before = even[Math.max(0, i - 1)];
+		const after = even[Math.min(even.length - 1, i + 1)];
+		const dx = after.x - before.x;
+		const dy = after.y - before.y;
+		const d = Math.hypot(dx, dy) || 1;
+		const push = bow * Math.sin(Math.PI * t) + sway * Math.sin(Math.PI * 2 * t);
+		// Ends overshoot along the stroke's own direction.
+		const overshoot = i === 0 ? -run * hash(id, 3, 41) : i === steps ? run * hash(id, 4, 43) : 0;
+		return { x: point.x - (dy / d) * push + (dx / d) * overshoot, y: point.y + (dx / d) * push + (dy / d) * overshoot };
+	});
 }
 
 function drawRibbon(ctx: CanvasRenderingContext2D, ink: string): void {
@@ -203,7 +260,7 @@ function drawRibbon(ctx: CanvasRenderingContext2D, ink: string): void {
 		// The fold, where the band turns under into the tail: its back, in shadow.
 		const fold = [
 			ribbonEdge(side * (s.end + s.endBottom), 1, 0),
-			ribbonEdge(side * (s.end + s.endBottom), 1, s.drop),
+			ribbonEdge(side * (s.end + s.endBottom + s.foldLean), 1, s.drop),
 			ribbonEdge(side * s.tailIn, 1, s.drop),
 			ribbonEdge(side * s.tailIn, 1, 0),
 		];
@@ -221,55 +278,69 @@ function drawRibbon(ctx: CanvasRenderingContext2D, ink: string): void {
 	paper(ctx, front, 7500, 300, 0);
 	stroke(ctx, front, 7500, { ...outline, closed: true, seamlessClosed: true });
 
-	// Lettered by hand in his own pen, at the scale his face is drawn: each
-	// letter a little off in size, tilt, height and spacing, and no two strokes
-	// quite where a font would put them.
+	// Lettered in his own pen, at the scale his face is drawn, by a steady
+	// hand: one cap height on one baseline, evenly spaced. Only the pen's own
+	// wobble and a hair of drift keep it from looking set in type.
+	// The letters are inked on their own layer, then laid down at his ink's
+	// strength, so strokes that cross don't darken into blots at the joins.
+	const layer = document.createElement('canvas');
+	layer.width = ctx.canvas.width;
+	layer.height = ctx.canvas.height;
+	const letterCtx = layer.getContext('2d');
+	if (!letterCtx) throw new Error('No 2D canvas context');
+	letterCtx.setTransform(ctx.getTransform());
 	const height = RIBBON.half * 1.04;
+	const gap = 0.2;
 	const letters = [...TEXT.toUpperCase()].map((letter) => GLYPHS[letter]).filter(Boolean);
-	const gaps = letters.map((_, index) => 0.24 + (hash(7701, index, 4) - 0.5) * 0.1);
-	const total = letters.reduce((sum, glyph) => sum + glyph.w, 0) + gaps.slice(1).reduce((sum, gap) => sum + gap, 0);
+	const total = letters.reduce((sum, glyph) => sum + glyph.w, 0) + gap * (letters.length - 1);
 	let cursor = -total / 2;
+	const loose = LETTER_HAND;
 	letters.forEach((glyph, index) => {
-		if (index) cursor += gaps[index];
 		const theta = ((cursor + glyph.w / 2) * height) / RIBBON.R;
-		const at = onRibbon(theta, (hash(7700, index, 1) - 0.5) * height * 0.12);
-		const size = height * (1 + (hash(7700, index, 2) - 0.5) * 0.16);
-		ctx.save();
-		ctx.translate(at.x, at.y);
-		ctx.rotate(-theta + (hash(7700, index, 3) - 0.5) * 0.13);
-		ctx.scale(FACE_SCALE, FACE_SCALE);
+		const at = onRibbon(theta, (hash(7700, index, 1) - 0.5) * height * (0.02 + 0.03 * loose));
+		const size = height * (1 + (hash(7700, index, 2) - 0.5) * (0.03 + 0.05 * loose));
+		letterCtx.save();
+		letterCtx.translate(at.x, at.y);
+		letterCtx.rotate(-theta + (hash(7700, index, 3) - 0.5) * (0.025 + 0.04 * loose));
+		letterCtx.scale(FACE_SCALE, FACE_SCALE);
 		glyph.strokes.forEach((points, strokeIndex) => {
 			const id = 7600 + index * 17 + strokeIndex;
-			// The hand drifts smoothly along a stroke, so curves stay curves.
-			const placed = points.map((point, pointIndex) => {
-				const along = (pointIndex / Math.max(1, points.length - 1)) * 1.6;
+			const placed = handStroke(points, id, loose).map((point, pointIndex, all) => {
+				const along = (pointIndex / Math.max(1, all.length - 1)) * 1.6;
+				const drift = 0.025 + 0.03 * loose;
 				return {
-					x: ((point.x - glyph.w / 2 + (valueNoise(along, 0.5, id * 2 + 1) - 0.5) * 0.11) * size) / FACE_SCALE,
-					y: ((point.y - 0.5 + (valueNoise(along, 0.5, id * 2 + 2) - 0.5) * 0.11) * size) / FACE_SCALE,
+					x: ((point.x - glyph.w / 2 + (valueNoise(along, 0.5, id * 2 + 1) - 0.5) * drift) * size) / FACE_SCALE,
+					y: ((point.y - 0.5 + (valueNoise(along, 0.5, id * 2 + 2) - 0.5) * drift) * size) / FACE_SCALE,
 				};
 			});
-			stroke(ctx, placed, id, { width: 2.1, boil: 0.4, wobble: 0.5, color: ink });
+			stroke(letterCtx, placed, id, { width: 2.5, boil: 0.38, wobble: 0.35 + 0.15 * loose, color: ink, alpha: 1.25 });
 		});
-		ctx.restore();
-		cursor += glyph.w;
+		letterCtx.restore();
+		cursor += glyph.w + gap;
 	});
+	ctx.save();
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
+	ctx.globalAlpha = 0.8;
+	ctx.drawImage(layer, 0, 0);
+	ctx.restore();
 }
 
 /** The part of his bust space the picture shows: the circle, grown to take in the ribbon's tails. */
 function pictureView(): { x: number; y: number; w: number; h: number } {
-	const margin = 6;
+	// Room for the outlines' ink and wobble.
 	const pad = 12;
 	const leftEnd = ribbonSide(-1);
 	const rightEnd = ribbonSide(1);
-	const ribbon = [
+	const shapes = [
+		...circlePoints(CIRCLE.r),
 		...band(-leftEnd.end, rightEnd.end, 0),
 		...band(-leftEnd.tailOut, -leftEnd.tailIn, leftEnd.drop),
 		...band(rightEnd.tailIn, rightEnd.tailOut, rightEnd.drop),
 	];
-	const x = Math.min(CIRCLE.x - CIRCLE.r - margin, ...ribbon.map((point) => point.x - pad));
-	const right = Math.max(CIRCLE.x + CIRCLE.r + margin, ...ribbon.map((point) => point.x + pad));
-	const y = CIRCLE.y - CIRCLE.r - margin;
-	const bottom = Math.max(CIRCLE.y + CIRCLE.r + margin, ...ribbon.map((point) => point.y + pad));
+	const x = Math.min(...shapes.map((point) => point.x)) - pad;
+	const y = Math.min(...shapes.map((point) => point.y)) - pad;
+	const right = Math.max(...shapes.map((point) => point.x)) + pad;
+	const bottom = Math.max(...shapes.map((point) => point.y)) + pad;
 	return { x, y, w: right - x, h: bottom - y };
 }
 
