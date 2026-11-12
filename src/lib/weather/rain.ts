@@ -23,8 +23,8 @@ import {
 	wasMoving,
 	type Footing,
 } from './footing';
-import { createPool } from './pool';
-import { drawSoaked, drying, dry, soak } from './soak';
+import { createPooling } from './pool';
+import { drawSoaked, drying, soak } from './soak';
 
 interface Raindrop {
 	x: number;
@@ -108,7 +108,7 @@ const RUN_EASE = 6;
 // How much a running bead leaves behind, a second, as a share of itself.
 const SMEAR = 0.04;
 // Beads dry this much a second, CSS px²; far quicker once it's stopped
-// raining.
+// raining, or piling up.
 const EVAPORATE = 0.12;
 const DRY = 5;
 const SMALLEST = 0.5;
@@ -288,7 +288,6 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 		removed: (footing) => {
 			for (const bead of footing.data.beads) detach(footing, bead, 0, 0);
 			footing.data.beads = [];
-			dry(footing.surface);
 		},
 	});
 
@@ -298,7 +297,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 		for (const bead of beads) bead.shape = bead.volume > 0 ? beadShape(footing, bead) : undefined;
 		for (const bead of beads) {
 			if (bead.volume <= 0 || !bead.shape) continue;
-			bead.volume -= (raining ? EVAPORATE : DRY) * seconds;
+			bead.volume -= (raining && accumulating ? EVAPORATE : DRY) * seconds;
 			if (bead.volume < SMALLEST) {
 				bead.volume = 0;
 				continue;
@@ -369,6 +368,8 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 	// ---- The loop ----
 
 	let gone: (() => void) | undefined;
+	// Whether anything was left on things, as of the last frame.
+	let leftOnThings = false;
 	const weather = createWeatherCanvas(container, {
 		finished: () => gone?.(),
 		resize: (nextWidth, nextHeight) => {
@@ -383,7 +384,9 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 			}
 		},
 		frame: ({ context, seconds, time, layer }) => {
-			if (settle && accumulating) footings.sync();
+			// Kept up with while it's piling up, and after, while what it left
+			// on things is still going.
+			if (settle && (accumulating || leftOnThings)) footings.sync();
 
 			if (raining) {
 				for (const drop of drops) {
@@ -391,7 +394,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 					drop.y += drop.fall * seconds;
 					const tip = drop.y + drop.length;
 					const weight = drop.length / average;
-					if (drop.lands && !drop.pooled && footings.size) {
+					if (accumulating && drop.lands && !drop.pooled && footings.size) {
 						const footing = landingOn(footings.values(), drop.x, tip, lastTip);
 						if (footing) {
 							const ground = pagePoint(footing, Math.round(columnAt(footing, drop.x, tip)));
@@ -402,7 +405,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 						}
 					}
 					if (!drop.pooled && tip > height) {
-						pool?.land(drop.x / width, weight);
+						pooling?.land(drop.x / width, weight);
 						drop.pooled = true;
 					}
 					if (drop.y > height) spawn(drop, true);
@@ -415,7 +418,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 				drop.vy = Math.min(FASTEST, drop.vy + GRAVITY * seconds);
 				drop.x += drop.vx * seconds;
 				drop.y += drop.vy * seconds;
-				if (drop.vy > 0) {
+				if (accumulating && drop.vy > 0) {
 					const footing = landingOn(footings.values(), drop.x, drop.y, lastY);
 					if (footing) {
 						const ground = pagePoint(footing, Math.round(columnAt(footing, drop.x, drop.y)));
@@ -426,7 +429,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 					}
 				}
 				if (drop.y > height) {
-					pool?.land(drop.x / width, Math.min(2, drop.volume / 10));
+					pooling?.land(drop.x / width, Math.min(2, drop.volume / 10));
 					falling.splice(index, 1);
 				}
 			}
@@ -449,38 +452,32 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 			}
 			// What's falling goes into the puddle, wherever that's drawn.
 			context.save();
-			pool?.clipAbove(context, container.getBoundingClientRect());
+			pooling?.clipAbove(context, container);
 			drawFalling(context);
 			drawSprays(context);
 			if (raining) drawDrops(context);
 			context.restore();
+			leftOnThings = lingering;
 			// Once it's stopped and everything's dried or fallen, it's done.
 			return raining || lingering || falling.length > 0 || sprays.length > 0;
 		},
 	});
 	// Each drop lands in the puddle as its fall ends: 2.75s, on average.
-	const startPool = () => (weather ? createPool(ground, { kind: 'rain', scale, rate: count / (2.75 * speed), fillSeconds, persist }) : undefined);
-	let pool = accumulating ? startPool() : undefined;
+	const pooling = weather ? createPooling(ground, { kind: 'rain', scale, rate: count / (2.75 * speed), fillSeconds, persist }) : undefined;
+	if (accumulating) pooling?.start();
 
 	return {
 		accumulate: (on) => {
 			// Once it's stopped, it can only stop piling up.
 			if (on === accumulating || (on && !raining)) return;
 			accumulating = on;
-			if (on) {
-				pool = startPool();
-				return;
-			}
-			pool?.destroy();
-			pool = undefined;
-			// What's beaded on him drips off, past where the puddle was.
-			footings.clear();
+			if (on) pooling?.start();
+			else pooling?.letGo();
 		},
 		stop: (whenGone) => {
 			gone = whenGone;
 			if (!weather) gone?.();
-			pool?.destroy();
-			pool = undefined;
+			pooling?.letGo();
 			// What's beaded on things dries off rather than vanishing.
 			raining = false;
 			if (!weather?.running()) weather?.finish();

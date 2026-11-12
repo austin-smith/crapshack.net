@@ -67,8 +67,9 @@ export interface WeatherOptions {
 /** Rain or snow, falling. */
 export interface WeatherEffect {
 	/**
-	 * Lets it pile up from now on, or not. Turned off, what's piled up falls
-	 * away, even once it's stopped falling.
+	 * Lets it pile up from now on, or not. Turned off, nothing more piles
+	 * up, and what has goes as it would once the weather stopped: melting,
+	 * drying, or draining away. That holds once it's stopped falling, too.
 	 */
 	accumulate: (on: boolean) => void;
 	/**

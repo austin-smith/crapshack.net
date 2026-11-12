@@ -3,7 +3,8 @@
  * puddle that ripples where each drop hits, and snow heaps up where each
  * flake lands, slumping where it gets too steep. Either rises quickly at
  * first, then more slowly as it nears full, and stops there: the puddle
- * level, the drift as lumpy as the snow left it.
+ * level, the drift as lumpy as the snow left it. Once the weather's done
+ * with it, the puddle drains and the drift melts away.
  */
 
 import { inSight, watchSight } from './canvas';
@@ -34,7 +35,12 @@ export interface Pool {
 	 * `origin` is where the context's (0, 0) is in the viewport.
 	 */
 	clipAbove: (context: CanvasRenderingContext2D, origin: { x: number; y: number }) => void;
-	destroy: () => void;
+	/**
+	 * Lets it drain or melt away, taking nothing more in, then removes it
+	 * and calls `gone`. Out of sight, it goes at once. It isn't kept for the
+	 * next page.
+	 */
+	leave: (gone?: () => void) => void;
 }
 
 // How deep it gets: the puddle's level, or the drift's on average.
@@ -42,6 +48,9 @@ const DEPTH = 30;
 // Room above that for waves and splashes, or the drift's heaps and glow.
 const HEADROOM = 26;
 const FILL_SECONDS: Record<PoolKind, number> = { rain: 50, snow: 120 };
+// Leaving, how fast the puddle drains and the drift melts, px a second.
+const DRAIN = 8;
+const MELT = 8;
 const MAX_PIXEL_RATIO = 2;
 
 // Columns across the pool, in px.
@@ -342,27 +351,48 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 		return moving || splashes.length > 0;
 	};
 
+	/** Drains the puddle, or melts the drift, for `seconds`. Returns whether any's left. */
+	const ebb = (seconds: number): boolean => {
+		if (kind === 'rain') {
+			level = Math.max(0, level - DRAIN * scale * seconds);
+			return level > 0;
+		}
+		const melt = MELT * scale * seconds;
+		let left = false;
+		for (let i = 0; i < heights.length; i++) {
+			heights[i] = Math.max(0, heights[i] - melt);
+			if (heights[i] > 0) left = true;
+		}
+		return left;
+	};
+
 	// It's drawn only while it can be seen. Rain runs on while there's water
 	// to chop, or ripples or splashes to settle; snow is drawn again only as
-	// it lands. Either is drawn again whenever what stands in front of it is.
+	// it lands. Leaving, either runs on until it's gone.
 	let seen = false;
+	let leaving = false;
+	let gone: (() => void) | undefined;
 	let frame = 0;
 	let last = 0;
 	let pending = 0;
 	const tick = (now: number): void => {
 		frame = 0;
+		const seconds = last ? Math.min(0.1, (now - last) / 1000) : STEP;
+		last = now;
+		let moving = leaving && ebb(seconds);
 		if (kind === 'rain') {
-			pending = Math.min(pending + (last ? (now - last) / 1000 : STEP), 0.1);
-			last = now;
-			let moving = true;
+			pending = Math.min(pending + seconds, 0.1);
+			let stepping = true;
 			while (pending >= STEP) {
-				moving = stepRain();
+				stepping = stepRain();
 				pending -= STEP;
 			}
-			if (moving) frame = requestAnimationFrame(tick);
-			else last = 0;
+			moving ||= stepping;
 		}
 		draw();
+		if (moving) frame = requestAnimationFrame(tick);
+		else if (leaving) remove();
+		else last = 0;
 	};
 	const schedule = (): void => {
 		if (seen && !frame) frame = requestAnimationFrame(tick);
@@ -371,6 +401,10 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 	const update = (): void => {
 		seen = inSight(canvas);
 		if (!seen) {
+			if (leaving) {
+				remove();
+				return;
+			}
 			cancelAnimationFrame(frame);
 			frame = 0;
 			last = 0;
@@ -396,9 +430,18 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 	const stopWatching = watchSight(canvas, update);
 	addEventListener('pagehide', save);
 
+	const remove = (): void => {
+		stopWatching();
+		cancelAnimationFrame(frame);
+		frame = 0;
+		canvas.remove();
+		gone?.();
+		gone = undefined;
+	};
+
 	return {
 		land: (x, weight = 1) => {
-			if (width === 0) return;
+			if (width === 0 || leaving) return;
 			const at = Math.min(1, Math.max(0, x));
 			if (kind === 'snow') landSnow(at, weight);
 			else landRain(at, weight);
@@ -417,11 +460,11 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 			on.closePath();
 			on.clip();
 		},
-		destroy: () => {
-			stopWatching();
+		leave: (whenGone) => {
+			if (leaving) return;
+			leaving = true;
+			gone = whenGone;
 			removeEventListener('pagehide', save);
-			cancelAnimationFrame(frame);
-			canvas.remove();
 			// The weather's changed: what pooled goes with it.
 			if (persist) {
 				try {
@@ -430,6 +473,47 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 					// Nothing to clear.
 				}
 			}
+			if (!seen || width === 0) remove();
+			else schedule();
+		},
+	};
+}
+
+/**
+ * The pool weather fills along the bottom of `container`, started when it
+ * starts piling up, and let go to drain or melt away when it stops; and any
+ * it's let go that haven't yet.
+ */
+export interface Pooling {
+	/** Lands a particle in the pool being filled, if there is one (see `Pool.land`). */
+	land: (x: number, weight?: number) => void;
+	/** Clips a context drawn over `over` to above every pool's surface (see `Pool.clipAbove`). */
+	clipAbove: (context: CanvasRenderingContext2D, over: HTMLElement) => void;
+	/** Starts filling a pool, if none is being filled. */
+	start: () => void;
+	/** Lets the pool being filled go, to drain or melt away. */
+	letGo: () => void;
+}
+
+export function createPooling(container: HTMLElement, options: PoolOptions): Pooling {
+	let filling: Pool | undefined;
+	const pools = new Set<Pool>();
+	return {
+		land: (x, weight) => filling?.land(x, weight),
+		clipAbove: (context, over) => {
+			if (pools.size === 0) return;
+			const origin = over.getBoundingClientRect();
+			for (const pool of pools) pool.clipAbove(context, origin);
+		},
+		start: () => {
+			if (filling) return;
+			filling = createPool(container, options);
+			if (filling) pools.add(filling);
+		},
+		letGo: () => {
+			const leaving = filling;
+			filling = undefined;
+			leaving?.leave(() => pools.delete(leaving));
 		},
 	};
 }

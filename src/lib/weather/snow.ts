@@ -25,8 +25,8 @@ import {
 	wasMoving,
 	type Footing,
 } from './footing';
-import { createPool } from './pool';
-import { drawSoaked, drying, dry, soak } from './soak';
+import { createPooling } from './pool';
+import { drawSoaked, drying, soak } from './soak';
 
 interface Flake {
 	x: number;
@@ -96,7 +96,8 @@ const CLUMP_FALL_PER_PX = 30;
 // harder, CSS px.
 const SHAKE_RANGE = 20;
 const SHAKE_MOST = 0.55;
-// Settled snow melts this many CSS px a second once it stops snowing.
+// Settled snow melts this many CSS px a second once it stops snowing, or
+// piling up.
 const MELT = 6;
 // Settled snow melts a little into what it's on, where that soaks: this
 // much a second, until it's as soaked as MOST_UNDER under snow FULL_UNDER
@@ -304,7 +305,6 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 				snow[i] = 0;
 			}
 			release(footing);
-			dry(footing.surface);
 		},
 	});
 
@@ -465,6 +465,8 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 	// ---- The loop ----
 
 	let gone: (() => void) | undefined;
+	// Whether anything was left on things, as of the last frame.
+	let leftOnThings = false;
 	const weather = createWeatherCanvas(container, {
 		finished: () => gone?.(),
 		resize: (nextWidth, nextHeight) => {
@@ -479,13 +481,15 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 			}
 		},
 		frame: ({ context, seconds, time, layer }) => {
-			if (settle && accumulating) footings.sync();
+			// Kept up with while it's piling up, and after, while what it left
+			// on things is still going.
+			if (settle && (accumulating || leftOnThings)) footings.sync();
 
 			if (snowing) {
 				for (const flake of flakes) {
 					const lastY = flake.y;
 					flake.y += flake.fall * seconds;
-					if (flake.lands && footings.size) {
+					if (accumulating && flake.lands && footings.size) {
 						const footing = landingOn(footings.values(), flake.x, flake.y, lastY, snowTop);
 						if (footing) {
 							land(footing, flake.x, flake.y, FLAKE_AREA * (flake.size / average) ** 2, flake.size * FLAKE_SPREAD);
@@ -494,7 +498,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 						}
 					}
 					if (flake.y > height) {
-						pool?.land(flake.x / width, flake.size / average);
+						pooling?.land(flake.x / width, flake.size / average);
 						spawn(flake, true);
 					}
 				}
@@ -514,7 +518,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 				piece.y += piece.vy * seconds;
 				piece.angle += piece.spin * seconds;
 				piece.spin *= 1 - Math.min(1, 0.8 * seconds);
-				if (piece.vy > 0) {
+				if (accumulating && piece.vy > 0) {
 					const footing = landingOn(footings.values(), piece.x, piece.y, lastY, snowTop);
 					if (footing) {
 						land(footing, piece.x, piece.y, piece.area, Math.sqrt(piece.area) * 1.2);
@@ -523,20 +527,22 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 					}
 				}
 				if (piece.y > height) {
-					pool?.land(piece.x / width, piece.area / FLAKE_AREA);
+					pooling?.land(piece.x / width, piece.area / FLAKE_AREA);
 					clumps.splice(index, 1);
 				}
 			}
 
+			// Once it's stopped, or stopped piling up, what's settled melts.
+			const melting = !snowing || !accumulating;
 			let settled = false;
 			for (const footing of footings.values()) {
 				const { data } = footing;
 				if (data.settling) data.settling = slump(footing);
 				const soaks = footing.surface.soaks !== undefined;
-				if (snowing && soaks) soakUnder(footing, seconds);
+				if (!melting && soaks) soakUnder(footing, seconds);
 				const melt = (MELT * seconds) / footing.unitY;
 				for (let i = 0; i < data.snow.length; i++) {
-					if (snowing || !(data.snow[i] > 0)) continue;
+					if (!melting || !(data.snow[i] > 0)) continue;
 					const melted = Math.min(data.snow[i], melt);
 					data.snow[i] -= melted;
 					data.settling = true;
@@ -551,37 +557,31 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 			}
 			// What's falling goes into the drift, wherever that's drawn.
 			context.save();
-			pool?.clipAbove(context, container.getBoundingClientRect());
+			pooling?.clipAbove(context, container);
 			drawClumps(context);
 			if (snowing) drawFlakes(context);
 			context.restore();
+			leftOnThings = settled;
 			// Once it's stopped and everything's melted, fallen, or dried, it's done.
 			return snowing || settled || clumps.length > 0;
 		},
 	});
 	// Each flake lands in the drift as its fall ends: 9s, on average.
-	const startPool = () => (weather ? createPool(ground, { kind: 'snow', scale, rate: count / (9 * speed), fillSeconds, persist }) : undefined);
-	let pool = accumulating ? startPool() : undefined;
+	const pooling = weather ? createPooling(ground, { kind: 'snow', scale, rate: count / (9 * speed), fillSeconds, persist }) : undefined;
+	if (accumulating) pooling?.start();
 
 	return {
 		accumulate: (on) => {
 			// Once it's stopped, it can only stop piling up.
 			if (on === accumulating || (on && !snowing)) return;
 			accumulating = on;
-			if (on) {
-				pool = startPool();
-				return;
-			}
-			pool?.destroy();
-			pool = undefined;
-			// What's settled on him falls off, past where the drift was.
-			footings.clear();
+			if (on) pooling?.start();
+			else pooling?.letGo();
 		},
 		stop: (whenGone) => {
 			gone = whenGone;
 			if (!weather) gone?.();
-			pool?.destroy();
-			pool = undefined;
+			pooling?.letGo();
 			// What's settled on things melts away rather than vanishing, and
 			// what it soaked dries.
 			snowing = false;

@@ -70,11 +70,6 @@ export function soak<T>(footing: Footing<T>, column: number, amount: number, mos
 	soaking.wetted = performance.now();
 }
 
-/** Lets go of how wet a surface has got: it's dry. */
-export function dry(surface: WeatherSurface): void {
-	soakings.delete(surface);
-}
-
 /**
  * Lets a surface dry for frame `time` (as requestAnimationFrame gives it),
  * if it's not already dried for it, slowly while it's still being wetted.
