@@ -507,7 +507,10 @@ type BlonkyPainterFactory = NonNullable<BlonkyAnimatorOptions['painter']>;
 function mountBlonkyCanvas(root: HTMLElement, painter?: BlonkyPainterFactory): BlonkyAnimator | undefined {
 	const canvas = root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
 	if (!canvas) return;
-	const view = canvas.dataset.blonkyView === 'bust' ? 'bust' : 'portrait';
+	const requested = canvas.dataset.blonkyView;
+	const view: BlonkyView = requested !== undefined && Object.hasOwn(BLONKY_VIEWPORTS, requested)
+		? (requested as BlonkyView)
+		: 'portrait';
 	const animator = createBlonkyAnimator(canvas, {
 		followGaze: canvas.dataset.blonkyGaze === 'true',
 		painter,

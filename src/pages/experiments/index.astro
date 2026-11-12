@@ -152,13 +152,14 @@ import '../../components/once-in-a-lifetime-palette.css';
 		height: min(190svh, 130vw);
 	}
 
+	/* Big enough that the window holds him only from the chest up: he stands
+	   below its floor, and a little past its right edge. */
 	[data-experiment='blonky'] .world__figure {
 		position: absolute;
 		right: -12%;
 		bottom: 0;
-		width: min(70vw, 105svh);
-		/* His drawing stops short of its own foot; sink that below the window's. */
-		translate: 0 14%;
+		width: min(78vw, 118svh);
+		translate: 0 22%;
 	}
 
 	/* Crap stack's line runs between the title and the first name. */
@@ -337,10 +338,10 @@ import '../../components/once-in-a-lifetime-palette.css';
 			height: calc(var(--band) * 2.83);
 		}
 
-		/* He is 1.31 bands wide, so a band holds his head and shoulders, with a
+		/* He is 1.6 bands wide, so a band holds him from the chest up, with a
 		   fifth of him past its right edge. */
 		[data-experiment='blonky'] .world__figure {
-			--width: calc(var(--band) * 1.31);
+			--width: calc(var(--band) * 1.6);
 			right: calc(var(--width) * -0.21);
 			width: var(--width);
 		}
