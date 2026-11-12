@@ -13,7 +13,10 @@ html[data-theme='dark'] :is([data-blonky-root], [data-blonky-page-root]) {
 	--blonky-shirt: var(--app-overlay);
 	--blonky-shirt-texture: rgb(var(--app-fg-rgb));
 	--blonky-shirt-texture-alpha: 0.18;
-	--blonky-shirt-wet: rgba(8, 22, 40, 0.6);
+	/* The page behind him is close to his shirt, so the soak is bluer than
+	   the page as well as darker than the shirt: wet shoulders shouldn't
+	   read as holes in him. */
+	--blonky-shirt-wet: rgba(9, 29, 70, 0.6);
 }
 
 html[data-theme='black'] :is([data-blonky-root], [data-blonky-page-root]) {
