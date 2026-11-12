@@ -155,7 +155,8 @@ function initBlonkyPage(root: HTMLElement, painter?: BlonkyPainterFactory, faile
 	// only the clay answers to.
 	const unsupported = Boolean(painter) && !painted;
 	if (unsupported) {
-		root.classList.replace(`blonky-debug--${root.dataset.blonkyRenderer}`, 'blonky-debug--ink');
+		// Ink isn't lit like the clay set, so its stage follows the site theme.
+		root.querySelector<HTMLElement>('[data-blonky-stage]')?.removeAttribute('data-always-light');
 		restLabel = canvas.dataset.blonkyFallbackLabel ?? restLabel;
 		canvas.setAttribute('aria-label', restLabel);
 	}
@@ -336,7 +337,7 @@ function parseComputedColor(value: string): [number, number, number] | undefined
 
 /**
  * The lab stage's dot grid, as the clay renderer paints it onto its board:
- * read from the stage's --lab-dot-* properties, which its background uses
+ * read from the stage's --blonky-lab-dot-* properties, which its background uses
  * too, so the two match. Its colours are resolved again if the site theme
  * changes; where the canvas sits on the grid is read each exposure.
  */
@@ -345,11 +346,11 @@ export function labStagePattern(canvas: HTMLCanvasElement): () => ClayBoardPatte
 	let look: Omit<ClayBoardPattern, 'offset'> | undefined;
 	const resolve = (stage: HTMLElement): Omit<ClayBoardPattern, 'offset'> | undefined => {
 		const style = getComputedStyle(stage);
-		const spacing = Number.parseFloat(style.getPropertyValue('--lab-dot-spacing'));
-		const radius = Number.parseFloat(style.getPropertyValue('--lab-dot-radius'));
+		const spacing = Number.parseFloat(style.getPropertyValue('--blonky-lab-dot-spacing'));
+		const radius = Number.parseFloat(style.getPropertyValue('--blonky-lab-dot-radius'));
 		// Custom properties compute to their tokens; a probe resolves the colour.
 		const probe = document.createElement('span');
-		probe.style.color = 'var(--lab-dot-color)';
+		probe.style.color = 'var(--blonky-lab-dot-color)';
 		stage.append(probe);
 		const dot = parseComputedColor(getComputedStyle(probe).color);
 		probe.remove();

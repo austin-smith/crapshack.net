@@ -1,0 +1,65 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import type { Sticker } from '../data/crap-stack';
+import './crap-stack-palette.css';
+
+interface Props extends Omit<HTMLAttributes<'div'>, 'style'> {
+	/** The sticker it shows: its art, the token's colour, and how far the art is scaled to fill it. */
+	sticker: Sticker;
+	/** Where its parent puts it, such as its place, size and tilt. Added after the token's own. */
+	style?: string;
+}
+
+const { sticker, style, class: className, ...attributes } = Astro.props;
+const look = `--token-color: ${sticker.color}; --art-scale: ${sticker.artScale}`;
+---
+
+{/* One of crap stack's tokens: a sticker on a round chip outlined in the ink. Its parent places and
+    sizes it. The game's script copies one for each piece in play, and gives the copy its sticker's
+    --token-color and --art-scale. */}
+<div {...attributes} class:list={['crap-stack-token', className]} style={[look, style].filter(Boolean).join('; ')}>
+	<img src={sticker.source} alt="" draggable="false" />
+</div>
+
+<style>
+	/* It is placed on something. Weighed below a parent's own class, so whatever
+	   position its parent gives it wins. */
+	:where(.crap-stack-token) {
+		position: absolute;
+	}
+
+	.crap-stack-token {
+		aspect-ratio: 1;
+		border: max(2px, 0.3vw) solid rgb(var(--crap-stack-ink-rgb));
+		border-radius: 48% 52% 49% 51% / 52% 47% 53% 48%;
+		background:
+			radial-gradient(circle at 34% 27%, rgb(255 255 255 / 0.8) 0 6%, transparent 7%),
+			var(--token-color);
+		box-shadow:
+			inset -4px -5px 0 rgb(var(--crap-stack-ink-rgb) / 0.09),
+			inset 3px 3px 0 rgb(255 255 255 / 0.42),
+			0 3px 0 rgb(var(--crap-stack-ink-rgb) / 0.3),
+			0 6px 9px rgb(var(--crap-stack-ink-rgb) / 0.14);
+		overflow: hidden;
+	}
+
+	.crap-stack-token::after {
+		position: absolute;
+		inset: 5%;
+		border: 1px solid rgb(var(--crap-stack-ink-rgb) / 0.1);
+		border-radius: inherit;
+		content: '';
+		pointer-events: none;
+	}
+
+	.crap-stack-token img {
+		position: absolute;
+		inset: -6%;
+		display: block;
+		width: 112%;
+		height: 112%;
+		object-fit: contain;
+		filter: drop-shadow(0 2px 0 rgb(var(--crap-stack-ink-rgb) / 0.14));
+		transform: scale(var(--art-scale));
+	}
+</style>

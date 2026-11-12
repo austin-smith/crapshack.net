@@ -2,40 +2,34 @@
 import { Volume2, VolumeX } from '@lucide/astro';
 import Button from './ui/Button.astro';
 import Kbd from './ui/Kbd.astro';
-
-const stickers = [
-	{ name: 'test tube', source: '/images/crap-stack/test-tube.webp', color: '#b9e4f3', artScale: 1.12 },
-	{ name: 'wine', source: '/images/crap-stack/wine.webp', color: '#f2b6c4', artScale: 1.14 },
-	{ name: 'milk', source: '/images/crap-stack/milk.webp', color: '#eee6d7', artScale: 1.1 },
-	{ name: 'popcorn', source: '/images/crap-stack/popcorn.webp', color: '#f5cf61', artScale: 1.02 },
-	{ name: 'wink', source: '/images/crap-stack/wink.webp', color: '#ef9c43', artScale: 1.08 },
-	{ name: 'blinky', source: '/images/crap-stack/blinky.webp', color: '#a9d5f3', artScale: 0.92 },
-	{ name: 'brows', source: '/images/crap-stack/brows.webp', color: '#cbb99c', artScale: 1.02 },
-	{ name: 'hair', source: '/images/crap-stack/hair.webp', color: '#f3e86a', artScale: 0.98 },
-	{ name: 'spiral', source: '/images/crap-stack/spiral.webp', color: '#d8a5cf', artScale: 1.04 },
-	{ name: 'robot', source: '/images/crap-stack/robot.webp', color: '#91a6b7', artScale: 1.03 },
-];
+import CrapStackPaper from './CrapStackPaper.astro';
+import CrapStackToken from './CrapStackToken.astro';
+import { stickers } from '../data/crap-stack';
+import { DANGER_LINE } from '../lib/crap-stack';
+import './crap-stack-palette.css';
 ---
 
-<section class="crap-stack-root text-text" data-crap-stack-root data-stickers={JSON.stringify(stickers)} aria-labelledby="crap-stack-title" aria-describedby="crap-stack-instructions">
+<section class="crap-stack-root text-text" data-crap-stack-root aria-labelledby="crap-stack-title" aria-describedby="crap-stack-instructions">
 	<div class="crap-stack-cabinet">
 		<header class="crap-stack-header">
 			<h1 id="crap-stack-title" class="crap-stack-title text-brand">crap stack</h1>
 		</header>
-		<div
+		<CrapStackPaper
 			class="crap-stack-stage"
+			style={`--crap-stack-danger-line: calc(${DANGER_LINE} * 100%)`}
 			data-crap-stack-stage
 			tabindex="0"
 			aria-label="Crap Stack game board. Move with the pointer or arrow keys and drop with click, tap, Enter, or Space. Press A to nudge the pile left or D to nudge right."
 		>
 			<div class="crap-stack-stage__sheen" aria-hidden="true"></div>
-			<div class="crap-stack-danger" aria-hidden="true"></div>
 			<div class="crap-stack-guide" data-crap-stack-guide aria-hidden="true"></div>
 
-			<div class="crap-stack-current crap-stack-token" data-crap-stack-current aria-hidden="true">
-				<img src={stickers[0].source} alt="" draggable="false" />
-			</div>
+			<CrapStackToken class="crap-stack-current" data-crap-stack-current aria-hidden="true" sticker={stickers[0]} />
 			<div class="crap-stack-pieces" data-crap-stack-pieces aria-hidden="true"></div>
+			{/* The token the script copies for each piece in play. */}
+			<template data-crap-stack-piece>
+				<CrapStackToken class="crap-stack-piece" sticker={stickers[0]} />
+			</template>
 
 			<div class="crap-stack-first-hint text-sm" data-crap-stack-hint aria-hidden="true">
 				<strong>match two of the same</strong>
@@ -50,7 +44,7 @@ const stickers = [
 				<div class="mb-4 text-sm font-semibold" data-crap-stack-final-best hidden>new high score</div>
 				<Button data-crap-stack-restart>play again</Button>
 			</div>
-		</div>
+		</CrapStackPaper>
 
 		<aside class="crap-stack-controls grid gap-5 self-start rounded-lg border border-line-strong bg-sidebar-bg p-5" aria-label="Game status and controls">
 			<div class="crap-stack-scores grid grid-cols-2 gap-4 tabular-nums" aria-label="Game scores">
@@ -58,9 +52,7 @@ const stickers = [
 				<p class="grid gap-1"><span class="text-xs text-subtle">best</span><strong class="font-mono text-2xl font-semibold" data-crap-stack-best>0</strong></p>
 			</div>
 			<div class="flex items-center gap-4 border-t border-line-strong pt-5" aria-label="Next piece">
-				<div class="crap-stack-next__token crap-stack-token" data-crap-stack-next-token>
-					<img data-crap-stack-next src={stickers[0].source} alt="" draggable="false" />
-				</div>
+				<CrapStackToken class="crap-stack-next__token" data-crap-stack-next-token sticker={stickers[0]} />
 				<p class="grid gap-1"><span class="text-xs text-subtle">next up</span><strong class="text-sm font-semibold" data-crap-stack-next-name>{stickers[0].name}</strong></p>
 			</div>
 			<div class="grid gap-3 border-t border-line-strong pt-5" data-crap-stack-nudges role="group" tabindex="-1" aria-labelledby="crap-stack-nudge-title" aria-describedby="crap-stack-nudge-rules">
@@ -169,24 +161,18 @@ const stickers = [
 	[data-crap-stack-score].is-bumping { animation: score-bump 180ms ease-out; }
 	.crap-stack-cabinet.is-nudging { animation: shack-nudge 320ms ease-out; }
 
-	/* The paper and ink belong to the playfield; controls use site tokens. */
+	/* The playfield is crap stack's paper, with its danger line, and its tokens,
+	   from CrapStackPaper.astro and CrapStackToken.astro; controls use site tokens. */
 	.crap-stack-stage {
-		--crap-stack-paper: #f2f5ee;
-		--crap-stack-paper-ink: 16 39 60;
-		--crap-stack-combo-ink: #c74e78;
 		--danger-progress: 0;
-		position: relative;
+		/* The danger line is drawn over the pile and under the token about to drop. */
+		--crap-stack-danger-layer: 4;
 		isolation: isolate;
 		width: 100%;
 		aspect-ratio: 4 / 5;
 		overflow: hidden;
 		border: 2px solid var(--app-brand);
 		border-radius: 1rem;
-		background:
-			linear-gradient(rgb(var(--crap-stack-paper-ink) / 0.055) 1px, transparent 1px),
-			linear-gradient(90deg, rgb(var(--crap-stack-paper-ink) / 0.055) 1px, transparent 1px),
-			var(--crap-stack-paper);
-		background-size: 24px 24px;
 		box-shadow: 0 12px 32px rgb(0 0 0 / 0.16);
 		cursor: crosshair;
 		touch-action: none;
@@ -210,31 +196,20 @@ const stickers = [
 		position: absolute;
 		inset: 0;
 		z-index: 8;
-		background: linear-gradient(115deg, rgb(255 255 255 / 0.05), transparent 22% 78%, rgb(var(--crap-stack-paper-ink) / 0.04));
+		background: linear-gradient(115deg, rgb(255 255 255 / 0.05), transparent 22% 78%, rgb(var(--crap-stack-paper-ink-rgb) / 0.04));
 		pointer-events: none;
 	}
 
-	.crap-stack-danger {
-		position: absolute;
-		top: 17%;
-		left: 0;
-		z-index: 4;
-		width: 100%;
-		border-top: 2px dashed rgb(199 78 120 / 0.72);
-		pointer-events: none;
-	}
-
-	/* The 17% here is the danger line: DANGER_LINE in src/lib/crap-stack.ts
-	   has to match it, or the pile crosses the mark before the game says so.
-	   Like the current token, the guide sits at the left edge and the script
-	   moves it to the aim point with `translate`. */
+	/* The guide runs from the top down to the danger line. Like the current
+	   token, it sits at the left edge and the script moves it to the aim point
+	   with `translate`. */
 	.crap-stack-guide {
 		position: absolute;
 		top: 0;
 		left: 0;
 		z-index: 1;
-		height: 17%;
-		border-left: 1px dashed rgb(var(--crap-stack-paper-ink) / 0.28);
+		height: var(--crap-stack-danger-line);
+		border-left: 1px dashed rgb(var(--crap-stack-paper-ink-rgb) / 0.28);
 		pointer-events: none;
 		transition: opacity 160ms ease;
 	}
@@ -251,46 +226,6 @@ const stickers = [
 		pointer-events: none;
 	}
 
-	.crap-stack-token,
-	:global(.crap-stack-piece) {
-		--token-color: #b9e4f3;
-		--art-scale: 1;
-		position: absolute;
-		border: max(2px, 0.3vw) solid #10273c;
-		border-radius: 48% 52% 49% 51% / 52% 47% 53% 48%;
-		background:
-			radial-gradient(circle at 34% 27%, rgb(255 255 255 / 0.8) 0 6%, transparent 7%),
-			var(--token-color);
-		box-shadow:
-			inset -4px -5px 0 rgb(16 39 60 / 0.09),
-			inset 3px 3px 0 rgb(255 255 255 / 0.42),
-			0 3px 0 rgb(16 39 60 / 0.3),
-			0 6px 9px rgb(16 39 60 / 0.14);
-		overflow: hidden;
-	}
-
-	.crap-stack-token::after,
-	:global(.crap-stack-piece::after) {
-		position: absolute;
-		inset: 5%;
-		border: 1px solid rgb(16 39 60 / 0.1);
-		border-radius: inherit;
-		content: '';
-		pointer-events: none;
-	}
-
-	.crap-stack-token img,
-	:global(.crap-stack-piece img) {
-		position: absolute;
-		inset: -6%;
-		display: block;
-		width: 112%;
-		height: 112%;
-		object-fit: contain;
-		filter: drop-shadow(0 2px 0 rgb(16 39 60 / 0.14));
-		transform: scale(var(--art-scale));
-	}
-
 	.crap-stack-current {
 		top: 0.35rem;
 		left: 0;
@@ -301,7 +236,7 @@ const stickers = [
 		transition: opacity 160ms ease;
 	}
 
-	:global(.crap-stack-piece) {
+	.crap-stack-piece {
 		top: 0;
 		left: 0;
 		will-change: transform;
@@ -309,7 +244,7 @@ const stickers = [
 		pointer-events: none;
 	}
 
-	:global(.crap-stack-piece.is-merged) {
+	.crap-stack-piece.is-merged {
 		animation: token-arrive 270ms cubic-bezier(0.12, 1.25, 0.3, 1);
 	}
 
@@ -322,7 +257,7 @@ const stickers = [
 		gap: 0.25rem;
 		width: max-content;
 		max-width: 80%;
-		color: rgb(var(--crap-stack-paper-ink) / 0.75);
+		color: rgb(var(--crap-stack-paper-ink-rgb) / 0.75);
 		text-align: center;
 		transform: translate(-50%, -50%);
 		transition: opacity 180ms ease, transform 180ms ease;
@@ -367,11 +302,11 @@ const stickers = [
 		position: absolute;
 		z-index: 11;
 		padding: 0.15rem 0.3rem;
-		border: 1px solid #10273c;
+		border: 1px solid rgb(var(--crap-stack-ink-rgb));
 		border-radius: 999px;
 		background: var(--app-brand);
-		box-shadow: 1px 2px 0 #10273c;
-		color: #10273c;
+		box-shadow: 1px 2px 0 rgb(var(--crap-stack-ink-rgb));
+		color: rgb(var(--crap-stack-ink-rgb));
 		font-size: clamp(0.55rem, 2vw, 0.72rem);
 		font-weight: 900;
 		pointer-events: none;
@@ -389,7 +324,7 @@ const stickers = [
 		background: color-mix(in srgb, var(--crap-stack-paper) 90%, transparent);
 		backdrop-filter: blur(7px);
 		-webkit-backdrop-filter: blur(7px);
-		color: rgb(var(--crap-stack-paper-ink));
+		color: rgb(var(--crap-stack-paper-ink-rgb));
 		text-align: center;
 	}
 
@@ -400,20 +335,6 @@ const stickers = [
 		flex: 0 0 auto;
 		width: 4rem;
 		height: 4rem;
-	}
-
-	:global(html[data-theme]:not([data-theme='light'])) .crap-stack-stage {
-		--crap-stack-paper: var(--app-panel);
-		--crap-stack-paper-ink: var(--app-fg-rgb);
-		--crap-stack-combo-ink: var(--app-brand);
-	}
-
-	@media (prefers-color-scheme: dark) {
-		:global(html:not([data-theme])) .crap-stack-stage {
-			--crap-stack-paper: var(--app-panel);
-			--crap-stack-paper-ink: var(--app-fg-rgb);
-			--crap-stack-combo-ink: var(--app-brand);
-		}
 	}
 
 	.crap-stack-touch-copy,
@@ -485,7 +406,7 @@ const stickers = [
 		.crap-stack-stage.is-impacting,
 		.crap-stack-cabinet.is-nudging,
 		.crap-stack-scores strong.is-bumping,
-		:global(.crap-stack-piece.is-merged),
+		.crap-stack-piece.is-merged,
 		:global(.crap-stack-points),
 		:global(.crap-stack-burst),
 		.crap-stack-combo.is-showing {

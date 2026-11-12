@@ -6,7 +6,7 @@ import {
 	inkFrameTime,
 	smoothstep,
 } from '../motion';
-import { hash } from '../noise';
+import { hash } from '../../noise';
 import type { BlonkyEmotePose, BlonkyGaze } from '../types';
 import type { Pt } from './points';
 

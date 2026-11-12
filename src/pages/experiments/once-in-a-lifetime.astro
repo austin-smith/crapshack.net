@@ -1,0 +1,27 @@
+---
+import OnceInALifetime from '../../components/OnceInALifetime.astro';
+import OnceInALifetimeBoard from '../../components/OnceInALifetimeBoard.astro';
+import Layout from '../../layouts/Layout.astro';
+import { VIEW } from '../../lib/once-in-a-lifetime';
+---
+
+<Layout title="crapshack (once in a lifetime)" noIndex fullBleed>
+	<OnceInALifetimeBoard class="card" style={`--shape: ${VIEW.width / VIEW.height}`}>
+		<OnceInALifetime />
+	</OnceInALifetimeBoard>
+</Layout>
+
+<style>
+	.card {
+		/* As wide as still lets him stand in the window from head to shoes. */
+		width: min(100% - 1.5rem, 48rem, max(14rem, (100svh - 7.5rem) * var(--shape)));
+		margin: 3.5rem auto 1rem;
+		padding: 1rem 0;
+		border-radius: 1rem;
+	}
+
+	/* Keep weather off the board. */
+	:global(.weather-container) {
+		display: none;
+	}
+</style>
