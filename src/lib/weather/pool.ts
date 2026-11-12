@@ -7,7 +7,6 @@
  */
 
 import { inSight, watchSight } from './canvas';
-import { watchWeatherOccluders, weatherOccluders } from './surfaces';
 
 export type PoolKind = 'rain' | 'snow';
 
@@ -21,8 +20,6 @@ export interface PoolOptions {
 	fillSeconds?: number;
 	/** sessionStorage key to keep the pool from page to page. */
 	persist?: string;
-	/** Sits behind the page's weather occluders (see ./surfaces). */
-	behind?: boolean;
 }
 
 export interface Pool {
@@ -111,7 +108,7 @@ function readSaved(key: string | undefined, kind: PoolKind): number[] | undefine
 }
 
 export function createPool(container: HTMLElement, options: PoolOptions): Pool | undefined {
-	const { kind, scale = 1, rate, fillSeconds = FILL_SECONDS[kind], persist, behind = false } = options;
+	const { kind, scale = 1, rate, fillSeconds = FILL_SECONDS[kind], persist } = options;
 	const canvas = document.createElement('canvas');
 	canvas.className = 'weather-pool';
 	canvas.setAttribute('aria-hidden', 'true');
@@ -224,35 +221,6 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 		for (const splash of splashes) context.fillRect(splash.x - size / 2, splash.y - size / 2, size, size);
 	};
 
-	/** Hides the pool behind whatever stands in front of it. */
-	const occlude = (): void => {
-		if (!behind || weatherOccluders().size === 0) return;
-		const pool = canvas.getBoundingClientRect();
-		context.globalCompositeOperation = 'destination-out';
-		for (const occluder of weatherOccluders()) {
-			const figure = occluder();
-			const rect = figure?.getBoundingClientRect();
-			if (!figure || !rect || rect.height === 0 || figure.height === 0) continue;
-			// Only the part of it over the pool.
-			const top = Math.max(rect.top, pool.top);
-			const bottom = Math.min(rect.bottom, pool.bottom);
-			if (bottom <= top) continue;
-			const pixels = figure.height / rect.height;
-			context.drawImage(
-				figure,
-				0,
-				(top - rect.top) * pixels,
-				figure.width,
-				(bottom - top) * pixels,
-				rect.left - pool.left,
-				top - pool.top,
-				rect.width,
-				bottom - top,
-			);
-		}
-		context.globalCompositeOperation = 'source-over';
-	};
-
 	const draw = (): void => {
 		context.setTransform(ratio, 0, 0, ratio, 0, 0);
 		context.clearRect(0, 0, width, height);
@@ -260,7 +228,6 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 		if (width === 0) return;
 		if (kind === 'snow') drawSnow();
 		else drawRain();
-		occlude();
 	};
 
 	const resize = (): void => {
@@ -427,7 +394,6 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 	};
 
 	const stopWatching = watchSight(canvas, update);
-	const stopWatchingOccluders = behind ? watchWeatherOccluders(schedule) : undefined;
 	addEventListener('pagehide', save);
 
 	return {
@@ -453,7 +419,6 @@ export function createPool(container: HTMLElement, options: PoolOptions): Pool |
 		},
 		destroy: () => {
 			stopWatching();
-			stopWatchingOccluders?.();
 			removeEventListener('pagehide', save);
 			cancelAnimationFrame(frame);
 			canvas.remove();

@@ -471,7 +471,7 @@ export function initRainyDay(container: HTMLElement, options: WeatherOptions = {
 		},
 	});
 	// Each drop lands in the puddle as its fall ends: 2.75s, on average.
-	const startPool = () => (weather ? createPool(ground, { kind: 'rain', scale, rate: count / (2.75 * speed), fillSeconds, persist, behind: settle }) : undefined);
+	const startPool = () => (weather ? createPool(ground, { kind: 'rain', scale, rate: count / (2.75 * speed), fillSeconds, persist }) : undefined);
 	let pool = accumulating ? startPool() : undefined;
 
 	return {

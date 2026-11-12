@@ -1,5 +1,4 @@
 import {
-	addWeatherOccluder,
 	addWeatherSurface,
 	IDENTITY,
 	multiply,
@@ -81,13 +80,11 @@ export function addBlonkyWeatherSurfaces(root: HTMLElement): () => void {
 	themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
 	const canvas = (): HTMLCanvasElement | null => root.querySelector<HTMLCanvasElement>('[data-blonky-canvas]');
-	const occluder = addWeatherOccluder(canvas);
 	let removeHead: (() => void) | undefined;
 	let removeBody: (() => void) | undefined;
 	const update = (event: Event): void => {
 		if (!(event instanceof CustomEvent)) return;
 		const { time, emote, gaze, rate, view } = event.detail as BlonkyFrame & { time: number };
-		occluder.drawn();
 		const rect = canvas()?.getBoundingClientRect();
 		if (!rect || rect.width === 0) return;
 
@@ -151,7 +148,6 @@ export function addBlonkyWeatherSurfaces(root: HTMLElement): () => void {
 	return () => {
 		root.removeEventListener(BLONKY_FRAME_EVENT, update);
 		themeObserver.disconnect();
-		occluder.remove();
 		removeHead?.();
 		removeBody?.();
 	};

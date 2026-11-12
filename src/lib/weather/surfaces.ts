@@ -106,12 +106,6 @@ export function polygonTop(points: readonly { x: number; y: number }[], x: numbe
 }
 
 const surfaces = new Set<WeatherSurface>();
-const occluders = new Set<() => HTMLCanvasElement | null>();
-const occluderWatchers = new Set<() => void>();
-
-const occludersChanged = (): void => {
-	for (const watcher of occluderWatchers) watcher();
-};
 
 /** Lets the weather land on `surface`, until the returned function is called. */
 export function addWeatherSurface(surface: WeatherSurface): () => void {
@@ -123,34 +117,4 @@ export function addWeatherSurface(surface: WeatherSurface): () => void {
 
 export function weatherSurfaces(): ReadonlySet<WeatherSurface> {
 	return surfaces;
-}
-
-/**
- * Puts what's drawn on a canvas in front of what pools along the bottom
- * (see ./pool): the pool is hidden wherever the canvas isn't clear. Pass the
- * canvas as a function, for one that's replaced as it goes. Call `drawn`
- * whenever it's drawn again, and `remove` once it's gone.
- */
-export function addWeatherOccluder(canvas: () => HTMLCanvasElement | null): { drawn: () => void; remove: () => void } {
-	occluders.add(canvas);
-	occludersChanged();
-	return {
-		drawn: occludersChanged,
-		remove: () => {
-			occluders.delete(canvas);
-			occludersChanged();
-		},
-	};
-}
-
-export function weatherOccluders(): ReadonlySet<() => HTMLCanvasElement | null> {
-	return occluders;
-}
-
-/** Calls `watcher` whenever an occluder comes, goes, or is drawn again, until the returned function is called. */
-export function watchWeatherOccluders(watcher: () => void): () => void {
-	occluderWatchers.add(watcher);
-	return () => {
-		occluderWatchers.delete(watcher);
-	};
 }

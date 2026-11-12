@@ -1,3 +1,10 @@
+/* Where what's pooled along the bottom stacks: in front of the page, but
+   behind what's put in front of it (tooltips, menus, the sidebar, dialogs).
+   Whatever should stand in front of it, as Blonky does, stacks above this. */
+:root {
+	--weather-ground-layer: 5;
+}
+
 @layer utilities {
 	/* Weather container */
 	.weather-container {
@@ -11,10 +18,9 @@
 		overflow: hidden;
 	}
 
-	/* What's pooled along the bottom: in front of the page, but behind
-	   what's put in front of it (tooltips, menus, the sidebar, dialogs). */
+	/* What's pooled along the bottom. */
 	.weather-ground {
-		z-index: 5;
+		z-index: var(--weather-ground-layer);
 	}
 
 	/* Rain and snow, drawn as they fall and settle */

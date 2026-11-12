@@ -583,7 +583,7 @@ export function initSnowyDay(container: HTMLElement, options: WeatherOptions = {
 		},
 	});
 	// Each flake lands in the drift as its fall ends: 9s, on average.
-	const startPool = () => (weather ? createPool(ground, { kind: 'snow', scale, rate: count / (9 * speed), fillSeconds, persist, behind: settle }) : undefined);
+	const startPool = () => (weather ? createPool(ground, { kind: 'snow', scale, rate: count / (9 * speed), fillSeconds, persist }) : undefined);
 	let pool = accumulating ? startPool() : undefined;
 
 	return {
