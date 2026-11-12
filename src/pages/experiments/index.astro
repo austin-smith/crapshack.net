@@ -114,6 +114,13 @@ import '../../components/once-in-a-lifetime-palette.css';
 		transition: opacity var(--fade);
 	}
 
+	/* The site's underline is as thick as suits small text. At this size it is
+	   drawn finer, and close under the name. */
+	.experiments .squiggle-underline {
+		--underline-thickness: 0.17em;
+		--underline-offset: 0.03em;
+	}
+
 	/* After a name, to say that it goes somewhere. Out of the flow, with no
 	   place given, so it stays where the name's last word ends, without
 	   widening the name or its underline. */
@@ -152,13 +159,14 @@ import '../../components/once-in-a-lifetime-palette.css';
 		height: min(190svh, 130vw);
 	}
 
+	/* Big enough that the window holds him only from the chest up: he stands
+	   below its floor, and a little past its right edge. */
 	[data-experiment='blonky'] .world__figure {
 		position: absolute;
 		right: -12%;
 		bottom: 0;
-		width: min(70vw, 105svh);
-		/* His drawing stops short of its own foot; sink that below the window's. */
-		translate: 0 14%;
+		width: min(78vw, 118svh);
+		translate: 0 22%;
 	}
 
 	/* Crap stack's line runs between the title and the first name. */
@@ -207,7 +215,7 @@ import '../../components/once-in-a-lifetime-palette.css';
 		   name below it. It is the names' own padding, so the pointer is never
 		   between two of them. */
 		.experiments a {
-			padding-block: 0.26em;
+			padding-block: 0.14em;
 		}
 
 		.experiments li:not([data-selected]) a {
@@ -337,10 +345,10 @@ import '../../components/once-in-a-lifetime-palette.css';
 			height: calc(var(--band) * 2.83);
 		}
 
-		/* He is 1.31 bands wide, so a band holds his head and shoulders, with a
+		/* He is 1.6 bands wide, so a band holds him from the chest up, with a
 		   fifth of him past its right edge. */
 		[data-experiment='blonky'] .world__figure {
-			--width: calc(var(--band) * 1.31);
+			--width: calc(var(--band) * 1.6);
 			right: calc(var(--width) * -0.21);
 			width: var(--width);
 		}
