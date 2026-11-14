@@ -141,5 +141,19 @@
         }
       ]
     }
+  ],
+  "icons": [
+    {
+      "id": "playstation-2",
+      "name": "PlayStation 2",
+      "description": "A detailed PlayStation 2.",
+      "credits": [
+        {
+          "text": "PlayStation logos by",
+          "name": "Sony Interactive Entertainment",
+          "url": "https://www.playstation.com/"
+        }
+      ]
+    }
   ]
 }

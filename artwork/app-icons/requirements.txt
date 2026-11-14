@@ -3,3 +3,4 @@
 Pillow==13.0.0
 numpy==2.5.4
 opencv-python-headless==5.0.0.93
+shapely==2.2.0  # only for playstation-2/render/render.py

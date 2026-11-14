@@ -16,7 +16,9 @@ const fileSize = (path: string) => {
 	const bytes = statSync(resolve('public', path.slice(1))).size;
 	return bytes < 1e6 ? `${Math.round(bytes / 1e3)} KB` : `${(bytes / 1e6).toFixed(1)} MB`;
 };
-const iconLabel = ({ app, icon }: IconEntry) => `${app.name} ${icon.name} icon`;
+// A standalone icon goes by its own name; a collection's icon by its app's and its own
+const fullName = ({ app, icon }: Pick<IconEntry, 'app' | 'icon'>) => (app ? `${app.name} ${icon.name}` : icon.name);
+const iconLabel = (entry: Pick<IconEntry, 'app' | 'icon'>) => `${fullName(entry)} icon`;
 const isExternal = (url: string) => /^https?:\/\//.test(url);
 
 // Each collection's one-colour logo, named by its id and drawn in the text colour. Each
@@ -29,7 +31,7 @@ const logoFor = (id: string) => {
 	return logo;
 };
 
-const entries = iconEntries.map((entry) => ({ ...entry, size: fileSize(entry.icon.download), Logo: logoFor(entry.app.id) }));
+const entries = iconEntries.map((entry) => ({ ...entry, size: fileSize(entry.icon.download), Logo: entry.app && logoFor(entry.app.id) }));
 const first = entries[0];
 const actualSizes = [16, 32, 64, 128] as const;
 // On screen at first paint on every viewport from 360 × 640 up; later cards load lazily
@@ -57,7 +59,7 @@ const plates = [
 							aria-haspopup="dialog"
 							aria-controls={dialogId}
 						>
-							<span class="sr-only">Inspect {app.name} {icon.name}</span>
+							<span class="sr-only">Inspect {fullName({ app, icon })}</span>
 							<img src={previewSrc(icon, 128)} alt="" aria-hidden="true" loading={index < eagerCards ? 'eager' : 'lazy'} class="pointer-events-none absolute inset-0 size-full scale-125 object-cover opacity-55 blur-2xl saturate-150" decoding="async" />
 							<img
 								src={previewSrc(icon, 256)}
@@ -76,14 +78,16 @@ const plates = [
 							<div class="space-y-1">
 								<div class="flex items-baseline justify-between gap-3">
 									<h2 class="font-mono text-lg font-semibold text-[var(--color-text)]">{icon.name}</h2>
-									<span class="shrink-0 font-mono text-xs text-dim">
-										<Logo aria-hidden="true" class="mr-1.5 inline size-4 align-[-0.28em]" />{app.name}
-									</span>
+									{app && Logo && (
+										<span class="shrink-0 font-mono text-xs text-dim">
+											<Logo aria-hidden="true" class="mr-1.5 inline size-4 align-[-0.28em]" />{app.name}
+										</span>
+									)}
 								</div>
 								<p class="text-sm text-muted">{icon.description}</p>
 							</div>
 							<a href={icon.download} download={icon.fileName} class={`${buttonVariants({ variant: 'secondary', size: 'sm' })} self-start`}>
-								<ArrowDownToLine aria-hidden="true" /> <span><span class="sr-only">Download {app.name} {icon.name} </span>.icns</span>
+								<ArrowDownToLine aria-hidden="true" /> <span><span class="sr-only">Download {fullName({ app, icon })} </span>.icns</span>
 							</a>
 						</div>
 					</article>
@@ -106,7 +110,7 @@ const plates = [
 			</div>
 
 			{/* All hidden until opened: a closed dialog still has layout, so a shown panel's lazy images would load */}
-			{entries.map(({ app, icon, size, Logo }) => (
+			{entries.map(({ app, icon, credits, size, Logo }) => (
 				<section data-icon-panel={icon.key} data-label={iconLabel({ app, icon })} data-name={icon.name} hidden aria-labelledby={`${icon.key}-inspect-title`} class="text-[var(--color-text)]">
 					<div class="grid gap-6 md:grid-cols-[20rem_minmax(0,1fr)] md:items-center">
 						<div class="relative grid aspect-square place-items-center overflow-hidden rounded-xl bg-sunken p-[8%]">
@@ -125,8 +129,8 @@ const plates = [
 						</div>
 						<div class="flex flex-col gap-4">
 							<div class="flex flex-col items-start">
-								{/* Our own app pages open in place; other sites open in a new tab */}
-								{isExternal(app.url) ? (
+								{/* Our own app pages open in place; other sites open in a new tab. A standalone icon has no app. */}
+								{app && Logo && (isExternal(app.url) ? (
 									<a href={app.url} target="_blank" rel="noopener noreferrer" class={`${buttonVariants({ variant: 'outline', size: 'sm' })} mb-3`}>
 										<Logo aria-hidden="true" /> {app.name} <ArrowUpRight aria-hidden="true" />
 									</a>
@@ -134,7 +138,7 @@ const plates = [
 									<a href={app.url} class={`${buttonVariants({ variant: 'outline', size: 'sm' })} mb-3`}>
 										<Logo aria-hidden="true" /> {app.name}
 									</a>
-								)}
+								))}
 								<h2 id={`${icon.key}-inspect-title`} class="font-mono text-2xl font-semibold">{icon.name}</h2>
 								<p class="mt-2 text-muted">{icon.description}</p>
 							</div>
@@ -144,9 +148,9 @@ const plates = [
 								</a>
 								<span class="font-mono text-xs text-dim">{size} · 16–1024 px</span>
 							</div>
-							{app.credits && (
+							{credits && (
 								<p class="border-t border-line pt-3 text-xs text-dim">
-									{app.credits.map((credit) => (
+									{credits.map((credit) => (
 										<>
 											{credit.text}{' '}
 											<a href={credit.url} target="_blank" rel="noopener noreferrer" class="underline decoration-[var(--color-brand)] underline-offset-4 hover:text-[var(--color-brand)]">{credit.name}</a>.{' '}
