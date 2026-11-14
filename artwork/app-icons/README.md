@@ -22,11 +22,8 @@ graphics app.
 
 ## Change an icon
 
-The scripts need Python 3.12 or newer, the packages pinned in
-`requirements.txt`, and VectorCraft CLI 0.16.0. Other versions can encode the
-same pixels into different bytes. Set up an environment outside the repo once,
-checking that `python3 --version` reports 3.12 or newer (macOS's built-in one is
-3.9):
+The scripts need Python, VectorCraft CLI, and the packages in
+`requirements.txt`:
 
 ```sh
 python3 -m venv ~/.venvs/app-icons
