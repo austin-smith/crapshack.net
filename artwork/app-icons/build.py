@@ -44,14 +44,32 @@ def slug(value: str) -> str:
     return value
 
 
-def variant_source(app: dict, icon: dict) -> Path:
-    return ROOT / slug(app["id"]) / slug(icon["id"])
+def entries() -> list[tuple[dict | None, dict]]:
+    """Every icon with its collection: each collection's variants, then the standalone icons, which have none."""
+    return ([(app, icon) for app in CATALOG["collections"] for icon in app["variants"]]
+            + [(None, icon) for icon in CATALOG.get("icons", [])])
 
 
-def published(public: Path, app: dict, icon: dict) -> tuple[Path, Path]:
-    """A variant's preview directory and .icns file; src/data/app-icons.ts derives the same URLs."""
-    collection = public / slug(CATALOG["publicDir"]) / slug(app["id"])
-    return collection / slug(icon["id"]), collection / f"{icon['id']}.icns"
+def key(app: dict | None, icon: dict) -> str:
+    """An icon's page key and download name: <collection>-<variant>, or a standalone icon's own id."""
+    return f"{app['id']}-{icon['id']}" if app else icon["id"]
+
+
+def name(app: dict | None, icon: dict, separator: str) -> str:
+    return f"{app['name']}{separator}{icon['name']}" if app else icon["name"]
+
+
+def icon_source(app: dict | None, icon: dict) -> Path:
+    """<collection>/<variant>/, or a standalone icon's own <icon>/."""
+    return (ROOT / slug(app["id"]) if app else ROOT) / slug(icon["id"])
+
+
+def published(public: Path, app: dict | None, icon: dict) -> tuple[Path, Path]:
+    """An icon's preview directory and .icns file; src/data/app-icons.ts derives the same URLs."""
+    folder = public / slug(CATALOG["publicDir"])
+    if app:
+        folder /= slug(app["id"])
+    return folder / slug(icon["id"]), folder / f"{icon['id']}.icns"
 
 
 def chunk(tag: bytes, payload: bytes) -> bytes:
@@ -62,7 +80,7 @@ def encode_icns(previews: dict[int, Image.Image]) -> bytes:
     """Use straight RGB RLE + masks at small sizes, PNG for the other slots.
 
     This avoids the alpha conversion observed in iconutil's ic04/ic05 output.
-    All ten slots are independently decoded and compared by verify_variant().
+    All ten slots are independently decoded and compared by verify_icon().
     """
     parts = []
     for point, _, scale in REPRESENTATIONS:
@@ -92,8 +110,8 @@ def source_file(relative: str) -> Path:
     return path
 
 
-def optical_sources(app: dict, icon: dict) -> dict[int, Path]:
-    source = variant_source(app, icon)
+def optical_sources(app: dict | None, icon: dict) -> dict[int, Path]:
+    source = icon_source(app, icon)
     sources = {}
     for size, relative in icon.get("opticalSources", {}).items():
         pixels = int(size)
@@ -120,10 +138,10 @@ def validate_svg(path: Path, title: str, description: str | None) -> None:
                 require(target.startswith("#"), f"{path}: external SVG dependency url({target})")
 
 
-def validate_sources(app: dict, icon: dict) -> None:
+def validate_sources(app: dict | None, icon: dict) -> None:
     """Title every SVG from the catalog; small-size sources add the sizes they cover and describe themselves."""
-    title = f"{app['name']} — {icon['name']}"
-    validate_svg(variant_source(app, icon) / "icon.svg", title, icon["description"])
+    title = name(app, icon, " — ")
+    validate_svg(icon_source(app, icon) / "icon.svg", title, icon["description"])
     optical = optical_sources(app, icon)
     for svg in set(optical.values()):
         sizes = sorted(size for size, path in optical.items() if path == svg)
@@ -137,16 +155,16 @@ def read_render(path: Path) -> Image.Image:
         return image.convert("RGBA")
 
 
-def housing(app: dict) -> tuple[Image.Image, Image.Image] | None:
-    profile = app.get("housing")
+def housing(app: dict | None) -> tuple[Image.Image, Image.Image] | None:
+    profile = app.get("housing") if app else None
     if profile is None:
         return None
     return (read_render(source_file(profile["reference"])),
             Image.open(source_file(profile["screenMask"])).convert("1"))
 
 
-def verify_variant(app: dict, icon: dict, public: Path = PUBLIC, rendered_sources: dict[Path, Path] | None = None) -> None:
-    label = f"{app['name']} / {icon['name']}"
+def verify_icon(app: dict | None, icon: dict, public: Path = PUBLIC, rendered_sources: dict[Path, Path] | None = None) -> None:
+    label = name(app, icon, " / ")
     validate_sources(app, icon)
     optical = optical_sources(app, icon)
     base, icns = published(public, app, icon)
@@ -178,20 +196,22 @@ def verify_variant(app: dict, icon: dict, public: Path = PUBLIC, rendered_source
 
 
 def verify_all(public: Path = PUBLIC, rendered_sources: dict[Path, Path] | None = None) -> None:
-    """Verify every variant, and that the published folder holds nothing else (hidden files aside)."""
-    keys = [f"{app['id']}-{icon['id']}" for app in CATALOG["collections"] for icon in app["variants"]]
-    repeated = sorted({key for key in keys if keys.count(key) > 1})
-    require(not repeated, f"Variants share an id or a page key (collection-variant): {', '.join(repeated)}")
+    """Verify every icon, and that the published folder holds nothing else (hidden files aside)."""
+    keys = [key(app, icon) for app, icon in entries()]
+    repeated = sorted({k for k in keys if keys.count(k) > 1})
+    require(not repeated, f"Icons share an id or a page key (collection-variant): {', '.join(repeated)}")
+    # A standalone icon's folders sit beside the collections', so it can't take a collection's id
+    clashing = sorted({icon["id"] for icon in CATALOG.get("icons", [])} & {app["id"] for app in CATALOG["collections"]})
+    require(not clashing, f"Standalone icons share a collection's id: {', '.join(clashing)}")
     expected = set()
-    for app in CATALOG["collections"]:
-        for icon in app["variants"]:
-            verify_variant(app, icon, public, rendered_sources)
-            previews, icns = published(public, app, icon)
-            expected |= {previews / f"icon-{size}.png" for size in SIZES} | {icns}
+    for app, icon in entries():
+        verify_icon(app, icon, public, rendered_sources)
+        previews, icns = published(public, app, icon)
+        expected |= {previews / f"icon-{size}.png" for size in SIZES} | {icns}
     folder = public / CATALOG["publicDir"]
     actual = {path for path in folder.rglob("*") if path.is_file() and not path.name.startswith(".")}
     extra = sorted(str(path.relative_to(folder)) for path in actual - expected)
-    require(not extra, f"{folder}: files no variant publishes (run --rebuild to remove them): {', '.join(extra)}")
+    require(not extra, f"{folder}: files no icon publishes (run --rebuild to remove them): {', '.join(extra)}")
 
 
 def publish(staged: Path) -> None:
@@ -211,34 +231,33 @@ def rebuild(vectorcraft: str) -> None:
     executable = shutil.which(vectorcraft)
     if not executable:
         raise SystemExit("vectorcraft-cli not found. Install it separately or pass --vectorcraft /path/to/vectorcraft-cli.")
-    # Stage the whole collection and verify it before replacing published files.
+    # Stage every icon and verify the set before replacing published files.
     with tempfile.TemporaryDirectory(prefix="app-icons-") as folder:
         stage = Path(folder)
         rendered_sources = {}
-        for app in CATALOG["collections"]:
-            for icon in app["variants"]:
-                rendered = stage / f"{app['id']}-{icon['id']}.png"
-                validate_sources(app, icon)
-                svg = variant_source(app, icon) / "icon.svg"
-                subprocess.run([executable, "convert", str(svg), str(rendered)], check=True, capture_output=True)
-                master = read_render(rendered)
-                profile = housing(app)
-                if profile is not None:
-                    master = Image.composite(master, *profile)
-                optical = optical_sources(app, icon)
-                renders = {}
-                for index, svg in enumerate(sorted(set(optical.values()))):
-                    raster = stage / f"{app['id']}-{icon['id']}-optical-{index}.png"
-                    subprocess.run([executable, "convert", str(svg), str(raster)], check=True, capture_output=True)
-                    renders[svg] = read_render(raster)
-                    rendered_sources[svg] = raster
-                preview, icns = published(stage, app, icon)
-                preview.mkdir(parents=True, exist_ok=True)
-                previews = {}
-                for size in SIZES:
-                    previews[size] = renders.get(optical.get(size), master).resize((size, size), Image.Resampling.LANCZOS)
-                    previews[size].save(preview / f"icon-{size}.png", optimize=True)
-                icns.write_bytes(encode_icns(previews))
+        for app, icon in entries():
+            rendered = stage / f"{key(app, icon)}.png"
+            validate_sources(app, icon)
+            svg = icon_source(app, icon) / "icon.svg"
+            subprocess.run([executable, "convert", str(svg), str(rendered)], check=True, capture_output=True)
+            master = read_render(rendered)
+            profile = housing(app)
+            if profile is not None:
+                master = Image.composite(master, *profile)
+            optical = optical_sources(app, icon)
+            renders = {}
+            for index, svg in enumerate(sorted(set(optical.values()))):
+                raster = stage / f"{key(app, icon)}-optical-{index}.png"
+                subprocess.run([executable, "convert", str(svg), str(raster)], check=True, capture_output=True)
+                renders[svg] = read_render(raster)
+                rendered_sources[svg] = raster
+            preview, icns = published(stage, app, icon)
+            preview.mkdir(parents=True, exist_ok=True)
+            previews = {}
+            for size in SIZES:
+                previews[size] = renders.get(optical.get(size), master).resize((size, size), Image.Resampling.LANCZOS)
+                previews[size].save(preview / f"icon-{size}.png", optimize=True)
+            icns.write_bytes(encode_icns(previews))
         verify_all(stage, rendered_sources)
         publish(stage / CATALOG["publicDir"])
         for svg, raster in rendered_sources.items():
