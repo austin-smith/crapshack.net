@@ -64,6 +64,17 @@ its `Studio/Resources` folder:
 To see an icon's layers, open its `icon.svg` in VectorCraft or PhotoCraft. Make
 changes in `generate.py`, which overwrites the SVG.
 
+PlayStation 2's console is a Blender render,
+`references/playstation-2-render.png`, which its `generate.py` reads.
+`playstation-2/render/` holds the model and the script that renders it from the
+official logos in `references/`. It also needs Blender 5.3 and macOS's
+Helvetica. Every render's noise differs, so re-render only to change the
+console:
+
+```sh
+~/.venvs/app-icons/bin/python artwork/app-icons/playstation-2/render/render.py
+```
+
 ## Verify
 
 `build.py` without `--rebuild` checks every preview size and all ten ICNS
