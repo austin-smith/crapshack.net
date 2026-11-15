@@ -1,7 +1,7 @@
 ---
 import { statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { ArrowDownToLine, ArrowUpRight, ChevronLeft, ChevronRight, Maximize2 } from '@lucide/astro';
+import { ArrowDownToLine, ArrowUpRight, ChevronLeft, ChevronRight } from '@lucide/astro';
 import Layout from '../layouts/Layout.astro';
 import Button from '../components/ui/Button.astro';
 import ButtonGroup from '../components/ui/ButtonGroup.astro';
@@ -22,8 +22,9 @@ const iconLabel = (entry: Pick<IconEntry, 'app' | 'icon'>) => `${fullName(entry)
 const isExternal = (url: string) => /^https?:\/\//.test(url);
 
 // Each collection's one-colour logo, named by its id and drawn in the text colour. Each
-// viewBox is a square the art covers 22/35 of (so the widest, the BitDream cloud, just fits
-// across), so every logo looks the same size at the same square size.
+// viewBox is a square centred on the art, sized so the art's bounding box covers 22/35 of
+// its area (so the widest, the BitDream cloud, just fits across), so wide, tall, and square
+// logos all look the same size at the same square size.
 const logos = import.meta.glob<SvgComponent>('../assets/app-logos/*.svg', { eager: true, import: 'default' });
 const logoFor = (id: string) => {
 	const logo = logos[`../assets/app-logos/${id}.svg`];
@@ -35,7 +36,7 @@ const entries = iconEntries.map((entry) => ({ ...entry, size: fileSize(entry.ico
 const first = entries[0];
 const actualSizes = [16, 32, 64, 128] as const;
 // On screen at first paint on every viewport from 360 × 640 up; later cards load lazily
-const eagerCards = 3;
+const eagerCards = 6;
 const plates = [
 	{ id: 'light', label: 'light' },
 	{ id: 'dark', label: 'dark' },
@@ -43,18 +44,18 @@ const plates = [
 ---
 
 <Layout title="crapshack (icons)">
-	<section class="mx-auto mt-10 max-w-5xl space-y-10" data-icon-gallery data-dialog-id={dialogId}>
+	<section class="mx-auto mt-10 max-w-[85rem] space-y-10" data-icon-gallery data-dialog-id={dialogId}>
 		<header>
 			<h1 class="font-mono text-3xl font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">icons</h1>
 		</header>
 
-		<ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+		<ul class="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(15rem,1fr))]" role="list">
 			{entries.map(({ app, icon, Logo }, index) => (
 				<li>
-					<article id={icon.key} class="flex h-full scroll-mt-8 overflow-hidden rounded-lg border border-line bg-raised shadow-lg max-sm:flex-row sm:flex-col">
+					<article id={icon.key} class="relative flex h-full scroll-mt-8 flex-col overflow-hidden rounded-lg border border-line bg-raised shadow-lg">
 						<button
 							type="button"
-							class="group relative grid shrink-0 place-items-center overflow-hidden border-line bg-sunken p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-brand)] max-sm:border-r sm:aspect-[4/3] sm:border-b"
+							class="group relative grid aspect-square w-full shrink-0 place-items-center overflow-hidden border-b border-line bg-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-brand)]"
 							data-icon-inspect={icon.key}
 							aria-haspopup="dialog"
 							aria-controls={dialogId}
@@ -64,31 +65,26 @@ const plates = [
 							<img
 								src={previewSrc(icon, 256)}
 								srcset={responsivePreviewSet(icon)}
-								sizes="(min-width: 640px) 176px, 88px"
+								sizes="(min-width: 640px) 12rem, 33vw"
 								width="176"
 								height="176"
 								alt=""
-								class="relative size-[88px] drop-shadow-2xl transition-transform duration-200 ease-out group-hover:scale-[1.05] motion-reduce:transition-none sm:size-44"
+								class="relative size-[66%] drop-shadow-2xl transition-transform duration-200 ease-out group-hover:scale-[1.05] motion-reduce:transition-none"
 								loading={index < eagerCards ? 'eager' : 'lazy'}
 								decoding="async"
 							/>
-							<Maximize2 aria-hidden="true" class="absolute top-2 right-2 size-3.5 text-[var(--color-text)] opacity-60 transition-opacity group-hover:opacity-100 sm:top-3 sm:right-3 sm:size-4" />
 						</button>
-						<div class="flex min-w-0 flex-1 flex-col justify-between gap-4 p-4">
-							<div class="space-y-1">
-								<div class="flex items-baseline justify-between gap-3">
-									<h2 class="font-mono text-lg font-semibold text-[var(--color-text)]">{icon.name}</h2>
-									{app && Logo && (
-										<span class="shrink-0 font-mono text-xs text-dim">
-											<Logo aria-hidden="true" class="mr-1.5 inline size-4 align-[-0.28em]" />{app.name}
-										</span>
-									)}
-								</div>
-								<p class="text-sm text-muted">{icon.description}</p>
-							</div>
-							<a href={icon.download} download={icon.fileName} class={`${buttonVariants({ variant: 'secondary', size: 'sm' })} self-start`}>
-								<ArrowDownToLine aria-hidden="true" /> <span><span class="sr-only">Download {fullName({ app, icon })} </span>.icns</span>
-							</a>
+						<a href={icon.download} download={icon.fileName} class={`${buttonVariants({ variant: 'secondary', size: 'icon-sm' })} absolute top-2 right-2`}>
+							<ArrowDownToLine aria-hidden="true" /><span class="sr-only">Download {fullName({ app, icon })} .icns</span>
+						</a>
+						<div class="flex min-w-0 flex-1 items-center justify-between gap-2 p-3 max-sm:px-2.5 sm:gap-3">
+							<h2 class="min-w-0 truncate font-mono text-[0.95rem] font-semibold text-[var(--color-text)] max-sm:text-[0.8125rem]">{icon.name}</h2>
+							{/* Two columns on a phone leave room for the app's logo beside the name, not its name */}
+							{app && Logo && (
+								<span class="flex shrink-0 items-center gap-1.5 font-mono text-xs whitespace-nowrap text-dim">
+									<Logo aria-hidden="true" class="size-4" /><span class="max-sm:sr-only">{app.name}</span>
+								</span>
+							)}
 						</div>
 					</article>
 				</li>
