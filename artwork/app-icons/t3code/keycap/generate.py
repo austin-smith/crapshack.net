@@ -1,20 +1,17 @@
 """Generate T3 Code Keycap's icon.svg.
 
 The legend is T3's wordmark path, read unchanged from T3 Code's production logo
-(references/t3code-logo.svg). The title and description come from catalog.json.
-Requires Pillow (for the grain texture). Run build.py --rebuild afterwards to
-refresh the published files.
+(references/t3code-logo.svg). Requires Pillow (for the grain texture). Run
+build.py --rebuild afterwards to refresh the published files.
 """
 from __future__ import annotations
 
 import argparse
 import base64
 from io import BytesIO
-import json
 from pathlib import Path
 import random
 import re
-from xml.sax.saxutils import escape
 
 from PIL import Image
 
@@ -31,13 +28,6 @@ LEGEND_SCALE = 4.9  # logo units to icon pixels; fills about 70% of the top's wi
 COLOURS = dict(skirt_top="#34343a", skirt_mid="#18181b", skirt_bottom="#080809",
                top_upper="#1e1e21", top_mid="#232327", top_lower="#2a2a2f", grain=0.07,
                legend_top="#ffffff", legend_bottom="#ececef")
-
-
-def catalog_entry() -> tuple[dict, dict]:
-    """This variant's collection and variant in catalog.json, whose IDs name its folders."""
-    catalog = json.loads((HERE.parents[1] / "catalog.json").read_text(encoding="utf-8"))
-    app = {a["id"]: a for a in catalog["collections"]}[HERE.parent.name]
-    return app, {v["id"]: v for v in app["variants"]}[HERE.name]
 
 
 def wordmark() -> str:
@@ -73,7 +63,7 @@ def noise_uri(size=512, seed=5, strength=26) -> str:
     return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
-def keycap(c: dict, title: str, desc: str) -> str:
+def keycap(c: dict) -> str:
     body = squircle(*BODY_BOX)
     top = squircle(*TOP_BOX, **TOP_CORNER)
     tx0, ty0, tx1, ty1 = TOP_BOX
@@ -115,9 +105,8 @@ def keycap(c: dict, title: str, desc: str) -> str:
         ("pbt-texture", f'<g clip-path="url(#body)" opacity="{c["grain"]}"><image x="100" y="100" width="824" height="824" preserveAspectRatio="none" href="{noise_uri()}"/></g>'),
         ("legend", f'<g transform="{word_t}"><path d="{wordmark()}" fill="url(#legend)"/></g>'),
     ]
-    groups = "".join(f'<g id="{i:02d}-{n}" inkscape:groupmode="layer" inkscape:label="{i:02d}-{n}">{b}</g>' for i, (n, b) in enumerate(layers, 1))
-    return ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-            f'width="1024" height="1024" viewBox="0 0 1024 1024"><title>{escape(title)}</title><desc>{escape(desc)}</desc>'
+    groups = "".join(f'<g id="{i:02d}-{n}">{b}</g>' for i, (n, b) in enumerate(layers, 1))
+    return ('<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">'
             f'<defs>{defs}</defs>{groups}</svg>')
 
 
@@ -125,9 +114,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path, default=HERE, help="output directory (default: this variant)")
     out = parser.parse_args().out
-    app, icon = catalog_entry()
     out.mkdir(parents=True, exist_ok=True)
-    (out / "icon.svg").write_text(keycap(COLOURS, f"{app['name']} — {icon['name']}", icon["description"]), encoding="utf-8")
+    (out / "icon.svg").write_text(keycap(COLOURS), encoding="utf-8")
 
 
 if __name__ == "__main__":

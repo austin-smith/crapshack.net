@@ -3,17 +3,15 @@
 The console is a Blender render (references/playstation-2-render.png) that
 render/render.py makes from the official logos in references/. This places it on
 the 1024px canvas, with a drop shadow fitted to a macOS system app icon cast from
-its silhouette. The title and description come from catalog.json. Requires
-Pillow. Run build.py --rebuild afterwards to refresh the published files.
+its silhouette. Requires Pillow. Run build.py --rebuild afterwards to refresh
+the published files.
 """
 from __future__ import annotations
 
 import argparse
 import base64
 from io import BytesIO
-import json
 from pathlib import Path
-from xml.sax.saxutils import escape
 
 from PIL import Image
 
@@ -23,12 +21,6 @@ RENDER = HERE.parent / "references" / "playstation-2-render.png"
 # Drop shadow fitted to a macOS system app icon.
 SHADOW = {"blur": 10.8, "dy": 4, "opacity": 0.37}
 SPAN = 880  # the console's longer side, in icon pixels
-
-
-def catalog_entry() -> dict:
-    """This icon in catalog.json, whose ID names its folder."""
-    catalog = json.loads((HERE.parent / "catalog.json").read_text(encoding="utf-8"))
-    return {icon["id"]: icon for icon in catalog["icons"]}[HERE.name]
 
 
 def data_uri(image: Image.Image) -> str:
@@ -48,7 +40,7 @@ def console() -> tuple[Image.Image, int, int]:
     return render, (1024 - render.width) // 2, (1024 - render.height) // 2
 
 
-def svg(title: str, desc: str) -> str:
+def svg() -> str:
     image, x, y = console()
     silhouette = Image.new("RGBA", image.size, (0, 0, 0, 255))
     silhouette.putalpha(image.getchannel("A"))
@@ -58,11 +50,10 @@ def svg(title: str, desc: str) -> str:
                    f'filter="url(#icon-shadow)" href="{data_uri(silhouette)}"/>'),
         ("console", f'<image x="{x}" y="{y}" width="{w}" height="{h}" href="{data_uri(image)}"/>'),
     ]
-    groups = "".join(f'<g id="{i:02d}-{name}" inkscape:groupmode="layer" inkscape:label="{i:02d}-{name}">{body}</g>'
+    groups = "".join(f'<g id="{i:02d}-{name}">{body}</g>'
                      for i, (name, body) in enumerate(layers, 1))
     defs = f'<filter id="icon-shadow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="{SHADOW["blur"]}"/></filter>'
-    return ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-            f'width="1024" height="1024" viewBox="0 0 1024 1024"><title>{escape(title)}</title><desc>{escape(desc)}</desc>'
+    return ('<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">'
             f'<defs>{defs}</defs>{groups}</svg>')
 
 
@@ -70,9 +61,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path, default=HERE, help="output directory (default: this icon)")
     out = parser.parse_args().out
-    icon = catalog_entry()
     out.mkdir(parents=True, exist_ok=True)
-    (out / "icon.svg").write_text(svg(icon["name"], icon["description"]), encoding="utf-8")
+    (out / "icon.svg").write_text(svg(), encoding="utf-8")
 
 
 if __name__ == "__main__":
