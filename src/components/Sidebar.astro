@@ -6,7 +6,7 @@ import { buttonVariants } from './ui/button';
 import { FlaskConical, LayoutGrid } from '@lucide/astro';
 import packageJson from '../../package.json';
 import { apps } from '../data/apps';
-import { iconEntries, previewSrc } from '../data/app-icons';
+import { iconEntries, previewSrc } from '../data/icons';
 
 const version = packageJson.version;
 const repoUrl = typeof packageJson.repository === 'string'
@@ -23,7 +23,7 @@ const appLinks = apps
 	.sort((a, b) => a.label.localeCompare(b.label));
 // Rextty stands in for the whole gallery, named so reordering the catalog can't change it
 const galleryIcon = iconEntries.find(({ icon }) => icon.key === 'rex-rextty')?.icon;
-if (!galleryIcon) throw new Error('No rex-rextty app icon for the sidebar: update the sidebar or the catalog');
+if (!galleryIcon) throw new Error('No rex-rextty icon for the sidebar: update the sidebar or the catalog');
 ---
 <div id="sidebar-overlay" class="fixed inset-0 z-[90] bg-scrim"></div>
 
@@ -72,10 +72,10 @@ if (!galleryIcon) throw new Error('No rex-rextty app icon for the sidebar: updat
 				<SettingsGear />
 			</Button>
 			<a
-				href="/app-icons"
-				aria-label="app icons"
-				data-tooltip="sidebar-app-icons-tooltip"
-				data-tooltip-body="app icons"
+				href="/icons"
+				aria-label="icons"
+				data-tooltip="sidebar-icons-tooltip"
+				data-tooltip-body="icons"
 				class:list={[buttonVariants({ variant: 'ghost', size: 'icon' }), 'group']}
 			>
 				{/* Grey and quiet like the gear until the pointer or focus reaches it. */}
@@ -114,7 +114,7 @@ if (!galleryIcon) throw new Error('No rex-rextty app icon for the sidebar: updat
 		The insets hand-centre them on their buttons — retune if a label grows.
 	*/}
 	<Tooltip id="sidebar-knobs-tooltip" class="left-1 sm:left-2 w-max max-w-[calc(100%-1rem)]" />
-	<Tooltip id="sidebar-app-icons-tooltip" class="left-8 sm:left-9 w-max max-w-[calc(100%-1rem)]" />
+	<Tooltip id="sidebar-icons-tooltip" class="left-8 sm:left-9 w-max max-w-[calc(100%-1rem)]" />
 	<Tooltip id="sidebar-experiments-tooltip" class="left-16 sm:left-17 w-max max-w-[calc(100%-1rem)]" />
 	{/* Wider than its button, so it starts at the footer's edge; the caret still finds the button. */}
 	<Tooltip id="sidebar-github-tooltip" class="left-4 sm:left-5 w-max max-w-[calc(100%-2rem)] sm:max-w-[calc(100%-2.5rem)]">

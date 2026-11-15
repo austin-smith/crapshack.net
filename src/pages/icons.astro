@@ -7,7 +7,7 @@ import Button from '../components/ui/Button.astro';
 import ButtonGroup from '../components/ui/ButtonGroup.astro';
 import Dialog from '../components/ui/Dialog.astro';
 import { buttonVariants } from '../components/ui/button';
-import { actualSizeSet, iconEntries, previewSrc, responsivePreviewSet, type IconEntry } from '../data/app-icons';
+import { actualSizeSet, iconEntries, previewSrc, responsivePreviewSet, type IconEntry } from '../data/icons';
 import type { SvgComponent } from 'astro/types';
 
 const dialogId = 'icon-inspector';
@@ -27,7 +27,7 @@ const isExternal = (url: string) => /^https?:\/\//.test(url);
 const logos = import.meta.glob<SvgComponent>('../assets/app-logos/*.svg', { eager: true, import: 'default' });
 const logoFor = (id: string) => {
 	const logo = logos[`../assets/app-logos/${id}.svg`];
-	if (!logo) throw new Error(`No logo for the ${id} app icons: add src/assets/app-logos/${id}.svg`);
+	if (!logo) throw new Error(`No logo for the ${id} icons: add src/assets/app-logos/${id}.svg`);
 	return logo;
 };
 
@@ -42,10 +42,10 @@ const plates = [
 ];
 ---
 
-<Layout title="crapshack (app icons)">
+<Layout title="crapshack (icons)">
 	<section class="mx-auto mt-10 max-w-5xl space-y-10" data-icon-gallery data-dialog-id={dialogId}>
 		<header>
-			<h1 class="font-mono text-3xl font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">app icons</h1>
+			<h1 class="font-mono text-3xl font-semibold bg-gradient-to-r from-[var(--color-brand)] to-[var(--color-text)] bg-clip-text text-transparent">icons</h1>
 		</header>
 
 		<ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
@@ -186,10 +186,10 @@ const plates = [
 </Layout>
 
 <script>
-	import { initAppIconGallery } from '../lib/app-icon-gallery';
+	import { initIconGallery } from '../lib/icon-gallery';
 
 	const gallery = document.querySelector<HTMLElement>('[data-icon-gallery]');
-	if (gallery) initAppIconGallery(gallery);
+	if (gallery) initIconGallery(gallery);
 </script>
 
 <style>

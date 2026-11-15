@@ -1,7 +1,7 @@
-# App icon artwork
+# Icon artwork
 
-Sources for the `/app-icons` gallery. The site reads only `catalog.json` and the
-finished files in `public/app-icons/`, so its build needs neither Python nor a
+Sources for the `/icons` gallery. The site reads only `catalog.json` and the
+finished files in `public/icons/`, so its build needs neither Python nor a
 graphics app.
 
 ## Layout
@@ -33,15 +33,15 @@ The scripts need Python, VectorCraft CLI, and the packages in
 `requirements.txt`:
 
 ```sh
-python3 -m venv ~/.venvs/app-icons
-~/.venvs/app-icons/bin/pip install -r artwork/app-icons/requirements.txt
+python3 -m venv ~/.venvs/icons
+~/.venvs/icons/bin/pip install -r artwork/icons/requirements.txt
 ```
 
 Edit the icon's `generate.py`, or the data it reads, then run it and rebuild:
 
 ```sh
-~/.venvs/app-icons/bin/python artwork/app-icons/<path>/generate.py
-~/.venvs/app-icons/bin/python artwork/app-icons/build.py --rebuild
+~/.venvs/icons/bin/python artwork/icons/<path>/generate.py
+~/.venvs/icons/bin/python artwork/icons/build.py --rebuild
 ```
 
 Pass `--out DIR` to a generator to write somewhere else for comparison.
@@ -51,14 +51,14 @@ BitDream's icons are the app's own alternates. To refresh them after the app's
 needs Xcode's Icon Composer:
 
 ```sh
-~/.venvs/app-icons/bin/python artwork/app-icons/bitdream/generate.py --export ../BitDream/AppIcons
+~/.venvs/icons/bin/python artwork/icons/bitdream/generate.py --export ../BitDream/AppIcons
 ```
 
 PlexBar's icons come from PlexBar Studio's `.icon` documents the same way; pass
 its `Studio/Resources` folder:
 
 ```sh
-~/.venvs/app-icons/bin/python artwork/app-icons/plexbar/generate.py --export ../PlexBar/Studio/Resources
+~/.venvs/icons/bin/python artwork/icons/plexbar/generate.py --export ../PlexBar/Studio/Resources
 ```
 
 To see an SVG icon's layers, open its `icon.svg` in VectorCraft or PhotoCraft.
@@ -73,8 +73,8 @@ for the PlayStation 3. Every render's noise differs, so re-render only to change
 a console:
 
 ```sh
-~/.venvs/app-icons/bin/python artwork/app-icons/playstation-2/render/render.py
-~/.venvs/app-icons/bin/python artwork/app-icons/playstation-3/render/render.py
+~/.venvs/icons/bin/python artwork/icons/playstation-2/render/render.py
+~/.venvs/icons/bin/python artwork/icons/playstation-3/render/render.py
 ```
 
 ## Verify
@@ -83,12 +83,12 @@ a console:
 representations. It also confirms that every icon has exactly one source, that
 every SVG is self-contained, that a PNG icon's master is exactly its `icon.png`,
 that the reference housing is unchanged where a collection has a `housing`
-setting, that IDs are unique, and that `public/app-icons/` holds no other files
+setting, that IDs are unique, and that `public/icons/` holds no other files
 (hidden ones such as `.DS_Store` aside). It modifies nothing.
 `--rebuild` renders the SVGs with VectorCraft CLI (pass `--vectorcraft PATH` if
 it isn't on `PATH`), takes each `icon.png` as it is, and, once the whole set
 verifies, replaces
-`public/app-icons/` outright, so a removed or renamed icon leaves nothing behind.
+`public/icons/` outright, so a removed or renamed icon leaves nothing behind.
 It also rewrites each `optical-*/render.png`; commit them with the rest.
 
 ## Attribution
