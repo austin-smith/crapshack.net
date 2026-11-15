@@ -146,7 +146,19 @@
     {
       "id": "playstation-2",
       "name": "PlayStation 2",
-      "description": "A detailed PlayStation 2.",
+      "description": "Stylized render of a PlayStation 2.",
+      "credits": [
+        {
+          "text": "PlayStation logos by",
+          "name": "Sony Interactive Entertainment",
+          "url": "https://www.playstation.com/"
+        }
+      ]
+    },
+    {
+      "id": "playstation-3",
+      "name": "PlayStation 3",
+      "description": "Stylized render of a PlayStation 3.",
       "credits": [
         {
           "text": "PlayStation logos by",

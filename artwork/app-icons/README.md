@@ -22,7 +22,7 @@ graphics app.
 - `icon.svg` or `icon.png`: generated, and the build input; don't edit it by
   hand. An SVG is self-contained and layered. A PNG is the finished 1024px
   master, composited in Pillow, so it's published without being resampled.
-  BitDream's, PlexBar's, and PlayStation 2's icons are PNGs.
+  BitDream's, PlexBar's, PlayStation 2's, and PlayStation 3's icons are PNGs.
 - `optical-*/`: simpler artwork for small sizes, mapped by `opticalSources`. Its
   `render.png` is the saved render that verification checks against.
 - `references/`: original artwork the generators read. It is not published.
@@ -64,15 +64,17 @@ its `Studio/Resources` folder:
 To see an SVG icon's layers, open its `icon.svg` in VectorCraft or PhotoCraft.
 Make changes in `generate.py`, which overwrites the source.
 
-PlayStation 2's console is a Blender render,
-`references/playstation-2-render.png`, which its `generate.py` reads.
-`playstation-2/render/` holds the model and the script that renders it from the
-official logos in `references/`. It also needs Blender 5.3 and macOS's
-Helvetica. Every render's noise differs, so re-render only to change the
-console:
+The PlayStation 2 and PlayStation 3 consoles are Blender renders,
+`references/playstation-2-render.png` and `references/playstation-3-render.png`,
+which their `generate.py` read. Each icon's `render/` holds the model and the
+script that renders it from the official logos in `references/`. They also need
+Blender 5.3, and macOS's Helvetica for the PlayStation 2 or its Superclarendon
+for the PlayStation 3. Every render's noise differs, so re-render only to change
+a console:
 
 ```sh
 ~/.venvs/app-icons/bin/python artwork/app-icons/playstation-2/render/render.py
+~/.venvs/app-icons/bin/python artwork/app-icons/playstation-3/render/render.py
 ```
 
 ## Verify
