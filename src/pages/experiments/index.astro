@@ -6,10 +6,13 @@ import CrapStackPaper from '../../components/CrapStackPaper.astro';
 import CrapStackPile from '../../components/CrapStackPile.astro';
 import OnceInALifetime from '../../components/OnceInALifetime.astro';
 import OnceInALifetimeBoard from '../../components/OnceInALifetimeBoard.astro';
+import ShackIsland from '../../components/ShackIsland.astro';
+import ShackSky from '../../components/ShackSky.astro';
 import Layout from '../../layouts/Layout.astro';
 import '../../components/blonky-lab-palette.css';
 import '../../components/crap-stack-palette.css';
 import '../../components/once-in-a-lifetime-palette.css';
+import '../../components/shack-palette.css';
 ---
 
 <Layout title="crapshack (experiments)" fullBleed>
@@ -41,6 +44,12 @@ import '../../components/once-in-a-lifetime-palette.css';
 				<CrapStackPaper class="world" aria-hidden="true">
 					<CrapStackPile class="world__figure" />
 				</CrapStackPaper>
+			</li>
+			<li data-experiment="shack">
+				<a href="/experiments/shack" class="group"><span class="squiggle-underline">shack<ArrowRight class="experiments__arrow" aria-hidden="true" /></span></a>
+				<ShackSky class="world" aria-hidden="true">
+					<ShackIsland class="world__figure" label="" loading="lazy" />
+				</ShackSky>
 			</li>
 		</ul>
 	</section>
@@ -182,6 +191,15 @@ import '../../components/once-in-a-lifetime-palette.css';
 		width: 102%;
 	}
 
+	/* The island floats to the right of the names, a little below the middle. */
+	[data-experiment='shack'] .world__figure {
+		position: absolute;
+		top: 54%;
+		right: 4vw;
+		width: min(54vw, 98svh);
+		translate: 0 -50%;
+	}
+
 	/* Weather would fall across the worlds. */
 	:global(.weather-container) {
 		display: none;
@@ -210,7 +228,8 @@ import '../../components/once-in-a-lifetime-palette.css';
 		}
 
 		/* The other names stand back, but stay readable on every world: this is
-		   the least that keeps them at 3:1 on the palest, the lab's light stage. */
+		   the least that keeps them at 3:1 on the palest, the lab's light stage.
+		   A darker world asks for more. */
 		/* Room between the names, so that one name's underline stands clear of the
 		   name below it. It is the names' own padding, so the pointer is never
 		   between two of them. */
@@ -219,7 +238,7 @@ import '../../components/once-in-a-lifetime-palette.css';
 		}
 
 		.experiments li:not([data-selected]) a {
-			opacity: 0.6;
+			opacity: var(--experiment-rest, 0.6);
 		}
 
 		/* While the script keeps the selection, the underline goes with it, where
@@ -248,6 +267,13 @@ import '../../components/once-in-a-lifetime-palette.css';
 		.experiments:has([data-experiment='crap-stack'][data-selected]) {
 			--experiment-ink: rgb(var(--crap-stack-paper-ink-rgb));
 			--experiment-accent: var(--crap-stack-combo-ink);
+		}
+
+		/* Its sky is darkest at the top, behind the names. */
+		.experiments:has([data-experiment='shack'][data-selected]) {
+			--experiment-ink: var(--shack-ink);
+			--experiment-accent: var(--shack-pink-ink);
+			--experiment-rest: 0.7;
 		}
 	}
 
@@ -311,6 +337,11 @@ import '../../components/once-in-a-lifetime-palette.css';
 			--experiment-accent: var(--crap-stack-combo-ink);
 		}
 
+		.experiments li[data-experiment='shack'] {
+			--experiment-ink: var(--shack-ink);
+			--experiment-accent: var(--shack-pink-ink);
+		}
+
 		.experiments a {
 			/* Unplaced, so its ::after can cover the band; the name itself is
 			   lifted over the world instead. */
@@ -362,6 +393,16 @@ import '../../components/once-in-a-lifetime-palette.css';
 		[data-experiment='crap-stack'] .world__figure {
 			left: calc((100% - var(--pile-width)) * 0.44);
 			width: var(--pile-width);
+		}
+
+		/* The island is 1.6 bands wide, so a band holds it down to its rim, roof
+		   and all, with an eighth of it past the band's right edge. */
+		[data-experiment='shack'] .world__figure {
+			--width: calc(var(--band) * 1.6);
+			top: calc(var(--band) * 0.2);
+			right: calc(var(--width) * -0.12);
+			width: var(--width);
+			translate: none;
 		}
 	}
 

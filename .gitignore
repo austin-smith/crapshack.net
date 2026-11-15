@@ -31,3 +31,7 @@ Icon[^a-zA-Z]
 
 # Local env file
 .env.local
+
+# browser test artifacts
+playwright-report/
+test-results/

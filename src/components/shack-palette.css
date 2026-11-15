@@ -1,0 +1,22 @@
+/*
+ * Shack's colours, page-wide, since words written over its sky take them too.
+ * Each component or page that uses one imports this file. They are the same
+ * under every site theme: the island keeps its own weather.
+ */
+
+:root {
+	/* The daytime sky, top to bottom. The game reads these from the page to
+	   paint the sky behind the island (src/lib/shack/game.ts). */
+	--shack-sky-top: #8bb8c8;
+	--shack-sky-bottom: #f4dfb5;
+
+	/* Its paper notes, and what is written on them. */
+	--shack-ink: #303c36;
+	--shack-paper: #fbf6e9;
+	--shack-pink: #cf647f;
+	/* The pink, deep enough to write in over the sky: 3:1 at its darkest. */
+	--shack-pink-ink: #9c3c57;
+	--shack-green: #38765d;
+	--shack-muted: #657369;
+	--shack-line: #b7b9a8;
+}
