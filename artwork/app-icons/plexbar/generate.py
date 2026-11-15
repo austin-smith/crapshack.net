@@ -1,4 +1,4 @@
-"""Generate the PlexBar icon.svg files from PlexBar Studio's Icon Composer icons.
+"""Generate the PlexBar icon.png files from PlexBar Studio's Icon Composer icons.
 
 PlexBar Studio, the repo's mock-content editor, uses the clay icon; it doesn't
 ship with a PlexBar release. Each is Icon Composer's macOS rendering of its
@@ -12,7 +12,6 @@ Run build.py --rebuild afterwards to refresh the published files.
 from __future__ import annotations
 
 import argparse
-import base64
 from io import BytesIO
 import json
 from pathlib import Path
@@ -62,31 +61,15 @@ def export(resources: Path, ictool: str) -> None:
             print(reference(variant).relative_to(HERE.parent))
 
 
-def data_uri(image: Image.Image) -> str:
-    buffer = BytesIO()
-    image.save(buffer, format="PNG", optimize=True)
-    return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
-
-
-def shadow(icon: Image.Image) -> Image.Image:
-    """The icon's own outline, offset, blurred, and faded, on the full canvas."""
+def compose(icon: Image.Image) -> Image.Image:
+    """The icon in the grid over its shadow: its own outline, offset, blurred, and faded."""
     alpha = Image.new("L", (1024, 1024))
     alpha.paste(icon.getchannel("A"), (INSET, INSET + SHADOW["dy"]))
     alpha = alpha.filter(ImageFilter.GaussianBlur(SHADOW["blur"])).point(lambda v: round(v * SHADOW["opacity"]))
-    cast = Image.new("RGBA", (1024, 1024), (0, 0, 0, 255))
-    cast.putalpha(alpha)
-    return cast
-
-
-def svg(icon: Image.Image) -> str:
-    layers = [
-        ("shadow", f'<image x="0" y="0" width="1024" height="1024" href="{data_uri(shadow(icon))}"/>'),
-        ("icon", f'<image x="{INSET}" y="{INSET}" width="{BODY}" height="{BODY}" href="{data_uri(icon)}"/>'),
-    ]
-    groups = "".join(f'<g id="{i:02d}-{name}">{body}</g>'
-                     for i, (name, body) in enumerate(layers, 1))
-    return ('<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">'
-            f'{groups}</svg>')
+    canvas = Image.new("RGBA", (1024, 1024), (0, 0, 0, 255))
+    canvas.putalpha(alpha)
+    canvas.alpha_composite(icon, (INSET, INSET))
+    return canvas
 
 
 def main() -> None:
@@ -100,9 +83,9 @@ def main() -> None:
     for icon in COLLECTION["variants"]:
         with Image.open(reference(icon["id"])) as image:
             source = image.convert("RGBA")
-        target = arguments.out / icon["id"] / "icon.svg"
+        target = arguments.out / icon["id"] / "icon.png"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(svg(source), encoding="utf-8")
+        compose(source).save(target, optimize=True)
         print(target.relative_to(arguments.out))
 
 

@@ -16,10 +16,13 @@ graphics app.
   `<variant>/` beside it. A standalone icon's sources live in `<icon>/`, and it
   publishes `public/<publicDir>/<icon>.icns` with its previews in `<icon>/`, so
   its ID can't be a collection's.
-- `generate.py`: an icon's source. It holds every setting and writes `icon.svg`.
-  There is one per icon, or one per collection when variants share a build.
-- `icon.svg`: generated, self-contained, and layered. This is the build input;
-  don't edit it by hand.
+- `generate.py`: an icon's source. It holds every setting and writes `icon.svg`,
+  or `icon.png` when the icon is only raster artwork. There is one per icon, or
+  one per collection when variants share a build.
+- `icon.svg` or `icon.png`: generated, and the build input; don't edit it by
+  hand. An SVG is self-contained and layered. A PNG is the finished 1024px
+  master, composited in Pillow, so it's published without being resampled.
+  BitDream's, PlexBar's, and PlayStation 2's icons are PNGs.
 - `optical-*/`: simpler artwork for small sizes, mapped by `opticalSources`. Its
   `render.png` is the saved render that verification checks against.
 - `references/`: original artwork the generators read. It is not published.
@@ -58,8 +61,8 @@ its `Studio/Resources` folder:
 ~/.venvs/app-icons/bin/python artwork/app-icons/plexbar/generate.py --export ../PlexBar/Studio/Resources
 ```
 
-To see an icon's layers, open its `icon.svg` in VectorCraft or PhotoCraft. Make
-changes in `generate.py`, which overwrites the SVG.
+To see an SVG icon's layers, open its `icon.svg` in VectorCraft or PhotoCraft.
+Make changes in `generate.py`, which overwrites the source.
 
 PlayStation 2's console is a Blender render,
 `references/playstation-2-render.png`, which its `generate.py` reads.
@@ -75,12 +78,14 @@ console:
 ## Verify
 
 `build.py` without `--rebuild` checks every preview size and all ten ICNS
-representations. It also confirms that every SVG is self-contained, that the
-reference housing is unchanged where a collection has a `housing` setting, that
-IDs are unique, and that `public/app-icons/` holds no other files (hidden ones
-such as `.DS_Store` aside). It modifies nothing.
+representations. It also confirms that every icon has exactly one source, that
+every SVG is self-contained, that a PNG icon's master is exactly its `icon.png`,
+that the reference housing is unchanged where a collection has a `housing`
+setting, that IDs are unique, and that `public/app-icons/` holds no other files
+(hidden ones such as `.DS_Store` aside). It modifies nothing.
 `--rebuild` renders the SVGs with VectorCraft CLI (pass `--vectorcraft PATH` if
-it isn't on `PATH`) and, once the whole set verifies, replaces
+it isn't on `PATH`), takes each `icon.png` as it is, and, once the whole set
+verifies, replaces
 `public/app-icons/` outright, so a removed or renamed icon leaves nothing behind.
 It also rewrites each `optical-*/render.png`; commit them with the rest.
 
