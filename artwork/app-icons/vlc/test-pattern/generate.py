@@ -2,17 +2,15 @@
 
 The cone is VLC's own 1024px icon artwork (references/vlc-original.png), embedded
 unchanged. Its outline and cast shadow are derived from the cone's alpha channel.
-Titles and the main description come from catalog.json. Requires Pillow. Run
-build.py --rebuild afterwards to refresh the published files.
+Requires Pillow. Run build.py --rebuild afterwards to refresh the published
+files.
 """
 from __future__ import annotations
 
 import argparse
 import base64
 from io import BytesIO
-import json
 from pathlib import Path
-from xml.sax.saxutils import escape
 
 from PIL import Image, ImageFilter
 
@@ -33,14 +31,6 @@ ROWS = {"bars": (100, 712), "castellation": (712, 788), "floor": (788, 924)}
 # Cone placement per source. The small-size source drops scanlines, which alias below 128px.
 MAIN = dict(scale=0.66, bottom=826, outline=7, scanlines=True, bloom=0.12)
 SMALL = dict(scale=0.72, bottom=838, outline=12, scanlines=False, bloom=0.0)
-SMALL_SIZES, SMALL_DESC = "16–64px", "Larger cone, heavier outline, and no scanlines for 16–64px."
-
-
-def catalog_entry() -> tuple[dict, dict]:
-    """This variant's collection and variant in catalog.json, whose IDs name its folders."""
-    catalog = json.loads((HERE.parents[1] / "catalog.json").read_text(encoding="utf-8"))
-    app = {a["id"]: a for a in catalog["collections"]}[HERE.parent.name]
-    return app, {v["id"]: v for v in app["variants"]}[HERE.name]
 
 
 def data_uri(image: Image.Image) -> str:
@@ -75,7 +65,7 @@ def cone(source: Image.Image, scale: float, bottom: int, outline: int) -> dict:
             "cast": data_uri(cast.crop(cast.getbbox())), "cast_box": cast.getbbox()}
 
 
-def svg(source: Image.Image, title: str, desc: str, scale: float, bottom: int, outline: int, scanlines: bool, bloom: float) -> str:
+def svg(source: Image.Image, scale: float, bottom: int, outline: int, scanlines: bool, bloom: float) -> str:
     c = cone(source, scale, bottom, outline)
     ob, cb = c["outline_box"], c["cast_box"]
     lines = "".join(f'<rect x="100" y="{y}" width="824" height="2"/>' for y in range(102, 924, 6))
@@ -95,7 +85,7 @@ def svg(source: Image.Image, title: str, desc: str, scale: float, bottom: int, o
         ("bezel", f'<g clip-path="url(#body)"><path d="{BODY}" fill="none" stroke="#000" stroke-opacity="0.32" stroke-width="14"/></g>'
                   f'<g clip-path="url(#body)"><path d="{BODY}" fill="none" stroke="#fff" stroke-opacity="0.22" stroke-width="4"/></g>'),
     ]
-    groups = "".join(f'<g id="{i:02d}-{name}" inkscape:groupmode="layer" inkscape:label="{i:02d}-{name}">{body}</g>'
+    groups = "".join(f'<g id="{i:02d}-{name}">{body}</g>'
                      for i, (name, body) in enumerate(layers, 1))
     defs = (
         f'<clipPath id="body"><path d="{BODY}"/></clipPath>'
@@ -107,8 +97,7 @@ def svg(source: Image.Image, title: str, desc: str, scale: float, bottom: int, o
         '<linearGradient id="reflection" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="252"><stop offset="0" stop-color="#fff" stop-opacity="0.18"/>'
         '<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
     )
-    return ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-            f'width="1024" height="1024" viewBox="0 0 1024 1024"><title>{escape(title)}</title><desc>{escape(desc)}</desc>'
+    return ('<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">'
             f'<defs>{defs}</defs>{groups}</svg>')
 
 
@@ -116,13 +105,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path, default=HERE, help="output directory (default: this variant)")
     out = parser.parse_args().out
-    app, icon = catalog_entry()
-    title = f"{app['name']} — {icon['name']}"
     with Image.open(CONE_SOURCE) as image:
         source = image.convert("RGBA")
     (out / "optical-small").mkdir(parents=True, exist_ok=True)
-    (out / "icon.svg").write_text(svg(source, title, icon["description"], **MAIN), encoding="utf-8")
-    (out / "optical-small" / "icon.svg").write_text(svg(source, f"{title} ({SMALL_SIZES})", SMALL_DESC, **SMALL), encoding="utf-8")
+    (out / "icon.svg").write_text(svg(source, **MAIN), encoding="utf-8")
+    (out / "optical-small" / "icon.svg").write_text(svg(source, **SMALL), encoding="utf-8")
 
 
 if __name__ == "__main__":

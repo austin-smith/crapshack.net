@@ -5,8 +5,7 @@ phosphor, reflection, and housing (references/) and the mascot geometry in
 geometry.json. The mascot's glow, and the undercoat drawn from it, transfer the
 edge lighting measured from Ghostty's glass material
 (references/ghostty-glass-material.png); its face takes that material's gradient.
-housing-alpha.png is the housing's screen cut-out. Titles and descriptions come
-from catalog.json.
+housing-alpha.png is the housing's screen cut-out.
 
 Requires Pillow, NumPy, OpenCV, and vectorcraft-cli, which rasterises the mascot
 masks. Run build.py --rebuild afterwards to refresh the published files.
@@ -31,12 +30,8 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 REFERENCES = HERE.parent / "references"
 GEOMETRY = json.loads((HERE / "geometry.json").read_text(encoding="utf-8"))
-CATALOG = json.loads((HERE.parent / "catalog.json").read_text(encoding="utf-8"))
-COLLECTION = {app["id"]: app for app in CATALOG["collections"]}[HERE.name]
 SVG = "http://www.w3.org/2000/svg"
-INK = "http://www.inkscape.org/namespaces/inkscape"
 E.register_namespace("", SVG)
-E.register_namespace("inkscape", INK)
 
 # Ghostty's 825px screen is drawn at 663px, starting at 180px.
 S = 663 / 825
@@ -77,7 +72,7 @@ def node(parent, tag, attrs=None):
 
 
 def layer(root, name, blend=None):
-    attrs = {"id": name, f"{{{INK}}}groupmode": "layer", f"{{{INK}}}label": name}
+    attrs = {"id": name}
     if blend:
         attrs["style"] = "mix-blend-mode:" + blend
     return node(root, "g", attrs)
@@ -297,11 +292,9 @@ def variant_defs(palette, stops):
     return defs
 
 
-def assemble(c, icon, mat, shared, stops) -> E.ElementTree:
+def assemble(c, mat, shared, stops) -> E.ElementTree:
     palette = c["palette"]
     root = E.Element(f"{{{SVG}}}svg", {"width": "1024", "height": "1024", "viewBox": "0 0 1024 1024"})
-    node(root, "title").text = f"{COLLECTION['name']} — {icon['name']}"
-    node(root, "desc").text = icon["description"]
     defs = variant_defs(palette, stops)
     root.append(defs)
     screen = layer(root, "01-screen")
@@ -362,7 +355,6 @@ def main() -> None:
     vectorcraft = shutil.which(arguments.vectorcraft)
     if vectorcraft is None:
         raise SystemExit("vectorcraft-cli not found. Install it separately or pass --vectorcraft /path/to/vectorcraft-cli.")
-    icons = {icon["id"]: icon for icon in COLLECTION["variants"]}
     lut, stops = measure_material()
     shared = shared_images()
     for folder, c in VARIANTS.items():
@@ -370,7 +362,7 @@ def main() -> None:
             masks = render_masks(c, vectorcraft, Path(scratch))
         target = arguments.out / folder / "icon.svg"
         target.parent.mkdir(parents=True, exist_ok=True)
-        tree = assemble(c, icons[folder], materials(c, masks, lut), shared, stops)
+        tree = assemble(c, materials(c, masks, lut), shared, stops)
         target.write_text(E.tostring(tree.getroot(), encoding="unicode"), encoding="utf-8")
         print(f"{folder}/icon.svg")
 

@@ -3,8 +3,7 @@
 PlexBar Studio, the repo's mock-content editor, uses the clay icon; it doesn't
 ship with a PlexBar release. Each is Icon Composer's macOS rendering of its
 .icon document, saved as an sRGB PNG in references/ and placed in the macOS
-icon grid with the system drop shadow. Titles and descriptions come from
-catalog.json.
+icon grid with the system drop shadow.
 
 Requires Pillow. Pass --export with PlexBar's Studio/Resources folder to
 re-export the references first; that needs Icon Composer's ictool (from Xcode).
@@ -19,7 +18,6 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
-from xml.sax.saxutils import escape
 
 from PIL import Image, ImageCms, ImageFilter
 
@@ -80,15 +78,14 @@ def shadow(icon: Image.Image) -> Image.Image:
     return cast
 
 
-def svg(icon: Image.Image, title: str, desc: str) -> str:
+def svg(icon: Image.Image) -> str:
     layers = [
         ("shadow", f'<image x="0" y="0" width="1024" height="1024" href="{data_uri(shadow(icon))}"/>'),
         ("icon", f'<image x="{INSET}" y="{INSET}" width="{BODY}" height="{BODY}" href="{data_uri(icon)}"/>'),
     ]
-    groups = "".join(f'<g id="{i:02d}-{name}" inkscape:groupmode="layer" inkscape:label="{i:02d}-{name}">{body}</g>'
+    groups = "".join(f'<g id="{i:02d}-{name}">{body}</g>'
                      for i, (name, body) in enumerate(layers, 1))
-    return ('<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-            f'width="1024" height="1024" viewBox="0 0 1024 1024"><title>{escape(title)}</title><desc>{escape(desc)}</desc>'
+    return ('<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">'
             f'{groups}</svg>')
 
 
@@ -105,7 +102,7 @@ def main() -> None:
             source = image.convert("RGBA")
         target = arguments.out / icon["id"] / "icon.svg"
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(svg(source, f"{COLLECTION['name']} — {icon['name']}", icon["description"]), encoding="utf-8")
+        target.write_text(svg(source), encoding="utf-8")
         print(target.relative_to(arguments.out))
 
 

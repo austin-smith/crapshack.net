@@ -2,15 +2,14 @@
 
 Builds Plex's chevron as an amber dot matrix in separate editable SVG layers. The
 icon's shadow comes from the original Plex icon (references/plex-original.png).
-Titles and the main description come from catalog.json. Requires Pillow, NumPy
-and OpenCV. Run build.py --rebuild afterwards to refresh the published files.
+Requires Pillow, NumPy and OpenCV. Run build.py --rebuild afterwards to refresh
+the published files.
 """
 from __future__ import annotations
 
 import argparse
 import base64
 import io
-import json
 import math
 from pathlib import Path
 import xml.etree.ElementTree as E
@@ -22,9 +21,7 @@ from PIL import Image, ImageDraw, ImageFilter
 HERE = Path(__file__).resolve().parent
 REFERENCE = HERE.parents[1] / "references" / "plex-original.png"
 SVG = "http://www.w3.org/2000/svg"
-INK = "http://www.inkscape.org/namespaces/inkscape"
 E.register_namespace("", SVG)
-E.register_namespace("inkscape", INK)
 
 # Original Plex chevron proportions.
 CHEVRON = "M336 238H532L717 512L532 786H336L521 512Z"
@@ -35,16 +32,6 @@ POLYGON = np.array([[336, 238], [532, 238], [717, 512], [532, 786], [336, 786], 
 SOURCES = {1024: "icon.svg", 128: "optical-128/icon.svg", 64: "optical-64/icon.svg"}
 PITCH = {1024: 12, 128: 16, 64: 32}
 PHASE = {1024: 8, 128: 4, 64: 8}
-# The sizes each small-size source covers, and what it simplifies.
-SMALL = {128: ("128px", "Coarser 16px dot grid that stays readable at 128px."),
-         64: ("16–64px", "Coarsest 32px dot grid that stays readable at 16–64px.")}
-
-
-def catalog_entry() -> tuple[dict, dict]:
-    """This variant's collection and variant in catalog.json, whose IDs name its folders."""
-    catalog = json.loads((HERE.parents[1] / "catalog.json").read_text(encoding="utf-8"))
-    app = {a["id"]: a for a in catalog["collections"]}[HERE.parent.name]
-    return app, {v["id"]: v for v in app["variants"]}[HERE.name]
 
 
 def node(parent, tag, attrs=None):
@@ -52,7 +39,7 @@ def node(parent, tag, attrs=None):
 
 
 def layer(parent, name, clipped=False):
-    attrs = {"id": name, f"{{{INK}}}groupmode": "layer", f"{{{INK}}}label": name}
+    attrs = {"id": name}
     if clipped:
         attrs["clip-path"] = "url(#screen)"
     return node(parent, "g", attrs)
@@ -79,14 +66,12 @@ def gradient(defs, ident, colors):
         node(g, "stop", {"offset": str(offset), "stop-color": color, "stop-opacity": str(opacity)})
 
 
-def build(optical_size: int, reference: Image.Image, title: str, desc: str) -> tuple[E.ElementTree, int]:
+def build(optical_size: int, reference: Image.Image) -> tuple[E.ElementTree, int]:
     pitch = PITCH[optical_size]
     phase = PHASE[optical_size]
     radius = pitch * (.285 if optical_size < 256 else .25)
     core_radius = radius * .5
     root = E.Element(f"{{{SVG}}}svg", {"width": "1024", "height": "1024", "viewBox": "0 0 1024 1024"})
-    node(root, "title").text = title
-    node(root, "desc").text = desc
     defs = node(root, "defs")
     clip = node(defs, "clipPath", {"id": "screen"})
     node(clip, "rect", {"x": "100", "y": "100", "width": "824", "height": "824", "rx": "174"})
@@ -163,13 +148,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path, default=HERE, help="output directory (default: this variant)")
     out = parser.parse_args().out
-    app, icon = catalog_entry()
-    title = f"{app['name']} — {icon['name']}"
     with Image.open(REFERENCE) as image_file:
         reference = image_file.convert("RGBA")
     for size, relative in SOURCES.items():
-        sizes, desc = SMALL.get(size, (None, icon["description"]))
-        tree, lit = build(size, reference, f"{title} ({sizes})" if sizes else title, desc)
+        tree, lit = build(size, reference)
         target = out / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(E.tostring(tree.getroot(), encoding="unicode"), encoding="utf-8")

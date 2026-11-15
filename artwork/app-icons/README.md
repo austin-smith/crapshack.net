@@ -75,10 +75,10 @@ console:
 ## Verify
 
 `build.py` without `--rebuild` checks every preview size and all ten ICNS
-representations. It also confirms that every SVG is self-contained and titled
-from the catalog, that the reference housing is unchanged where a collection has
-a `housing` setting, that IDs are unique, and that `public/app-icons/` holds no
-other files (hidden ones such as `.DS_Store` aside). It modifies nothing.
+representations. It also confirms that every SVG is self-contained, that the
+reference housing is unchanged where a collection has a `housing` setting, that
+IDs are unique, and that `public/app-icons/` holds no other files (hidden ones
+such as `.DS_Store` aside). It modifies nothing.
 `--rebuild` renders the SVGs with VectorCraft CLI (pass `--vectorcraft PATH` if
 it isn't on `PATH`) and, once the whole set verifies, replaces
 `public/app-icons/` outright, so a removed or renamed icon leaves nothing behind.

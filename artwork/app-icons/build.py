@@ -55,8 +55,9 @@ def key(app: dict | None, icon: dict) -> str:
     return f"{app['id']}-{icon['id']}" if app else icon["id"]
 
 
-def name(app: dict | None, icon: dict, separator: str) -> str:
-    return f"{app['name']}{separator}{icon['name']}" if app else icon["name"]
+def name(app: dict | None, icon: dict) -> str:
+    """An icon's label in the build's output: <collection> / <variant>, or a standalone icon's own name."""
+    return f"{app['name']} / {icon['name']}" if app else icon["name"]
 
 
 def icon_source(app: dict | None, icon: dict) -> Path:
@@ -122,13 +123,10 @@ def optical_sources(app: dict | None, icon: dict) -> dict[int, Path]:
     return sources
 
 
-def validate_svg(path: Path, title: str, description: str | None) -> None:
-    """A self-contained SVG with the given title, and the given description or else any description."""
+def validate_svg(path: Path) -> None:
+    """A self-contained SVG: everything it draws is embedded or defined inside it, with no linked files and no
+    stylesheets that could load them."""
     svg = ET.parse(path).getroot()
-    require(svg.findtext(f"{SVG}title") == title, f"{path}: title should be {title!r}")
-    desc = svg.findtext(f"{SVG}desc")
-    require(desc == description if description else bool(desc), f"{path}: description should be {description or 'present'!r}")
-    # Everything it draws is embedded or defined inside it: no linked files, and no stylesheets that could load them
     for element in svg.iter():
         require(element.tag != f"{SVG}style", f"{path}: <style> element")
         for attribute, value in element.attrib.items():
@@ -139,14 +137,9 @@ def validate_svg(path: Path, title: str, description: str | None) -> None:
 
 
 def validate_sources(app: dict | None, icon: dict) -> None:
-    """Title every SVG from the catalog; small-size sources add the sizes they cover and describe themselves."""
-    title = name(app, icon, " — ")
-    validate_svg(icon_source(app, icon) / "icon.svg", title, icon["description"])
-    optical = optical_sources(app, icon)
-    for svg in set(optical.values()):
-        sizes = sorted(size for size, path in optical.items() if path == svg)
-        covered = f"{sizes[0]}–{sizes[-1]}px" if len(sizes) > 1 else f"{sizes[0]}px"
-        validate_svg(svg, f"{title} ({covered})", None)
+    """Check the icon's SVG and its small-size sources."""
+    for svg in {icon_source(app, icon) / "icon.svg", *optical_sources(app, icon).values()}:
+        validate_svg(svg)
 
 
 def read_render(path: Path) -> Image.Image:
@@ -164,7 +157,7 @@ def housing(app: dict | None) -> tuple[Image.Image, Image.Image] | None:
 
 
 def verify_icon(app: dict | None, icon: dict, public: Path = PUBLIC, rendered_sources: dict[Path, Path] | None = None) -> None:
-    label = name(app, icon, " / ")
+    label = name(app, icon)
     validate_sources(app, icon)
     optical = optical_sources(app, icon)
     base, icns = published(public, app, icon)
