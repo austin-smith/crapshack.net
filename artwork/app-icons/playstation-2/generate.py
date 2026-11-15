@@ -1,4 +1,4 @@
-"""Generate PlayStation 2's icon.svg.
+"""Generate PlayStation 2's icon.png.
 
 The console is a Blender render (references/playstation-2-render.png) that
 render/render.py makes from the official logos in references/. This places it on
@@ -9,11 +9,9 @@ the published files.
 from __future__ import annotations
 
 import argparse
-import base64
-from io import BytesIO
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 HERE = Path(__file__).resolve().parent
 RENDER = HERE.parent / "references" / "playstation-2-render.png"
@@ -21,12 +19,6 @@ RENDER = HERE.parent / "references" / "playstation-2-render.png"
 # Drop shadow fitted to a macOS system app icon.
 SHADOW = {"blur": 10.8, "dy": 4, "opacity": 0.37}
 SPAN = 880  # the console's longer side, in icon pixels
-
-
-def data_uri(image: Image.Image) -> str:
-    buffer = BytesIO()
-    image.save(buffer, format="PNG", optimize=True)
-    return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
 
 
 def console() -> tuple[Image.Image, int, int]:
@@ -40,21 +32,16 @@ def console() -> tuple[Image.Image, int, int]:
     return render, (1024 - render.width) // 2, (1024 - render.height) // 2
 
 
-def svg() -> str:
+def icon() -> Image.Image:
+    """The console on the 1024px canvas over its shadow: its silhouette, offset, blurred, and faded."""
     image, x, y = console()
-    silhouette = Image.new("RGBA", image.size, (0, 0, 0, 255))
-    silhouette.putalpha(image.getchannel("A"))
-    w, h = image.size
-    layers = [
-        ("shadow", f'<image x="{x}" y="{y + SHADOW["dy"]}" width="{w}" height="{h}" opacity="{SHADOW["opacity"]}" '
-                   f'filter="url(#icon-shadow)" href="{data_uri(silhouette)}"/>'),
-        ("console", f'<image x="{x}" y="{y}" width="{w}" height="{h}" href="{data_uri(image)}"/>'),
-    ]
-    groups = "".join(f'<g id="{i:02d}-{name}">{body}</g>'
-                     for i, (name, body) in enumerate(layers, 1))
-    defs = f'<filter id="icon-shadow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="{SHADOW["blur"]}"/></filter>'
-    return ('<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">'
-            f'<defs>{defs}</defs>{groups}</svg>')
+    alpha = Image.new("L", (1024, 1024))
+    alpha.paste(image.getchannel("A"), (x, y + SHADOW["dy"]))
+    alpha = alpha.filter(ImageFilter.GaussianBlur(SHADOW["blur"])).point(lambda v: round(v * SHADOW["opacity"]))
+    canvas = Image.new("RGBA", (1024, 1024), (0, 0, 0, 255))
+    canvas.putalpha(alpha)
+    canvas.alpha_composite(image, (x, y))
+    return canvas
 
 
 def main() -> None:
@@ -62,7 +49,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=HERE, help="output directory (default: this icon)")
     out = parser.parse_args().out
     out.mkdir(parents=True, exist_ok=True)
-    (out / "icon.svg").write_text(svg(), encoding="utf-8")
+    icon().save(out / "icon.png", optimize=True)
 
 
 if __name__ == "__main__":

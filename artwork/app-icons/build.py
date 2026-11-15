@@ -1,7 +1,9 @@
-"""Verify published icons, or rebuild them offline from the self-contained SVGs.
+"""Verify published icons, or rebuild them offline from their sources.
 
-Requires Pillow. --rebuild also requires vectorcraft-cli on PATH (or pass
---vectorcraft). The website build does not run this script.
+Each icon's source is a self-contained SVG, or a PNG for icons that are only
+raster artwork. Requires Pillow. --rebuild also requires vectorcraft-cli on PATH
+(or pass --vectorcraft) to render the SVGs. The website build does not run this
+script.
 """
 from __future__ import annotations
 
@@ -123,6 +125,14 @@ def optical_sources(app: dict | None, icon: dict) -> dict[int, Path]:
     return sources
 
 
+def main_source(app: dict | None, icon: dict) -> Path:
+    """The icon's icon.svg, or its icon.png when its artwork is only raster images."""
+    folder = icon_source(app, icon)
+    found = [path for path in (folder / "icon.svg", folder / "icon.png") if path.exists()]
+    require(len(found) == 1, f"{folder}: needs exactly one of icon.svg and icon.png")
+    return found[0]
+
+
 def validate_svg(path: Path) -> None:
     """A self-contained SVG: everything it draws is embedded or defined inside it, with no linked files and no
     stylesheets that could load them."""
@@ -137,13 +147,19 @@ def validate_svg(path: Path) -> None:
 
 
 def validate_sources(app: dict | None, icon: dict) -> None:
-    """Check the icon's SVG and its small-size sources."""
-    for svg in {icon_source(app, icon) / "icon.svg", *optical_sources(app, icon).values()}:
+    """Check the icon's source and its small-size sources."""
+    source = main_source(app, icon)
+    if source.suffix == ".png":
+        read_render(source)
+    else:
+        validate_svg(source)
+    for svg in set(optical_sources(app, icon).values()):
         validate_svg(svg)
 
 
 def read_render(path: Path) -> Image.Image:
     with Image.open(path) as image:
+        require(image.format == "PNG", f"{path}: must be a PNG")
         require(image.size == (1024, 1024), f"{path}: rendered source must be 1024 × 1024")
         return image.convert("RGBA")
 
@@ -163,6 +179,12 @@ def verify_icon(app: dict | None, icon: dict, public: Path = PUBLIC, rendered_so
     base, icns = published(public, app, icon)
     master = read_render(base / "icon-1024.png")
     profile = housing(app)
+    source = main_source(app, icon)
+    if source.suffix == ".png":
+        expected = read_render(source)
+        if profile is not None:
+            expected = Image.composite(expected, *profile)
+        require(master.tobytes() == expected.tobytes(), f"{label}: master differs from {source.name}")
     if profile is not None:
         reference, screen = profile
         restored = Image.composite(master, reference, screen)
@@ -231,9 +253,12 @@ def rebuild(vectorcraft: str) -> None:
         for app, icon in entries():
             rendered = stage / f"{key(app, icon)}.png"
             validate_sources(app, icon)
-            svg = icon_source(app, icon) / "icon.svg"
-            subprocess.run([executable, "convert", str(svg), str(rendered)], check=True, capture_output=True)
-            master = read_render(rendered)
+            source = main_source(app, icon)
+            if source.suffix == ".png":
+                master = read_render(source)
+            else:
+                subprocess.run([executable, "convert", str(source), str(rendered)], check=True, capture_output=True)
+                master = read_render(rendered)
             profile = housing(app)
             if profile is not None:
                 master = Image.composite(master, *profile)
@@ -259,7 +284,7 @@ def rebuild(vectorcraft: str) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--rebuild", action="store_true", help="Render the SVGs and replace the published folder")
+    parser.add_argument("--rebuild", action="store_true", help="Render the sources and replace the published folder")
     parser.add_argument("--vectorcraft", default="vectorcraft-cli", help="VectorCraft CLI executable")
     arguments = parser.parse_args()
     if arguments.rebuild:
