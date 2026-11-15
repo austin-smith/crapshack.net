@@ -8,7 +8,7 @@ const initializedGalleries = new WeakSet<HTMLElement>();
  * the arrow keys. Panels are rendered on the server; this only chooses which
  * one is visible.
  */
-export function initAppIconGallery(root: HTMLElement): void {
+export function initIconGallery(root: HTMLElement): void {
 	if (initializedGalleries.has(root)) return;
 	initializedGalleries.add(root);
 

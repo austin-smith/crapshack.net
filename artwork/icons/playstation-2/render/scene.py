@@ -1,4 +1,4 @@
-"""The original PlayStation 2, modelled and rendered in Blender for its app icon. render.py runs it:
+"""The original PlayStation 2, modelled and rendered in Blender for its icon. render.py runs it:
 
 blender -b --factory-startup -P scene.py -- ARTWORK_DIR OUT.png SAMPLES
 

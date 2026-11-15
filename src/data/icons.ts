@@ -1,4 +1,4 @@
-import catalog from '../../artwork/app-icons/catalog.json';
+import catalog from '../../artwork/icons/catalog.json';
 
 export interface IconCredit {
 	text: string;
@@ -37,7 +37,7 @@ export interface IconEntry {
 }
 
 /**
- * Shared with the offline packaging script in artwork/app-icons; the site reads only finished files.
+ * Shared with the offline packaging script in artwork/icons; the site reads only finished files.
  * A collection's variant publishes to public/<publicDir>/<collection>/<variant>/ and <variant>.icns beside it;
  * a standalone icon to public/<publicDir>/<icon>/ and <icon>.icns.
  */

@@ -68,7 +68,7 @@ def icon_source(app: dict | None, icon: dict) -> Path:
 
 
 def published(public: Path, app: dict | None, icon: dict) -> tuple[Path, Path]:
-    """An icon's preview directory and .icns file; src/data/app-icons.ts derives the same URLs."""
+    """An icon's preview directory and .icns file; src/data/icons.ts derives the same URLs."""
     folder = public / slug(CATALOG["publicDir"])
     if app:
         folder /= slug(app["id"])
@@ -247,7 +247,7 @@ def rebuild(vectorcraft: str) -> None:
     if not executable:
         raise SystemExit("vectorcraft-cli not found. Install it separately or pass --vectorcraft /path/to/vectorcraft-cli.")
     # Stage every icon and verify the set before replacing published files.
-    with tempfile.TemporaryDirectory(prefix="app-icons-") as folder:
+    with tempfile.TemporaryDirectory(prefix="icons-") as folder:
         stage = Path(folder)
         rendered_sources = {}
         for app, icon in entries():
